@@ -14,6 +14,8 @@ FasType 是一个**无需账号、没有后端**的轻量写作工具。一次�
 
 所有数据都留在你的浏览器里。不使用 AI 时，正文不会离开这台设备。
 
+**在线体验：[fast.lovtype.com](https://fast.lovtype.com)** —— 无需安装，打开即用。
+
 ## 截图
 
 | 小红书 | 公众号 | 编辑器 |
@@ -22,12 +24,16 @@ FasType 是一个**无需账号、没有后端**的轻量写作工具。一次�
 
 ## 快速开始
 
+直接打开 [fast.lovtype.com](https://fast.lovtype.com) 就能用，没有登录页，也没有新手向导。
+
+想在本地跑或参与开发：
+
 ```bash
 pnpm install
 pnpm dev
 ```
 
-打开 http://localhost:3000 直接开始写，没有登录页，也没有新手向导。
+打开 http://localhost:3000 直接开始写。
 
 ## 功能
 
