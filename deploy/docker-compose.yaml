@@ -1,6 +1,6 @@
 services:
   fastype:
-    image: ai-graveyard/fastype:latest
+    image: ghcr.io/ai-graveyard/fastype:latest
     container_name: fastype
     restart: unless-stopped
     ports:

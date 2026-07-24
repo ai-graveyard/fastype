@@ -1,4 +1,4 @@
-IMAGE = ai-graveyard/fastype
+IMAGE = ghcr.io/ai-graveyard/fastype
 VERSION = latest
 
 .DEFAULT_GOAL := help
