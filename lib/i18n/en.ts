@@ -187,7 +187,6 @@ export const en: Translation = {
   layout: {
     dragHint: "Drag to resize, double-click to reset",
     resetRatio: "Reset to default ratio",
-    narrowHint: "Narrow screen: switched to single-column preview / edit",
   },
 
   xhs: {
@@ -937,6 +936,7 @@ export const en: Translation = {
   a11y: {
     mainToolbar: "Main toolbar",
     viewSwitcher: "View switcher",
+    narrowSideSwitcher: "Preview / edit switcher",
     formatToolbar: "Formatting toolbar",
     splitter: "Resize panes",
     openSettings: "Open settings",

@@ -31,6 +31,7 @@ import {
 import { SplitPane } from "@/components/workbench/split-pane";
 import { StatusBar } from "@/components/workbench/status-bar";
 import { TopBar } from "@/components/workbench/top-bar";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/misc";
 import { WechatPreview, type WechatSettingsTarget, type WechatWorkspaceTab } from "@/components/workbench/wechat-preview";
 import { WechatPreviewStatus } from "@/components/workbench/wechat-preview-status";
 import { WechatWorkspace } from "@/components/workbench/wechat-workspace";
@@ -545,21 +546,23 @@ export function Workbench() {
 
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-card">
         {narrow ? (
-          <div className="flex shrink-0 items-center gap-1 border-b border-dashed border-border px-3 py-1.5">
-            <span className="mr-auto font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-              {t("layout.narrowHint")}
-            </span>
-            {(["preview", "editor"] as const).map((side) => (
-              <Button
-                key={side}
-                size="sm"
-                variant={narrowSide === side ? "default" : "ghost"}
-                onClick={() => setNarrowSide(side)}
-              >
-                {side === "preview" ? <Type /> : <FileCode2 />}
-                {side === "preview" ? t("view.preview") : t("view.edit")}
-              </Button>
-            ))}
+          <div className="flex shrink-0 items-center justify-center border-b border-dashed border-border px-3 py-1.5">
+            {/* 单栏切换本身已经自解释，不再需要额外说明文字（避免窄屏下和按钮挤在一起）。 */}
+            <Tabs
+              value={narrowSide}
+              onValueChange={(next) => setNarrowSide(next as "preview" | "editor")}
+            >
+              <TabsList className="h-8 gap-0.5 rounded-lg p-0.5" aria-label={t("a11y.narrowSideSwitcher")}>
+                <TabsTrigger value="preview" className="h-full gap-1.5 rounded-md px-3 py-0 text-xs [&_svg]:size-3.5">
+                  <Type />
+                  {t("view.preview")}
+                </TabsTrigger>
+                <TabsTrigger value="editor" className="h-full gap-1.5 rounded-md px-3 py-0 text-xs [&_svg]:size-3.5">
+                  <FileCode2 />
+                  {t("view.edit")}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         ) : null}
 

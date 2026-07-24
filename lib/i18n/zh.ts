@@ -181,7 +181,6 @@ export const zh = {
   layout: {
     dragHint: "拖动调整宽度，双击恢复默认比例",
     resetRatio: "恢复默认比例",
-    narrowHint: "屏幕较窄，已切换为预览 / 编辑单栏模式",
   },
 
   xhs: {
@@ -908,6 +907,7 @@ export const zh = {
   a11y: {
     mainToolbar: "主工具栏",
     viewSwitcher: "视图切换",
+    narrowSideSwitcher: "预览 / 编辑切换",
     formatToolbar: "格式工具栏",
     splitter: "调整左右宽度",
     openSettings: "打开设置",

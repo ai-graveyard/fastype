@@ -83,7 +83,7 @@ export function TopBar({
   };
 
   return (
-    <header className="flex h-12 shrink-0 flex-nowrap items-center gap-2 border-b border-border bg-card px-4">
+    <header className="flex h-auto shrink-0 flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-border bg-card px-3 py-1.5 sm:h-12 sm:flex-nowrap sm:px-4 sm:py-0">
       <div className="flex min-w-0 items-center gap-2">
         <div className="flex shrink-0 select-none items-center gap-2.5 pr-1">
           <span className="group flex size-8 items-center justify-center">
@@ -120,14 +120,14 @@ export function TopBar({
                   setEditingName(false);
                 }
               }}
-              className="h-8 w-40 rounded-md border border-input bg-muted/40 px-2 font-mono text-xs"
+              className="h-8 w-32 rounded-md border border-input bg-muted/40 px-2 font-mono text-xs sm:w-40"
             />
           ) : (
             <Tooltip label={t("doc.filenameHint")}>
               <button
                 type="button"
                 onClick={() => setEditingName(true)}
-                className="block max-w-[12rem] truncate rounded-sm border border-transparent px-2 py-1 font-mono text-xs text-muted-foreground hover:border-border hover:bg-accent hover:text-foreground"
+                className="block max-w-[6rem] truncate rounded-sm border border-transparent px-2 py-1 font-mono text-xs text-muted-foreground hover:border-border hover:bg-accent hover:text-foreground sm:max-w-[12rem]"
               >
                 {filename}
               </button>
@@ -136,7 +136,7 @@ export function TopBar({
         </div>
       </div>
 
-      <div className="flex items-center gap-0.5">
+      <div className="flex shrink-0 items-center gap-0.5">
         <Tooltip label={t("doc.newDoc")}>
           <Button variant="ghost" size="icon-sm" aria-label={t("doc.newDoc")} onClick={newDocument}>
             <FilePlus2 />
@@ -171,7 +171,7 @@ export function TopBar({
         />
       </div>
 
-      <div className="mx-auto">
+      <div className="order-last flex w-full shrink-0 justify-center sm:order-none sm:mx-auto sm:w-auto">
         {/* 用色块分段样式（而不是下划线），和工作台内部各二级 Tab 区分开，避免两级切换看起来像同一种控件。 */}
         <Tabs value={view} onValueChange={(next) => onViewChange(next as ViewId)}>
           <TabsList className="h-10 gap-0.5 rounded-lg p-0.5" aria-label={t("a11y.viewSwitcher")}>
@@ -189,9 +189,10 @@ export function TopBar({
         </Tabs>
       </div>
 
-      <div className="ml-auto flex items-center gap-0.5">
+      <div className="ml-auto flex shrink-0 items-center gap-0.5">
+        {/* GitHub 与专业版入口在窄屏隐藏，仍可在设置 › 关于中找到 GitHub 链接。 */}
         <Tooltip label="GitHub">
-          <Button variant="ghost" size="icon-sm" asChild>
+          <Button variant="ghost" size="icon-sm" className="hidden sm:inline-flex" asChild>
             <a
               href="https://github.com/ai-graveyard/fastype"
               target="_blank"
@@ -235,7 +236,7 @@ export function TopBar({
         <Button
           variant="outline"
           size="sm"
-          className="ml-1 border-brand-primary/40 text-brand-primary hover:border-brand-primary/60 hover:bg-brand-primary/10 hover:text-brand-primary"
+          className="ml-1 hidden border-brand-primary/40 text-brand-primary hover:border-brand-primary/60 hover:bg-brand-primary/10 hover:text-brand-primary sm:inline-flex"
           asChild
         >
           <a
