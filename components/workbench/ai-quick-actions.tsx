@@ -8,6 +8,8 @@ import {
   Replace,
   ShieldCheck,
   Square,
+  SquarePen,
+  SquareSplitHorizontal,
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
@@ -15,6 +17,7 @@ import { toast } from "sonner";
 import type { EditorApi } from "@/components/editor/markdown-editor";
 import { useAi } from "@/components/providers/ai-provider";
 import { useT } from "@/components/providers/prefs-provider";
+import { AiDiffView } from "@/components/workbench/ai-diff-view";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,8 +28,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cleanAiOutput, runDocumentAction } from "@/lib/ai/client";
+import { computeDiffSegments, diffStats } from "@/lib/ai/diff";
 import type { AiDocumentAction } from "@/lib/ai/types";
 import type { TKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -79,9 +84,18 @@ export function AiQuickActions({
   const [running, setRunning] = React.useState(false);
   /** 弹框已打开但用户尚未手动触发 AI 请求。 */
   const [pending, setPending] = React.useState(false);
+  /** 结果生成完成后默认切到差异对比；生成过程中固定停在编辑视图看流式输出。 */
+  const [mode, setMode] = React.useState<"diff" | "edit">("edit");
   const abortRef = React.useRef<AbortController | null>(null);
 
   const actionMeta = ACTIONS.find((item) => item.action === action);
+  const cleanedResult = cleanAiOutput(result);
+  /** 只在切到差异对比视图时才算 diff，避免流式输出期间每个字符都重新计算。 */
+  const diffSegments = React.useMemo(
+    () => (mode === "diff" ? computeDiffSegments(original, cleanedResult) : []),
+    [mode, original, cleanedResult],
+  );
+  const stats = React.useMemo(() => diffStats(diffSegments), [diffSegments]);
 
   /** 点击快捷按钮：校验后打开弹框，等待用户手动触发。 */
   const openFor = React.useCallback(
@@ -104,6 +118,7 @@ export function AiQuickActions({
       setResult("");
       setRunning(false);
       setPending(true);
+      setMode("edit");
       setOpen(true);
     },
     [configured, editorRef, openSettings, t],
@@ -132,6 +147,7 @@ export function AiQuickActions({
       setResult("");
       setRunning(true);
       setPending(false);
+      setMode("edit");
       setOpen(true);
 
       const response = await runDocumentAction(
@@ -155,7 +171,11 @@ export function AiQuickActions({
       if (response.ok) {
         const cleaned = cleanAiOutput(response.content);
         setResult(cleaned);
-        if (!cleaned) toast.warning(t("ai.emptyResult"));
+        if (cleaned) {
+          setMode("diff");
+        } else {
+          toast.warning(t("ai.emptyResult"));
+        }
         return;
       }
       if (response.canceled) {
@@ -265,27 +285,70 @@ export function AiQuickActions({
               </p>
             </div>
           ) : (
-            <div className="flex min-h-0 flex-col gap-2">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{t("ai.previewBeforeReplace")}</span>
-                <span>{t("ai.resultChars", { n: cleanAiOutput(result).length })}</span>
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>{mode === "diff" ? t("ai.diffHint") : t("ai.previewBeforeReplace")}</span>
+                {mode === "diff" ? (
+                  <span className="tabular-nums">
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                      +{stats.added}
+                    </span>
+                    <span className="mx-1">/</span>
+                    <span className="font-semibold text-red-600 dark:text-red-400">
+                      -{stats.removed}
+                    </span>
+                    <span className="ml-1">{t("ai.diffStatsUnit")}</span>
+                  </span>
+                ) : (
+                  <span>{t("ai.resultChars", { n: cleanedResult.length })}</span>
+                )}
               </div>
-              <div className="relative min-h-0 flex-1">
-                <Textarea
-                  value={result}
-                  onChange={(event) => setResult(event.target.value)}
-                  readOnly={running}
-                  aria-label={t("ai.result")}
-                  className="h-[52vh] min-h-64 resize-none overflow-y-auto font-mono text-xs leading-6"
-                  placeholder={running ? t("ai.running") : t("ai.emptyResult")}
-                />
-                {running && !result ? (
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                    {t("ai.running")}
+
+              <Tabs
+                value={mode}
+                onValueChange={(value) => setMode(value as "diff" | "edit")}
+                className="min-h-0 flex-1 gap-2"
+              >
+                <TabsList>
+                  <TabsTrigger value="diff" disabled={running}>
+                    <SquareSplitHorizontal />
+                    {t("ai.diffView")}
+                  </TabsTrigger>
+                  <TabsTrigger value="edit">
+                    <SquarePen />
+                    {t("ai.editView")}
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="diff" className="flex min-h-0 flex-col">
+                  <AiDiffView
+                    segments={diffSegments}
+                    hasResult={Boolean(cleanedResult)}
+                    emptyLabel={running ? t("ai.running") : t("ai.emptyResult")}
+                    unchangedLabel={t("ai.diffUnchanged")}
+                    className="h-[52vh] min-h-64 rounded-md border border-input bg-card/60 px-3 py-2 font-mono text-xs leading-6 shadow-xs"
+                  />
+                </TabsContent>
+
+                <TabsContent value="edit" className="flex min-h-0 flex-col">
+                  <div className="relative min-h-0 flex-1">
+                    <Textarea
+                      value={result}
+                      onChange={(event) => setResult(event.target.value)}
+                      readOnly={running}
+                      aria-label={t("ai.result")}
+                      className="h-[52vh] min-h-64 resize-none overflow-y-auto font-mono text-xs leading-6"
+                      placeholder={running ? t("ai.running") : t("ai.emptyResult")}
+                    />
+                    {running && !result ? (
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        {t("ai.running")}
+                      </div>
+                    ) : null}
                   </div>
-                ) : null}
-              </div>
+                </TabsContent>
+              </Tabs>
             </div>
           )}
 
