@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.git
+.github
+.playwright-cli
+.pnpm-store
+coverage
+output
+.env*
+*.md
+.DS_Store

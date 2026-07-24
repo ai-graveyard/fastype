@@ -1,0 +1,7 @@
+services:
+  fastype:
+    image: ghcr.io/ai-graveyard/fastype:latest
+    container_name: fastype
+    restart: unless-stopped
+    ports:
+      - "${FASTYPE_PORT:-3000}:80"
