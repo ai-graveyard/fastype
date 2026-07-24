@@ -1,0 +1,371 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* FasType 以品牌蓝标记当前状态、焦点与关键交互；工作台主体保持中性。 */
+:root {
+  --radius: 0.5rem;
+  --brand-primary: #0088ff;
+  --brand-secondary: #5db3ff;
+  --background: oklch(0.975 0.003 250);
+  --foreground: oklch(0.19 0.012 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.19 0.012 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.012 255);
+  --primary: oklch(0.23 0.012 255);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0.004 250);
+  --secondary-foreground: oklch(0.23 0.012 255);
+  --muted: oklch(0.965 0.003 250);
+  --muted-foreground: oklch(0.5 0.012 255);
+  --accent: oklch(0.945 0.008 250);
+  --accent-foreground: oklch(0.2 0.012 255);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --success: oklch(0.52 0.13 155);
+  --warning: oklch(0.62 0.15 65);
+  --border: oklch(0.9 0.006 250);
+  --input: oklch(0.88 0.008 250);
+  --ring: var(--brand-primary);
+}
+
+.dark {
+  --background: oklch(0.105 0.003 75);
+  --foreground: oklch(0.91 0.006 85);
+  --card: oklch(0.145 0.004 75);
+  --card-foreground: oklch(0.91 0.006 85);
+  --popover: oklch(0.17 0.005 75);
+  --popover-foreground: oklch(0.91 0.006 85);
+  --primary: oklch(0.9 0.006 85);
+  --primary-foreground: oklch(0.14 0.004 75);
+  --secondary: oklch(0.2 0.005 75);
+  --secondary-foreground: oklch(0.88 0.006 85);
+  --muted: oklch(0.19 0.005 75);
+  --muted-foreground: oklch(0.61 0.009 85);
+  --accent: oklch(0.225 0.006 75);
+  --accent-foreground: oklch(0.92 0.006 85);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --success: oklch(0.72 0.15 155);
+  --warning: oklch(0.78 0.15 75);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: var(--brand-secondary);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background:
+      radial-gradient(circle at 18% -10%, color-mix(in oklab, var(--brand-primary) 2%, transparent), transparent 30rem),
+      var(--background);
+    color: var(--foreground);
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--brand-secondary) 42%, transparent);
+  }
+  /* 键盘可达性：所有核心操作可用键盘完成，焦点必须可见（PRD FT-SET-003）。 */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .ft-workbench {
+    background-color: var(--background);
+  }
+
+}
+
+* {
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 30%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+/* ---------- Markdown 通用预览样式（工作台内，仅用于 Markdown 视图） ---------- */
+.md-preview {
+  line-height: 1.75;
+  overflow-wrap: break-word;
+}
+.md-preview > *:first-child {
+  margin-top: 0;
+}
+.md-preview h1,
+.md-preview h2,
+.md-preview h3,
+.md-preview h4,
+.md-preview h5,
+.md-preview h6 {
+  font-weight: 650;
+  line-height: 1.35;
+  margin: 1.6em 0 0.6em;
+}
+.md-preview h1 {
+  font-size: 1.75em;
+}
+.md-preview h2 {
+  font-size: 1.4em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--border);
+}
+.md-preview h3 {
+  font-size: 1.2em;
+}
+.md-preview p {
+  margin: 0.9em 0;
+}
+.md-preview a {
+  color: var(--brand-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.md-preview ul,
+.md-preview ol {
+  margin: 0.9em 0;
+  padding-left: 1.6em;
+}
+.md-preview ul {
+  list-style: disc;
+}
+.md-preview ol {
+  list-style: decimal;
+}
+.md-preview li {
+  margin: 0.35em 0;
+}
+.md-preview li > ul,
+.md-preview li > ol {
+  margin: 0.35em 0;
+}
+.md-preview blockquote {
+  margin: 1em 0;
+  padding: 0.2em 1em;
+  border-left: 3px solid var(--brand-secondary);
+  color: var(--muted-foreground);
+}
+.md-preview hr {
+  margin: 2em 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.md-preview code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  background: var(--muted);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+.md-preview pre {
+  margin: 1.1em 0;
+  padding: 1em;
+  background: var(--muted);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.md-preview pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.85em;
+  line-height: 1.6;
+}
+.md-preview table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1.1em 0;
+  font-size: 0.95em;
+}
+.md-preview th,
+.md-preview td {
+  border: 1px solid var(--border);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+.md-preview th {
+  background: var(--muted);
+  font-weight: 600;
+}
+.md-preview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+.md-preview del {
+  opacity: 0.7;
+}
+.md-preview input[type="checkbox"] {
+  margin-right: 0.4em;
+}
+
+/* 编辑器预览经典主题：主题变量同时作用于屏幕预览和长图导出。 */
+.md-preview.md-theme-github {
+  --background: #ffffff;
+  --foreground: #1f2328;
+  --border: #d0d7de;
+  --muted: #f6f8fa;
+  --muted-foreground: #59636e;
+  --brand-primary: #0969da;
+  --brand-secondary: #54aeff;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+}
+
+.md-preview.md-theme-notion {
+  --background: #ffffff;
+  --foreground: #37352f;
+  --border: #e9e9e7;
+  --muted: #f7f6f3;
+  --muted-foreground: #787774;
+  --brand-primary: #2383e2;
+  --brand-secondary: #9ec7ee;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.7;
+}
+.md-preview.md-theme-notion h1,
+.md-preview.md-theme-notion h2,
+.md-preview.md-theme-notion h3 {
+  letter-spacing: -0.02em;
+}
+.md-preview.md-theme-notion h2 {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.md-preview.md-theme-notion blockquote {
+  border-left-color: var(--foreground);
+}
+
+.md-preview.md-theme-paper {
+  --background: #f7f1e5;
+  --foreground: #3f352c;
+  --border: #d8cbb8;
+  --muted: #eee4d3;
+  --muted-foreground: #74675a;
+  --brand-primary: #9a4f32;
+  --brand-secondary: #c58c68;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Georgia, "Songti SC", STSong, "Noto Serif SC", serif;
+  font-size: 16px;
+  line-height: 1.9;
+  letter-spacing: 0.01em;
+}
+.md-preview.md-theme-paper h1,
+.md-preview.md-theme-paper h2,
+.md-preview.md-theme-paper h3,
+.md-preview.md-theme-paper h4,
+.md-preview.md-theme-paper h5,
+.md-preview.md-theme-paper h6 {
+  font-family: Georgia, "Songti SC", STSong, "Noto Serif SC", serif;
+  letter-spacing: 0.015em;
+}
+.md-preview.md-theme-paper h2 {
+  border-bottom-style: double;
+  border-bottom-width: 3px;
+}
+
+.md-preview.md-theme-night {
+  --background: #111827;
+  --foreground: #e5e7eb;
+  --border: #374151;
+  --muted: #1f2937;
+  --muted-foreground: #9ca3af;
+  --brand-primary: #60a5fa;
+  --brand-secondary: #818cf8;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+}
+.md-preview.md-theme-night img {
+  box-shadow: 0 12px 30px rgb(0 0 0 / 28%);
+}
+
+/* 图片加载失败占位（FT-IMG-001） */
+.md-img-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  max-width: 100%;
+  padding: 0.5em 0.75em;
+  border: 1px dashed currentColor;
+  border-radius: 6px;
+  opacity: 0.7;
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- CodeMirror 编辑器接线 ---------- */
+.cm-editor {
+  height: 100%;
+  background: transparent;
+}
+.cm-editor.cm-focused {
+  outline: none !important;
+}
+.cm-scroller {
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "PingFang SC",
+    "Microsoft YaHei", monospace;
+  line-height: 1.7;
+}
+
+/* 拖动分隔条时禁止选中正文（FT-LYT-001） */
+.ft-resizing,
+.ft-resizing * {
+  user-select: none !important;
+  cursor: col-resize !important;
+}
