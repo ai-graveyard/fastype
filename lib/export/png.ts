@@ -1,6 +1,3 @@
-import { toBlob } from "html-to-image";
-import JSZip from "jszip";
-
 import { downloadBlob } from "@/lib/file";
 
 /**
@@ -38,6 +35,7 @@ export async function renderPageToBlob(
   node: HTMLElement,
   options: Pick<ExportOptions, "scale" | "backgroundColor">,
 ): Promise<Blob | null> {
+  const { toBlob } = await import("html-to-image");
   return toBlob(node, {
     pixelRatio: options.scale,
     backgroundColor: options.backgroundColor,
@@ -88,6 +86,7 @@ export async function buildPagesZip(
   results: PageExportResult[],
   docBaseName: string,
 ): Promise<PagesZipResult | null> {
+  const { default: JSZip } = await import("jszip");
   const zip = new JSZip();
   let included = 0;
 

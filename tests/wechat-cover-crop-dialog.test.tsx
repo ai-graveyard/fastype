@@ -24,7 +24,7 @@ vi.mock("react-advanced-cropper", () => ({
 afterEach(() => vi.restoreAllMocks());
 
 describe("WechatCoverCropDialog", () => {
-  it("分别以 900×383 和 500×500 保存同一张原图的裁剪", () => {
+  it("分别以 900×383 和 500×500 保存同一张原图的裁剪", async () => {
     const onSave = vi.fn();
     const sourceCanvas = document.createElement("canvas");
     sourceCanvas.width = 900;
@@ -49,9 +49,9 @@ describe("WechatCoverCropDialog", () => {
       </PrefsProvider>,
     );
 
-    expect(Number(screen.getByTestId("wechat-cover-cropper").getAttribute("data-aspect"))).toBeCloseTo(
-      900 / 383,
-    );
+    // 裁剪器是懒加载的，等它挂载后再断言。
+    const cropper = await screen.findByTestId("wechat-cover-cropper");
+    expect(Number(cropper.getAttribute("data-aspect"))).toBeCloseTo(900 / 383);
     fireEvent.click(screen.getByRole("button", { name: /Save current crop|保存当前裁剪/ }));
     expect(context.drawImage).toHaveBeenLastCalledWith(sourceCanvas, 0, 0, 900, 383);
     expect(onSave).toHaveBeenLastCalledWith("wide", "data:image/webp;base64,cropped");

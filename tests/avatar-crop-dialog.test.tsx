@@ -34,7 +34,7 @@ const labels = {
 afterEach(() => vi.restoreAllMocks());
 
 describe("AvatarCropDialog", () => {
-  it("keeps the crop selection square and only applies the avatar after confirmation", () => {
+  it("keeps the crop selection square and only applies the avatar after confirmation", async () => {
     const onOpenChange = vi.fn();
     const onSave = vi.fn();
     const sourceCanvas = document.createElement("canvas");
@@ -44,7 +44,9 @@ describe("AvatarCropDialog", () => {
 
     const context = { drawImage: vi.fn() } as unknown as CanvasRenderingContext2D;
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context);
-    vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockReturnValue("data:image/webp;base64,cropped");
+    vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockReturnValue(
+      "data:image/webp;base64,cropped",
+    );
 
     render(
       <AvatarCropDialog
@@ -56,7 +58,9 @@ describe("AvatarCropDialog", () => {
       />,
     );
 
-    expect(screen.getByTestId("avatar-cropper").getAttribute("data-aspect")).toBe("1");
+    // 裁剪器是懒加载的，等它挂载后再断言。
+    const cropper = await screen.findByTestId("avatar-cropper");
+    expect(cropper.getAttribute("data-aspect")).toBe("1");
     expect(onSave).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: labels.save }));
@@ -65,10 +69,17 @@ describe("AvatarCropDialog", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("provides reset and zoom controls without applying a crop", () => {
+  it("provides reset and zoom controls without applying a crop", async () => {
     render(
-      <AvatarCropDialog src="blob:avatar" open onOpenChange={vi.fn()} onSave={vi.fn()} labels={labels} />,
+      <AvatarCropDialog
+        src="blob:avatar"
+        open
+        onOpenChange={vi.fn()}
+        onSave={vi.fn()}
+        labels={labels}
+      />,
     );
+    await screen.findByTestId("avatar-cropper");
 
     fireEvent.click(screen.getByRole("button", { name: labels.zoomOut }));
     fireEvent.click(screen.getByRole("button", { name: labels.reset }));

@@ -2,7 +2,7 @@
 
 import { Crop, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import * as React from "react";
-import { Cropper, type CropperRef } from "react-advanced-cropper";
+import { type CropperRef } from "react-advanced-cropper";
 import "react-advanced-cropper/dist/style.css";
 import { toast } from "sonner";
 
@@ -15,6 +15,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+// 裁剪器只在用户真的打开裁剪弹窗时才需要，别让它压在首屏包里。
+const Cropper = React.lazy(async () => ({
+  default: (await import("react-advanced-cropper")).Cropper,
+}));
 
 const AVATAR_EXPORT_SIZE = 512;
 
@@ -49,7 +54,13 @@ interface AvatarCropDialogProps {
 }
 
 /** A local-only, locked 1:1 crop step used before an avatar reaches profile storage. */
-export function AvatarCropDialog({ src, open, onOpenChange, onSave, labels }: AvatarCropDialogProps) {
+export function AvatarCropDialog({
+  src,
+  open,
+  onOpenChange,
+  onSave,
+  labels,
+}: AvatarCropDialogProps) {
   const cropperRef = React.useRef<CropperRef>(null);
   const [saving, setSaving] = React.useState(false);
 
@@ -84,12 +95,14 @@ export function AvatarCropDialog({ src, open, onOpenChange, onSave, labels }: Av
 
         <div className="bg-muted/30 p-4">
           <div className="mx-auto aspect-square w-full max-w-[420px] overflow-hidden rounded-lg border bg-black shadow-sm">
-            <Cropper
-              ref={cropperRef}
-              src={src}
-              className="size-full"
-              stencilProps={{ aspectRatio: 1, grid: true }}
-            />
+            <React.Suspense fallback={<div className="size-full" />}>
+              <Cropper
+                ref={cropperRef}
+                src={src}
+                className="size-full"
+                stencilProps={{ aspectRatio: 1, grid: true }}
+              />
+            </React.Suspense>
           </div>
         </div>
 

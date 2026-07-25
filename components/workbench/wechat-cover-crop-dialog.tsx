@@ -2,22 +2,16 @@
 
 import { Check, Crop, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import * as React from "react";
-import { Cropper, type CropperRef } from "react-advanced-cropper";
+import { type CropperRef } from "react-advanced-cropper";
 import "react-advanced-cropper/dist/style.css";
 import { toast } from "sonner";
 
 import { useT } from "@/components/providers/prefs-provider";
 import { Button } from "@/components/ui/button";
-import {
-  WECHAT_COVER_FORMATS,
-  type WechatCoverFormat,
-} from "@/lib/wechat-cover";
+import { WECHAT_COVER_FORMATS, type WechatCoverFormat } from "@/lib/wechat-cover";
 import { cn } from "@/lib/utils";
 
-function cropCanvasToDataUrl(
-  canvas: HTMLCanvasElement,
-  format: WechatCoverFormat,
-): string {
+function cropCanvasToDataUrl(canvas: HTMLCanvasElement, format: WechatCoverFormat): string {
   const size = WECHAT_COVER_FORMATS[format];
   const output = document.createElement("canvas");
   output.width = size.width;
@@ -28,6 +22,11 @@ function cropCanvasToDataUrl(
   context.drawImage(canvas, 0, 0, size.width, size.height);
   return output.toDataURL("image/webp", 0.9);
 }
+
+// 裁剪器只在用户真的打开裁剪弹窗时才需要，别让它压在首屏包里。
+const Cropper = React.lazy(async () => ({
+  default: (await import("react-advanced-cropper")).Cropper,
+}));
 
 interface WechatCoverCropDialogProps {
   src: string;
@@ -62,9 +61,7 @@ export function WechatCoverCropDialog({
     try {
       setSaving(true);
       onSave(format, cropCanvasToDataUrl(canvas, format));
-      toast.success(
-        t(format === "wide" ? "wechat.coverWideSaved" : "wechat.coverSquareSaved"),
-      );
+      toast.success(t(format === "wide" ? "wechat.coverWideSaved" : "wechat.coverSquareSaved"));
     } catch {
       toast.error(t("wechat.coverCropSaveError"));
     } finally {
@@ -132,13 +129,15 @@ export function WechatCoverCropDialog({
             )}
             style={{ aspectRatio: `${size.width} / ${size.height}` }}
           >
-            <Cropper
-              key={`${src}-${format}`}
-              ref={cropperRef}
-              src={src}
-              className="size-full"
-              stencilProps={{ aspectRatio: size.width / size.height, grid: true }}
-            />
+            <React.Suspense fallback={<div className="size-full" />}>
+              <Cropper
+                key={`${src}-${format}`}
+                ref={cropperRef}
+                src={src}
+                className="size-full"
+                stencilProps={{ aspectRatio: size.width / size.height, grid: true }}
+              />
+            </React.Suspense>
           </div>
         </div>
 

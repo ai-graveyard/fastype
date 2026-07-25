@@ -1,6 +1,5 @@
 "use client";
 
-import QRCode from "qrcode";
 import * as React from "react";
 
 import type { XhsQrCodeStyle } from "@/lib/themes/xhs";
@@ -41,12 +40,15 @@ export function XhsQrCode({
       };
     }
 
-    void QRCode.toDataURL(normalizedUrl, {
-      width: Math.round(QR_BASE_SIZE * qrCode.scale),
-      margin: 1,
-      errorCorrectionLevel: "M",
-      color: { dark: "#111111", light: "#ffffff" },
-    })
+    void import("qrcode")
+      .then(({ default: QRCode }) =>
+        QRCode.toDataURL(normalizedUrl, {
+          width: Math.round(QR_BASE_SIZE * qrCode.scale),
+          margin: 1,
+          errorCorrectionLevel: "M",
+          color: { dark: "#111111", light: "#ffffff" },
+        }),
+      )
       .then((next) => {
         if (active) setDataUrl(next);
       })

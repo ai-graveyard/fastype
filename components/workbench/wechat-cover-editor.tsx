@@ -12,7 +12,6 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import JSZip from "jszip";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -368,6 +367,7 @@ export function WechatCoverEditor({
     try {
       const [wide, square] = await Promise.all([renderCover("wide"), renderCover("square")]);
       if (!wide || !square) throw new Error("empty");
+      const { default: JSZip } = await import("jszip");
       const zip = new JSZip();
       zip.file(wechatCoverFilename(docBaseName, "wide"), new Uint8Array(await wide.arrayBuffer()));
       zip.file(
@@ -431,14 +431,15 @@ export function WechatCoverEditor({
               {t("wechat.coverSafeAreaDesc")}
             </p>
           </div>
-          <Switch
-            id="wechat-cover-safe-area"
-            checked={safeArea}
-            onCheckedChange={setSafeArea}
-          />
+          <Switch id="wechat-cover-safe-area" checked={safeArea} onCheckedChange={setSafeArea} />
         </div>
 
-        <Button type="button" className="w-full" onClick={() => void downloadBoth()} disabled={exporting}>
+        <Button
+          type="button"
+          className="w-full"
+          onClick={() => void downloadBoth()}
+          disabled={exporting}
+        >
           <Layers3 />
           {t("wechat.coverDownloadBoth")}
         </Button>
@@ -576,7 +577,9 @@ export function WechatCoverEditor({
                     : "border-border hover:bg-accent",
                 )}
               >
-                {t(`wechat.coverPosition${position[0].toUpperCase()}${position.slice(1)}` as "wechat.coverPositionTop")}
+                {t(
+                  `wechat.coverPosition${position[0].toUpperCase()}${position.slice(1)}` as "wechat.coverPositionTop",
+                )}
               </button>
             ))}
           </div>
@@ -618,10 +621,7 @@ export function WechatCoverEditor({
         />
       ) : null}
 
-      <div
-        aria-hidden
-        style={{ position: "fixed", top: 0, left: -100_000, zIndex: -1 }}
-      >
+      <div aria-hidden style={{ position: "fixed", top: 0, left: -100_000, zIndex: -1 }}>
         <CoverArtwork
           cover={wechatCover}
           format="wide"

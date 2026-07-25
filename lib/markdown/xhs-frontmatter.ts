@@ -1,7 +1,6 @@
-import matter from "gray-matter";
-
 import { XHS_INPUT_LIMITS, XHS_LIMITS } from "@/lib/themes/xhs";
 
+import { parseFrontMatter, stringifyFrontMatter } from "./front-matter";
 import { extractTitleFromSource, renderMarkdown } from "./parse";
 
 /** 小红书发布时独立于图片正文保存的纯文本信息。 */
@@ -28,8 +27,8 @@ export const DEFAULT_XHS_METADATA: XhsMetadata = {
 /** 将 Markdown 的图片正文与小红书发布元数据分开。 */
 export function parseXhsMarkdown(markdown: string): ParsedXhsContent {
   try {
-    const parsed = matter(markdown);
-    const data = parsed.data as Record<string, unknown>;
+    const parsed = parseFrontMatter(markdown);
+    const data = parsed.data;
     const xhsData = data.xhs;
     let xhs: XhsMetadata | null = null;
 
@@ -71,7 +70,7 @@ export function stringifyXhsMarkdown(
     };
   }
 
-  return Object.keys(data).length ? matter.stringify(body, data) : body;
+  return stringifyFrontMatter(body, data);
 }
 
 /** 去掉正文里第一个一级标题所在行；跳过围栏代码块的逻辑与 extractTitleFromSource 保持一致。 */
@@ -110,9 +109,7 @@ function clampByCodePoints(text: string, limit: number): string {
  * 从图片正文推导小红书笔记内容的建议值：标题取第一个一级标题，正文取去除该标题后的
  * 纯文本前若干字，均按平台字数上限截断（PRD 3「内容与样式分离」——建议值仍需用户确认后写入）。
  */
-export function suggestXhsMetadata(
-  body: string,
-): Pick<XhsMetadata, "title" | "content"> {
+export function suggestXhsMetadata(body: string): Pick<XhsMetadata, "title" | "content"> {
   const title = extractTitleFromSource(body) ?? "";
   const plainText = renderMarkdown(removeFirstHeadingLine(body)).text;
 
