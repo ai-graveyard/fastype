@@ -2,6 +2,16 @@
   "name": "fastype",
   "version": "0.1.0",
   "private": true,
+  "description": "无需账号、没有后端的 Markdown 写作工具，一份正文同时排出小红书图片和微信公众号富文本。",
+  "license": "MIT",
+  "homepage": "https://fast.lovtype.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ai-graveyard/fastype.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ai-graveyard/fastype/issues"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

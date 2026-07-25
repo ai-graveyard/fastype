@@ -6,6 +6,12 @@
 
 <p align="center">一篇 Markdown，写完就能带走。</p>
 
+<p align="center">
+  <a href="https://github.com/ai-graveyard/fastype/actions/workflows/ci.yml"><img src="https://github.com/ai-graveyard/fastype/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/ai-graveyard/fastype/releases"><img src="https://img.shields.io/github/v/release/ai-graveyard/fastype?display_name=tag&sort=semver" alt="Release" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT" /></a>
+</p>
+
 FasType 是一个**无需账号、没有后端**的轻量写作工具。一次只处理一篇 Markdown，帮你完成三件事：
 
 - **写** —— 左预览、右源码的 Markdown 编辑器
@@ -21,6 +27,10 @@ FasType 是一个**无需账号、没有后端**的轻量写作工具。一次�
 | 小红书 | 公众号 | 编辑器 |
 | --- | --- | --- |
 | ![小红书卡片预览与分页](public/screenshot-xhs.png) | ![公众号预览与复制](public/screenshot-gzh.png) | ![编辑器双栏视图](public/screenshot-bjq.png) |
+
+深色模式（浅色 / 深色 / 跟随系统三选一）：
+
+![深色模式下的小红书视图](public/screenshot-dark.png)
 
 ## 快速开始
 
@@ -43,7 +53,7 @@ pnpm dev
 | 编辑器 | CodeMirror 6、语法高亮、格式工具栏、搜索替换、经典预览主题、预览长图下载、字数与光标统计 |
 | 小红书 | “内容”编辑器支持文本 / 可编辑 Markdown 预览、7 种常用比例与自定义画布、7 套主题 + 可保存的自定义主题、元素级样式、页码/用户标识/二维码、自动分页、批量 PNG 导出（打包为 ZIP） |
 | 公众号 | “内容”编辑器支持文本 / 可编辑 Markdown 预览、“封面”可制作 900×383 横版与 500×500 方形图、7 套主题 + 可保存的自定义主题、8 套标题模板、元素级排版、身份/引导卡片、内联 HTML 复制与下载 |
-| AI | BYOK 配置、连接测试、润色/扩写/精简/自定义、流式输出、确认后才替换正文 |
+| AI | BYOK 配置、连接测试、全文去 AI 味 / 去敏感词、划词浮层做润色/扩写/精简/自定义指令、六份提示词均可编辑、流式输出、确认后才替换正文 |
 | 界面 | 浅色 / 深色 / 跟随系统，简体中文 / English，平台成品预览可调分栏，内容编辑器支持源码 / Live Preview |
 
 ### 三个视图，一份正文
@@ -84,9 +94,54 @@ NEXT_PUBLIC_BASE_PATH=/fastype pnpm build
 
 运行时不需要 Node.js 服务、数据库、Redis、队列或对象存储。项目里没有 Route Handler，也没有 Server Action。
 
+### 用 Docker 跑自己的一份
+
+仓库里带了 `Dockerfile`（多阶段：Node 构建静态产物 → nginx 托管）和 `deploy/docker-compose.yaml`。镜像在你自己的机器上构建，不依赖任何镜像仓库：
+
+```bash
+cd deploy
+cp .env.example .env          # 按需改 FASTYPE_PORT，默认 3000
+docker compose up -d --build
+```
+
+然后打开 http://localhost:3000。
+
+根目录的 `Makefile` 把常用操作包了一层：
+
+| 命令 | 作用 |
+| --- | --- |
+| `make build` | 构建镜像 |
+| `make start` / `make stop` / `make restart` | 起停服务 |
+| `make logs` | 跟踪日志 |
+| `make deploy` | `git pull` + 重新构建 + 重启，服务器上用这条 |
+
+## 桌面客户端
+
+除了网页版，FasType 也能用 [Tauri](https://tauri.app) 打成 macOS 和 Windows 的原生客户端。壳里跑的还是同一份静态产物，功能与网页版一致，只是多了独立窗口和 Dock / 开始菜单图标。
+
+安装包在 [Releases](https://github.com/ai-graveyard/fastype/releases) 页面下载：macOS 取 `.dmg`，Windows 取 `-setup.exe`（NSIS）或 `.msi`。
+
+安装包**没有做代码签名**（Apple 签名公证和 Windows 代码签名都要付费证书），所以首次打开需要手动放行：
+
+| 平台 | 现象 | 放行方式 |
+| --- | --- | --- |
+| macOS | 提示应用「已损坏」或来自身份不明的开发者 | 在「访达」里右键点应用选「打开」，或执行 `xattr -dr com.apple.quarantine /Applications/FasType.app` |
+| Windows | SmartScreen 提示「Windows 已保护你的电脑」 | 点「更多信息 → 仍要运行」 |
+
+本地构建（产物在 `src-tauri/target/release/bundle/`）：
+
+```bash
+pnpm desktop:dev      # 开发模式，前端热更新
+pnpm desktop:build    # 打出当前平台的安装包
+```
+
+需要 [Rust 工具链](https://www.rust-lang.org/tools/install)；macOS 还需要 Xcode Command Line Tools，Windows 需要 MSVC 生成工具和 WebView2。
+
+**不能交叉编译**：Windows 包要 MSVC 链接器，macOS 包要 Xcode，两边都只能在对应系统上构建。所以两个平台的正式包由 `.github/workflows/desktop-release.yml` 在各自的 runner 上原生构建——推一个 `v*` 标签就会触发，产物挂到同名 Release 的草稿上。
+
 ## AI：浏览器直连你自己的模型
 
-在「设置 → AI」中填写：
+在「设置 → 基础配置」中填写：
 
 - **Base URL** —— OpenAI 兼容的 Chat Completions 端点，通常需要包含 `/v1`
 - **API Key**
@@ -94,20 +149,78 @@ NEXT_PUBLIC_BASE_PATH=/fastype pnpm build
 
 请求由**你的浏览器直接发往这个地址**，不经过任何 FasType 服务。你可以在浏览器网络面板里确认这一点。
 
-### CORS：最常见的坑
+| 填 Key 与测试连接 | 提示词可改 |
+| --- | --- |
+| ![设置中的模型连接配置](public/screenshot-ai.png) | ![去 AI 味与去敏感词的提示词配置](public/screenshot-prompts.png) |
 
-浏览器发起的跨域请求需要目标服务放行。如果连接测试失败：
+### 两种用法：全文和划词
+
+**全文**——编辑区右上角的「去 AI 味」「去敏感词」把整篇正文交给模型，结果先在差异对比里看过再决定要不要替换。
+
+**划词**——在编辑器里选中一段，浮出工具条，只处理这一段：
+
+![选中文字后浮出的划词 AI 工具条](public/screenshot-selection-toolbar.png)
+
+| 动作 | 做什么 |
+| --- | --- |
+| 润色 | 理顺语序、删冗词，长度与原文相当 |
+| 扩写 | 在原意基础上补细节，不编造事实 |
+| 精简 | 压缩表达，保留全部关键事实 |
+| 自定义指令 | 你自己写一句要求，只作用于选中这段 |
+
+划词只发送**选中的文字加前后各 400 字符**的上下文，不会把整篇文章送出去。结果流式显示在浮层里，可以「替换选中内容」或「插入到选中内容之后」，也可以直接丢弃——不点就不会动正文，落笔后 Cmd/Ctrl + Z 能原样撤回。生成期间那段原文若被改动，浮层会拒绝落笔并提示重选，不会覆盖新内容。
+
+### 提示词全都能改
+
+上面六个动作用的都是可见、可改、可恢复默认的提示词，全存在你自己的浏览器里：
+
+![设置中的划词提示词配置](public/screenshot-selection-prompts.png)
+
+### 哪些服务能直连
+
+浏览器发起的跨域请求需要目标服务放行 CORS。常见的 OpenAI 兼容服务实测如下（2026-07-25，用 `OPTIONS` 预检加 `Origin: https://fast.lovtype.com` 探测，全部放行）：
+
+| 服务 | Base URL |
+| --- | --- |
+| OpenAI | `https://api.openai.com/v1` |
+| OpenRouter | `https://openrouter.ai/api/v1` |
+| DeepSeek | `https://api.deepseek.com/v1` |
+| 硅基流动 | `https://api.siliconflow.cn/v1` |
+| 月之暗面 Kimi | `https://api.moonshot.cn/v1` |
+| 阿里云百炼 | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| 火山方舟 | `https://ark.cn-beijing.volces.com/api/v3` |
+| 智谱 BigModel | `https://open.bigmodel.cn/api/paas/v4` |
+
+想自己复核某个服务，把 Base URL 换进这条命令，看有没有回 `access-control-allow-origin`：
+
+```bash
+curl -si -X OPTIONS https://api.example.com/v1/chat/completions \
+  -H "Origin: https://fast.lovtype.com" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: authorization,content-type" | grep -i access-control
+```
+
+预检通过只说明浏览器不会拦，Key 有没有额度、模型名对不对是另一回事——用设置里的「测试连接」按钮验完整链路。
+
+### 本地模型和自建网关
+
+本地模型默认往往只放行 `localhost` 来源，把 FasType 部署到域名上之后就连不通了，需要显式加来源：
+
+| 服务 | 放行方式 |
+| --- | --- |
+| Ollama | 设环境变量 `OLLAMA_ORIGINS`，例如 `OLLAMA_ORIGINS="https://fast.lovtype.com"`，Base URL 填 `http://localhost:11434/v1` |
+| LM Studio | 在本地服务器设置里打开 CORS |
+| vLLM | 启动时加 `--allowed-origins`（底层是 FastAPI 的 CORS 中间件） |
+| one-api / LiteLLM 等网关 | 在网关侧配置允许来源 |
+
+### 连不上时怎么排查
+
+浏览器出于安全考虑不会告诉页面跨域失败的具体原因，所以「服务没起来」和「CORS 没放行」的报错看起来一模一样，只能逐个排除：
 
 1. 先确认模型服务在运行、Base URL 没写错（漏掉 `/v1` 是最常见的错误）
-2. 再检查服务端是否允许来自 FasType 站点来源的跨域请求
+2. 再用上面那条 `curl` 确认服务端放行了你这个来源
 
-浏览器出于安全考虑不会告诉页面失败的具体原因，所以这两种情况的报错看起来是一样的，需要你逐个排除。
-
-FasType **不提供**绕过 CORS 的后端代理——那会违背「没有后端」这个前提。可选方案：
-
-- 在你的模型服务端配置 CORS 允许来源
-- 使用本身支持浏览器直连的兼容服务
-- 在本地跑 FasType，直连本地模型（例如 `http://localhost:11434/v1`）
+FasType **不提供**绕过 CORS 的后端代理——那会违背「没有后端」这个前提。真连不通的话，要么在服务端配好 CORS，要么在本地跑 FasType 直连本地模型。
 
 ### 混合内容
 
@@ -131,6 +244,10 @@ FasType **不提供**绕过 CORS 的后端代理——那会违背「没有后�
 - 导出配置时默认**不包含** API Key，需要主动勾选才会带上。
 - 设置里可以随时单独清除 AI 配置。
 
+「设置 → 本地数据」把这些开关摆在明面上——导出是否带 Key 默认关闭，草稿、样式、AI 配置可以分别清除：
+
+![设置中的本地数据面板](public/screenshot-localdata.png)
+
 ## 已知限制
 
 - **远程图片导出**：把远程图片画进 canvas 需要图片来源站点允许跨域读取。不允许时导出的 PNG 里会缺这张图，界面会明确提示。FasType 不提供图片代理。
@@ -150,13 +267,16 @@ pnpm typecheck    # TypeScript
 pnpm lint         # ESLint
 pnpm test         # Vitest
 pnpm check        # 以上全部跑一遍
+
+pnpm desktop:dev      # Tauri 桌面客户端开发模式
+pnpm desktop:build    # 打出当前平台的桌面安装包
 ```
 
 想参与开发？目录结构、硬约束和测试要求见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 技术栈
 
-Next.js（App Router，静态导出）、React、TypeScript、Tailwind CSS、Shadcn/ui（基于 Radix UI）、Lucide、CodeMirror 6、marked、DOMPurify、html-to-image、jszip（批量导出打包）、qrcode、react-advanced-cropper（头像 / 封面裁剪）、gray-matter（小红书 Front Matter 解析）、sonner（轻提示）。
+Next.js（App Router，静态导出）、React、TypeScript、Tailwind CSS、Shadcn/ui（基于 Radix UI）、Lucide、CodeMirror 6、marked、DOMPurify、html-to-image、jszip（批量导出打包）、qrcode、react-advanced-cropper（头像 / 封面裁剪）、gray-matter（小红书 Front Matter 解析）、sonner（轻提示）。桌面客户端用 Tauri 2 打包。
 
 不引入第三方运行时脚本、远程字体和默认遥测。
 

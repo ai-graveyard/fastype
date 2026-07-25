@@ -1,0 +1,31 @@
+version: 2
+
+updates:
+  # 前端依赖：每周一次，按生态分组，减少 PR 噪音。
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      codemirror:
+        patterns:
+          - "@codemirror/*"
+          - codemirror
+      radix:
+        patterns:
+          - "@radix-ui/*"
+      types:
+        patterns:
+          - "@types/*"
+      dev-minor:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+
+  # CI / 部署用到的 Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
