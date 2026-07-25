@@ -239,17 +239,6 @@ export async function testConnection(
   });
 }
 
-const SYSTEM_PROMPT: Record<AiAction, string> = {
-  polish:
-    "You are a careful editor. Rewrite the user's text to read more smoothly and naturally while preserving the original language, meaning, facts, and Markdown structure. Return only the rewritten text.",
-  expand:
-    "You are a careful writing assistant. Expand the user's text with relevant detail while preserving the original language, voice, meaning, and Markdown structure. Return only the expanded text.",
-  condense:
-    "You are a careful editor. Condense the user's text, keeping every key fact and the original language and Markdown structure. Return only the condensed text.",
-  custom:
-    "You are a careful writing assistant. Apply the user's instruction to the given text. Preserve the original language unless told otherwise. Return only the resulting text.",
-};
-
 export interface RunActionInput {
   action: AiAction;
   /** 选中的文本，这是唯一必然被发送的正文内容。 */
@@ -260,20 +249,21 @@ export interface RunActionInput {
   customInstruction?: string;
 }
 
-export function buildMessages(input: RunActionInput): ChatMessage[] {
+/** 系统提示词来自设置，用户可以逐条改写、也可以恢复默认。 */
+export function buildMessages(config: AiConfig, input: RunActionInput): ChatMessage[] {
   const parts: string[] = [];
   if (input.action === "custom" && input.customInstruction?.trim()) {
-    parts.push(`Instruction: ${input.customInstruction.trim()}`);
+    parts.push(`改写指令：\n${input.customInstruction.trim()}`);
   }
   if (input.contextBefore?.trim()) {
-    parts.push(`Preceding context (do not rewrite):\n${input.contextBefore.trim()}`);
+    parts.push(`选区前文（仅供参考，不要改写）：\n${input.contextBefore.trim()}`);
   }
   if (input.contextAfter?.trim()) {
-    parts.push(`Following context (do not rewrite):\n${input.contextAfter.trim()}`);
+    parts.push(`选区后文（仅供参考，不要改写）：\n${input.contextAfter.trim()}`);
   }
-  parts.push(`Text to rewrite:\n${input.selection}`);
+  parts.push(`待改写的选中文字：\n${input.selection}`);
   return [
-    { role: "system", content: SYSTEM_PROMPT[input.action] },
+    { role: "system", content: config.prompts[input.action] },
     { role: "user", content: parts.join("\n\n") },
   ];
 }
@@ -285,7 +275,7 @@ export async function runAction(
   signal?: AbortSignal,
 ): Promise<AiResult> {
   return request(config, {
-    messages: buildMessages(input),
+    messages: buildMessages(config, input),
     stream: true,
     signal,
     callbacks,

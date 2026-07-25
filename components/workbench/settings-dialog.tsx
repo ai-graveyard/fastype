@@ -55,8 +55,10 @@ import {
   DEFAULT_AI_CONFIG,
   DEFAULT_AI_PROMPTS,
   parseAiConfig,
+  type AiAction,
   type AiConfig,
 } from "@/lib/ai/types";
+import type { TKey } from "@/lib/i18n";
 import { downloadText } from "@/lib/file";
 import { clearAllRecords, readRecord, StorageKey, writeRecord } from "@/lib/storage";
 import { emptyCustomThemeLibrary, parseCustomThemeLibrary } from "@/lib/themes/custom";
@@ -96,6 +98,14 @@ function SectionHeader({
     </div>
   );
 }
+
+/** 划词浮层的四个动作，顺序与浮层工具条一致。 */
+const SELECTION_PROMPTS: Array<{ action: AiAction; label: TKey; hint: TKey }> = [
+  { action: "polish", label: "ai.polishPrompt", hint: "ai.polishPromptHint" },
+  { action: "expand", label: "ai.expandPrompt", hint: "ai.expandPromptHint" },
+  { action: "condense", label: "ai.condensePrompt", hint: "ai.condensePromptHint" },
+  { action: "custom", label: "ai.customPrompt", hint: "ai.customPromptHint" },
+];
 
 function SettingsCard({
   title,
@@ -166,6 +176,8 @@ export function SettingsDialog({
   const [testing, setTesting] = React.useState(false);
   const [includeKey, setIncludeKey] = React.useState(false);
   const [promptTab, setPromptTab] = React.useState<"humanize" | "sensitive">("humanize");
+  const [selectionPromptTab, setSelectionPromptTab] =
+    React.useState<AiAction>("polish");
   const [clearTarget, setClearTarget] = React.useState<ClearTarget | null>(null);
   const [cropSrc, setCropSrc] = React.useState<string | null>(null);
   const importRef = React.useRef<HTMLInputElement>(null);
@@ -788,6 +800,69 @@ export function SettingsDialog({
                             {t("ai.restoreDefaultPrompt")}
                           </Button>
                         </TabsContent>
+                      </Tabs>
+                    </SettingsCard>
+
+                    <SettingsCard
+                      title={t("ai.selectionPromptSettings")}
+                      description={t("ai.selectionPromptSettingsHint")}
+                      contentClassName="space-y-4"
+                    >
+                      <Tabs
+                        value={selectionPromptTab}
+                        onValueChange={(value) => setSelectionPromptTab(value as AiAction)}
+                      >
+                        <TabsList className="grid w-full grid-cols-4">
+                          {SELECTION_PROMPTS.map((item) => (
+                            <TabsTrigger key={item.action} value={item.action}>
+                              {t(item.label)}
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
+
+                        {SELECTION_PROMPTS.map((item) => (
+                          <TabsContent
+                            key={item.action}
+                            value={item.action}
+                            className="mt-3 space-y-2"
+                          >
+                            <p className="text-xs leading-5 text-muted-foreground">
+                              {t(item.hint)}
+                            </p>
+                            <Textarea
+                              id={`ai-${item.action}-prompt`}
+                              aria-label={t(item.label)}
+                              value={draft.prompts[item.action]}
+                              className="min-h-[260px] resize-y font-mono text-xs leading-5"
+                              onChange={(event) =>
+                                setDraft({
+                                  ...draft,
+                                  prompts: {
+                                    ...draft.prompts,
+                                    [item.action]: event.target.value,
+                                  },
+                                })
+                              }
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="px-2"
+                              onClick={() =>
+                                setDraft({
+                                  ...draft,
+                                  prompts: {
+                                    ...draft.prompts,
+                                    [item.action]: DEFAULT_AI_PROMPTS[item.action],
+                                  },
+                                })
+                              }
+                            >
+                              <RotateCcw />
+                              {t("ai.restoreDefaultPrompt")}
+                            </Button>
+                          </TabsContent>
+                        ))}
                       </Tabs>
 
                       <div className="flex justify-end border-t border-dashed border-border pt-4">

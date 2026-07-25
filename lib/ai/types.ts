@@ -10,8 +10,14 @@ export interface AiConfig {
 }
 
 export interface AiPrompts {
+  /** 全文快捷操作。 */
   humanize: string;
   sensitive: string;
+  /** 划词后在浮动弹框里触发的选区操作。 */
+  polish: string;
+  expand: string;
+  condense: string;
+  custom: string;
 }
 
 /**
@@ -40,6 +46,41 @@ export const DEFAULT_AI_PROMPTS: AiPrompts = {
 5. 没有风险的内容保持不变，避免为了改写而改写。
 
 只返回优化后的完整 Markdown。不要列风险清单、不要解释、不要寒暄、不要包裹代码块。`,
+  polish: `你是一位克制、细致的中文编辑。请润色用户选中的这段文字，让它读起来更顺、更自然。
+
+编辑规则：
+1. 保留原文语言、语气、事实、数字、专有名词和 Markdown 语义。
+2. 理顺语序和搭配，删掉冗词和口水话，不改变意思，也不新增信息。
+3. 不要扩写，长度与原文相当。
+4. 前后文只用来判断语境，不要把它们写进结果。
+
+只返回改写后的这一段文字。不要解释、不要寒暄、不要包裹代码块。`,
+  expand: `你是一位克制的中文写作助手。请在用户选中的这段文字基础上补充细节，让内容更充实。
+
+编辑规则：
+1. 保留原文语言、语气、观点和 Markdown 语义。
+2. 只补充能从原文和上下文合理推出的细节，不要编造事实、数字、引语或来源。
+3. 顺着原有结构展开，不要另起话题，也不要加小标题和总结句。
+4. 前后文只用来判断语境，不要把它们写进结果。
+
+只返回扩写后的这一段文字。不要解释、不要寒暄、不要包裹代码块。`,
+  condense: `你是一位克制、细致的中文编辑。请精简用户选中的这段文字。
+
+编辑规则：
+1. 保留全部关键事实、数字、专有名词、图片链接和 Markdown 语义。
+2. 删掉重复表达、铺垫和没有信息量的修饰，不要删掉论据本身。
+3. 保持原文语言和语气，不要改写成提纲或要点列表，除非原文本来就是列表。
+4. 前后文只用来判断语境，不要把它们写进结果。
+
+只返回精简后的这一段文字。不要解释、不要寒暄、不要包裹代码块。`,
+  custom: `你是一位克制的中文写作助手。请按用户给出的指令改写选中的这段文字。
+
+编辑规则：
+1. 指令没有特别要求时，保留原文语言、事实、数字、专有名词和 Markdown 语义。
+2. 指令与这些约束冲突时以指令为准，但不要编造原文没有的事实。
+3. 只处理选中的这段，前后文仅用来判断语境，不要把它们写进结果。
+
+只返回改写后的这一段文字。不要解释、不要寒暄、不要包裹代码块。`,
 };
 
 export const DEFAULT_AI_CONFIG: AiConfig = {
@@ -69,17 +110,21 @@ export function parseAiConfig(raw: unknown): AiConfig | null {
     model: typeof input.model === "string" ? input.model : "",
     temperature: num(input.temperature, DEFAULT_AI_CONFIG.temperature, 0, 2),
     maxTokens: num(input.maxTokens, DEFAULT_AI_CONFIG.maxTokens, 64, 32000),
-    prompts: {
-      humanize:
-        typeof input.prompts?.humanize === "string" && input.prompts.humanize.trim()
-          ? input.prompts.humanize
-          : DEFAULT_AI_PROMPTS.humanize,
-      sensitive:
-        typeof input.prompts?.sensitive === "string" && input.prompts.sensitive.trim()
-          ? input.prompts.sensitive
-          : DEFAULT_AI_PROMPTS.sensitive,
-    },
+    prompts: parseAiPrompts(input.prompts),
   };
+}
+
+/** 逐条回落：老版本存档里没有的选区提示词会补上默认值，已改过的照旧保留。 */
+function parseAiPrompts(raw: unknown): AiPrompts {
+  const input = (raw ?? {}) as Partial<Record<keyof AiPrompts, unknown>>;
+  const keys = Object.keys(DEFAULT_AI_PROMPTS) as Array<keyof AiPrompts>;
+  const prompts = {} as AiPrompts;
+  for (const key of keys) {
+    const value = input[key];
+    prompts[key] =
+      typeof value === "string" && value.trim() ? value : DEFAULT_AI_PROMPTS[key];
+  }
+  return prompts;
 }
 
 export const AI_DOCUMENT_ACTIONS = ["humanize", "sensitive"] as const;

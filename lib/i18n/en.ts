@@ -808,7 +808,7 @@ export const en: Translation = {
     modelPlaceholder: "gpt-4o-mini",
     temperature: "Temperature",
     maxTokens: "Max output tokens",
-    promptSettings: "Feature prompts",
+    promptSettings: "Document prompts",
     promptSettingsHint:
       "These prompts stay in this browser and power the quick actions in the editor's top-right corner.",
     humanizePrompt: "Remove AI tone prompt",
@@ -817,6 +817,18 @@ export const en: Translation = {
     sensitivePrompt: "Remove sensitive terms prompt",
     sensitivePromptHint:
       "{{platform}} is replaced at request time with General platform, Xiaohongshu or WeChat Official Account.",
+    selectionPromptSettings: "Selection prompts",
+    selectionPromptSettingsHint:
+      "These power the floating toolbar that appears when you select text in the editor.",
+    polishPrompt: "Polish prompt",
+    polishPromptHint: "Tightens only the selected passage, keeping it about the same length.",
+    expandPrompt: "Expand prompt",
+    expandPromptHint: "Adds detail on top of the original meaning without inventing facts.",
+    condensePrompt: "Condense prompt",
+    condensePromptHint: "Compresses the wording while keeping every key fact.",
+    customPrompt: "Custom instruction prompt",
+    customPromptHint:
+      "The instruction you type in the popover is appended after this prompt as the user message.",
     restoreDefaultPrompt: "Restore default prompt",
     test: "Test connection",
     testing: "Testing…",
@@ -833,7 +845,10 @@ export const en: Translation = {
     actionCondense: "Condense",
     actionCustom: "Custom instruction",
     customPlaceholder: "e.g. Rewrite this in a more casual voice, keep all facts.",
+    selectionActions: "Selection AI",
     selectionRequired: "Select some text in the editor first.",
+    selectionChanged:
+      "The selected passage changed while generating. Reselect it and try again so nothing gets overwritten.",
     documentRequired: "There is no document content to process.",
     running: "Generating…",
     documentRunning: "Processing the full document. The original will not be overwritten automatically.",

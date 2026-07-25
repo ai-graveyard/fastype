@@ -28,6 +28,7 @@ import {
   AiQuickActions,
   type AiQuickActionPlatform,
 } from "@/components/workbench/ai-quick-actions";
+import { AiSelectionPopover } from "@/components/workbench/ai-selection-popover";
 import { useT } from "@/components/providers/prefs-provider";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -197,6 +198,7 @@ export function EditorPane({
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {children}
         <AiQuickActions editorRef={editorRef} platform={aiPlatform} />
+        <AiSelectionPopover editorRef={editorRef} />
       </div>
     </div>
   );

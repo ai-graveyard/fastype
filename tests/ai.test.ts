@@ -190,7 +190,7 @@ describe("parseSseLine", () => {
 
 describe("buildMessages", () => {
   it("只发送选中文本和有限上下文，不发整篇文章", () => {
-    const messages = buildMessages({
+    const messages = buildMessages(DEFAULT_AI_CONFIG, {
       action: "polish",
       selection: "选中的句子",
       contextBefore: "前文",
@@ -204,7 +204,7 @@ describe("buildMessages", () => {
   });
 
   it("自定义指令进入提示词", () => {
-    const messages = buildMessages({
+    const messages = buildMessages(DEFAULT_AI_CONFIG, {
       action: "custom",
       selection: "文本",
       customInstruction: "改成口语",
@@ -213,8 +213,23 @@ describe("buildMessages", () => {
   });
 
   it("没有上下文时不塞空段落", () => {
-    const messages = buildMessages({ action: "condense", selection: "文本" });
-    expect(messages[1].content).not.toContain("Preceding context");
+    const messages = buildMessages(DEFAULT_AI_CONFIG, {
+      action: "condense",
+      selection: "文本",
+    });
+    expect(messages[1].content).not.toContain("选区前文");
+    expect(messages[1].content).not.toContain("选区后文");
+  });
+
+  it("系统提示词取用户在设置里改过的那一份", () => {
+    const messages = buildMessages(
+      {
+        ...DEFAULT_AI_CONFIG,
+        prompts: { ...DEFAULT_AI_CONFIG.prompts, polish: "只把句子改短。" },
+      },
+      { action: "polish", selection: "文本" },
+    );
+    expect(messages[0].content).toBe("只把句子改短。");
   });
 });
 
@@ -290,6 +305,22 @@ describe("parseAiConfig", () => {
     });
     expect(config?.prompts.humanize).toBe("我的去味规则");
     expect(config?.prompts.sensitive).toBe(DEFAULT_AI_PROMPTS.sensitive);
+  });
+
+  it("老存档没有划词提示词时补上默认值，已改过的全文提示词不受影响", () => {
+    // 加入划词功能之前存下的配置里只有这两条。
+    const config = parseAiConfig({
+      baseUrl: "https://api.example.com/v1",
+      apiKey: "sk-x",
+      model: "m",
+      prompts: { humanize: "我的去味规则", sensitive: "我的敏感词规则" },
+    });
+    expect(config?.prompts.humanize).toBe("我的去味规则");
+    expect(config?.prompts.sensitive).toBe("我的敏感词规则");
+    expect(config?.prompts.polish).toBe(DEFAULT_AI_PROMPTS.polish);
+    expect(config?.prompts.expand).toBe(DEFAULT_AI_PROMPTS.expand);
+    expect(config?.prompts.condense).toBe(DEFAULT_AI_PROMPTS.condense);
+    expect(config?.prompts.custom).toBe(DEFAULT_AI_PROMPTS.custom);
   });
 
   it("非对象返回 null", () => {

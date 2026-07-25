@@ -62,6 +62,14 @@ export interface EditorSelectionInfo {
   selectionLength: number;
 }
 
+/** 视口坐标，直接喂给 position: fixed 的浮层，不受编辑器容器的 overflow 裁剪影响。 */
+export interface EditorSelectionRect {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
 export interface EditorSearchStatus {
   current: number;
   count: number;
@@ -71,11 +79,21 @@ export interface EditorApi {
   focus: () => void;
   getValue: () => string;
   getSelection: () => { text: string; from: number; to: number };
+  /** 选区在视口中的位置，供划词浮层定位；无选区或编辑器未挂载时返回 null。 */
+  getSelectionRect: () => EditorSelectionRect | null;
+  /** 选区或文档变化时触发，浮层据此决定显示、跟随还是收起。 */
+  subscribeSelection: (listener: () => void) => () => void;
   /** 上下文取值有上限，避免把整篇文章发给模型（PRD FT-AI-003）。 */
   getContextAround: (chars: number) => { before: string; after: string };
   replaceSelection: (text: string) => void;
   replaceDocument: (text: string) => void;
   insertAfterSelection: (text: string) => void;
+  /**
+   * 按记录的范围落笔，供划词 AI 在流式生成期间用户点开别处后仍能替换对的那一段。
+   * 范围内容与 `expected` 不一致（正文被改过）时不动文档，返回 false。
+   */
+  replaceRange: (from: number, to: number, text: string, expected: string) => boolean;
+  insertAfterRange: (to: number, text: string, expected: string, from: number) => boolean;
   toggleWrap: (before: string, after?: string) => void;
   toggleLinePrefix: (prefix: string, ordered?: boolean) => void;
   insertBlock: (text: string) => void;
@@ -863,6 +881,7 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
     const viewRef = React.useRef<EditorView | null>(null);
     const searchPanelListenersRef = React.useRef(new Set<(open: boolean) => void>());
     const searchUpdateListenersRef = React.useRef(new Set<() => void>());
+    const selectionListenersRef = React.useRef(new Set<() => void>());
     const modeCompartmentRef = React.useRef(new Compartment());
     const inputLimitsRef = React.useRef(inputLimits);
 
@@ -956,6 +975,11 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
               selectionLength: Math.abs(range.to - range.from),
             });
             searchUpdateListenersRef.current.forEach((listener) => listener());
+            selectionListenersRef.current.forEach((listener) => listener());
+          }
+          // 滚动不改变选区，但浮层要跟着选区一起移动。
+          if (update.geometryChanged) {
+            selectionListenersRef.current.forEach((listener) => listener());
           }
         }),
       ];
@@ -1010,6 +1034,29 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
           return { text: view.state.sliceDoc(from, to), from, to };
         },
 
+        getSelectionRect: () => {
+          const view = viewRef.current;
+          if (!view) return null;
+          const { from, to } = view.state.selection.main;
+          if (from === to) return null;
+          const start = view.coordsAtPos(from);
+          const end = view.coordsAtPos(to);
+          if (!start || !end) return null;
+          return {
+            top: Math.min(start.top, end.top),
+            bottom: Math.max(start.bottom, end.bottom),
+            left: Math.min(start.left, end.left),
+            right: Math.max(start.right, end.right),
+          };
+        },
+
+        subscribeSelection: (listener) => {
+          selectionListenersRef.current.add(listener);
+          return () => {
+            selectionListenersRef.current.delete(listener);
+          };
+        },
+
         getContextAround: (chars) => {
           const view = viewRef.current;
           if (!view) return { before: "", after: "" };
@@ -1042,6 +1089,35 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
             userEvent: "input.ai.document",
           });
           view.focus();
+        },
+
+        replaceRange: (from, to, text, expected) => {
+          const view = viewRef.current;
+          if (!view) return false;
+          if (to > view.state.doc.length) return false;
+          if (view.state.sliceDoc(from, to) !== expected) return false;
+          view.dispatch({
+            changes: { from, to, insert: text },
+            selection: { anchor: from, head: from + text.length },
+            userEvent: "input.ai.selection",
+          });
+          view.focus();
+          return true;
+        },
+
+        insertAfterRange: (to, text, expected, from) => {
+          const view = viewRef.current;
+          if (!view) return false;
+          if (to > view.state.doc.length) return false;
+          if (view.state.sliceDoc(from, to) !== expected) return false;
+          const insert = `\n\n${text}`;
+          view.dispatch({
+            changes: { from: to, to, insert },
+            selection: { anchor: to + insert.length },
+            userEvent: "input.ai.selection",
+          });
+          view.focus();
+          return true;
         },
 
         insertAfterSelection: (text) => {
