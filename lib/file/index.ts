@@ -1,6 +1,7 @@
 /** 文件读写全部走浏览器能力，没有任何服务端参与（PRD 9.1）。 */
 
-export const ACCEPTED_EXTENSIONS = [".md"] as const;
+/** 保存时一律用 `.md`；`.markdown` / `.txt` 只是允许被打开和拖入。 */
+export const ACCEPTED_EXTENSIONS = [".md", ".markdown", ".txt"] as const;
 
 export function hasAcceptedExtension(name: string): boolean {
   const lower = name.toLowerCase();
@@ -58,7 +59,10 @@ export function supportsFileSystemAccess(): boolean {
 const MARKDOWN_PICKER_TYPES = [
   {
     description: "Markdown",
-    accept: { "text/markdown": [".md"] },
+    accept: {
+      "text/markdown": [".md", ".markdown"],
+      "text/plain": [".txt"],
+    },
   },
 ];
 

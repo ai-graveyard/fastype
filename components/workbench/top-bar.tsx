@@ -12,6 +12,7 @@ import { GitHubIcon, WechatIcon, XiaohongshuIcon } from "@/components/ui/brand-i
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/misc";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useGlobalShortcuts, useModifierKeyLabel } from "@/hooks/use-global-shortcuts";
 import { type TKey } from "@/lib/i18n";
 import { ACCEPTED_EXTENSIONS, pickFile, supportsFileSystemAccess } from "@/lib/file";
 import { VIEWS, type ViewId } from "@/lib/types";
@@ -62,7 +63,7 @@ export function TopBar({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [editingName, setEditingName] = React.useState(false);
 
-  const handleOpen = async () => {
+  const handleOpen = React.useCallback(async () => {
     // 优先用 File System Access API，拿到 handle 之后才能写回原文件。
     if (supportsFileSystemAccess()) {
       const picked = await pickFile();
@@ -72,7 +73,13 @@ export function TopBar({
       }
     }
     fileInputRef.current?.click();
-  };
+  }, [openFile]);
+
+  const modKey = useModifierKeyLabel();
+  useGlobalShortcuts({
+    onSave: downloadMarkdown,
+    onOpen: () => void handleOpen(),
+  });
 
   const ThemeIcon = themeMode === "system" ? Monitor : themeMode === "dark" ? Moon : Sun;
 
@@ -142,12 +149,17 @@ export function TopBar({
             <FilePlus2 />
           </Button>
         </Tooltip>
-        <Tooltip label={t("doc.openDoc")}>
-          <Button variant="ghost" size="icon-sm" aria-label={t("doc.openDoc")} onClick={handleOpen}>
+        <Tooltip label={`${t("doc.openDoc")} · ${modKey}O`}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t("doc.openDoc")}
+            onClick={() => void handleOpen()}
+          >
             <Upload />
           </Button>
         </Tooltip>
-        <Tooltip label={t("doc.saveAs")}>
+        <Tooltip label={`${t("doc.saveAs")} · ${modKey}S`}>
           <Button
             variant="ghost"
             size="icon-sm"

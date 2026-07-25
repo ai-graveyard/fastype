@@ -113,4 +113,43 @@ describe("顶部栏", () => {
     const configured = screen.getByRole("button", { name: /打开设置|Open settings/ });
     expect(configured.querySelector(".bg-warning")).toBeNull();
   });
+  // 不拦住 Cmd/Ctrl+S，浏览器会弹「保存网页」——写作工具里这是最容易踩的一脚。
+  it("Cmd/Ctrl+S 触发下载 Markdown 并阻止浏览器默认行为", () => {
+    render(
+      <AppProviders>
+        <TopBar view="xhs" onViewChange={vi.fn()} onOpenSettings={vi.fn()} />
+      </AppProviders>,
+    );
+
+    const clicks: string[] = [];
+    const realCreate = document.createElement.bind(document);
+    vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      const node = realCreate(tag);
+      if (tag === "a") node.click = () => clicks.push((node as HTMLAnchorElement).download);
+      return node;
+    });
+
+    const prevented = !fireEvent.keyDown(window, { key: "s", metaKey: true });
+
+    expect(prevented).toBe(true);
+    expect(clicks).toHaveLength(1);
+    expect(clicks[0].endsWith(".md")).toBe(true);
+    vi.mocked(document.createElement).mockRestore();
+  });
+
+  it("输入法组合期间的 Cmd/Ctrl+S 不当作快捷键", () => {
+    render(
+      <AppProviders>
+        <TopBar view="xhs" onViewChange={vi.fn()} onOpenSettings={vi.fn()} />
+      </AppProviders>,
+    );
+
+    const prevented = !fireEvent.keyDown(window, {
+      key: "s",
+      metaKey: true,
+      isComposing: true,
+    });
+
+    expect(prevented).toBe(false);
+  });
 });

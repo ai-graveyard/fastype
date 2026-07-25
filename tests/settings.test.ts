@@ -38,8 +38,9 @@ describe("文件名处理", () => {
   it("识别支持的扩展名", () => {
     expect(hasAcceptedExtension("a.md")).toBe(true);
     expect(hasAcceptedExtension("a.MD")).toBe(true);
-    expect(hasAcceptedExtension("a.markdown")).toBe(false);
-    expect(hasAcceptedExtension("a.txt")).toBe(false);
+    // 纯文本笔记也该能直接打开：baseName() 一直在剥这三种后缀。
+    expect(hasAcceptedExtension("a.markdown")).toBe(true);
+    expect(hasAcceptedExtension("a.txt")).toBe(true);
     expect(hasAcceptedExtension("a.docx")).toBe(false);
     expect(hasAcceptedExtension("a.png")).toBe(false);
   });
@@ -62,7 +63,9 @@ describe("文件名处理", () => {
   it("补全扩展名", () => {
     expect(ensureMarkdownExtension("文章")).toBe("文章.md");
     expect(ensureMarkdownExtension("文章.md")).toBe("文章.md");
-    expect(ensureMarkdownExtension("笔记.txt")).toBe("笔记.txt.md");
+    // 打开 .txt / .markdown 再下载时保持原后缀，不叠成 .txt.md。
+    expect(ensureMarkdownExtension("笔记.txt")).toBe("笔记.txt");
+    expect(ensureMarkdownExtension("笔记.markdown")).toBe("笔记.markdown");
   });
 
   it("去掉扩展名得到导出用的基名", () => {
@@ -89,10 +92,18 @@ describe("readTextFile", () => {
   });
 
   it("拒绝不支持的类型，而不是读出乱码", async () => {
-    const file = new File(["x"], "a.txt");
+    const file = new File(["x"], "a.docx");
     const result = await readTextFile(file);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe("unsupportedType");
+  });
+
+  it("纯文本笔记按 Markdown 打开", async () => {
+    for (const name of ["note.txt", "note.markdown"]) {
+      const result = await readTextFile(new File(["# 标题"], name));
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.content).toBe("# 标题");
+    }
   });
 
   it("非 UTF-8 内容明确报错", async () => {
