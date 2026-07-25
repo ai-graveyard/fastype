@@ -14,5 +14,7 @@ export default defineConfig({
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     globals: true,
     restoreMocks: true,
+    // 整棵工作台渲染出来要几秒，并发跑满时默认的 5s 会偶发超时。
+    testTimeout: 15_000,
   },
 });

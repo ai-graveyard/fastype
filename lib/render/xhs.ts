@@ -29,9 +29,7 @@ function xhsPageNumberFontSize(style: Pick<XhsStyle, "pageNumberScale">): number
 export function xhsFooterBlockHeight(
   style: Pick<XhsStyle, "showPageNumber" | "pageNumberScale">,
 ): number {
-  return style.showPageNumber
-    ? Math.ceil(xhsPageNumberFontSize(style) + XHS_FOOTER_TOP_GAP)
-    : 0;
+  return style.showPageNumber ? Math.ceil(xhsPageNumberFontSize(style) + XHS_FOOTER_TOP_GAP) : 0;
 }
 
 export interface XhsPalette {
@@ -94,7 +92,11 @@ export function contentWidth(style: XhsStyle): number {
  * 在分页测量之前给标题插入自动编号，这样编号会和标题正文一起被分页克隆，
  * 预览和导出天然共用同一份结果（呼应 PRD FT-XHS-005 的“同一套渲染配置”）。
  */
-export function applyXhsHeadingNumbers(html: string, style: XhsStyle): string {
+export function applyXhsHeadingNumbers(
+  html: string,
+  // 只收真正用得上的三项：调用方据此把重算依赖收窄到这几个字段，改配色不会白跑一遍编号。
+  style: Pick<XhsStyle, "headings" | "fontSize" | "accentColor">,
+): string {
   const hasNumbering = (["h1", "h2", "h3"] as const).some(
     (tag) => style.headings[tag].number.enabled,
   );
@@ -196,7 +198,11 @@ function headingColorOverrideCss(style: XhsStyle, root: string): string {
     .map(({ tag, level }) => {
       const declarations: string[] = [];
       if (level.background) {
-        declarations.push(`background: ${level.background};`, "padding: 0.2em 0.44em;", "border-radius: 0.24em;");
+        declarations.push(
+          `background: ${level.background};`,
+          "padding: 0.2em 0.44em;",
+          "border-radius: 0.24em;",
+        );
       }
       if (level.textColor) {
         declarations.push(`color: ${level.textColor};`);

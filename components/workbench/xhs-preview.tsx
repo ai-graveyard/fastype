@@ -71,10 +71,7 @@ import {
   xhsFooterBlockHeight,
   xhsPalette,
 } from "@/lib/render/xhs";
-import {
-  getXhsCanvasSize,
-  type XhsStyle,
-} from "@/lib/themes/xhs";
+import { getXhsCanvasSize, type XhsStyle } from "@/lib/themes/xhs";
 import { cn } from "@/lib/utils";
 
 export interface XhsPreviewHandle {
@@ -267,15 +264,12 @@ function XhsSwipeCarousel({
         return;
       }
 
-      const crossedDistance =
-        Math.abs(pointer.rawOffset) >= FULL_CARD_WIDTH * SWIPE_DISTANCE_RATIO;
+      const crossedDistance = Math.abs(pointer.rawOffset) >= FULL_CARD_WIDTH * SWIPE_DISTANCE_RATIO;
       const crossedVelocity = Math.abs(pointer.velocity) >= SWIPE_VELOCITY_THRESHOLD;
       const wantsNext =
-        pointer.rawOffset < 0 &&
-        (crossedDistance || pointer.velocity < -SWIPE_VELOCITY_THRESHOLD);
+        pointer.rawOffset < 0 && (crossedDistance || pointer.velocity < -SWIPE_VELOCITY_THRESHOLD);
       const wantsPrevious =
-        pointer.rawOffset > 0 &&
-        (crossedDistance || pointer.velocity > SWIPE_VELOCITY_THRESHOLD);
+        pointer.rawOffset > 0 && (crossedDistance || pointer.velocity > SWIPE_VELOCITY_THRESHOLD);
 
       if ((crossedDistance || crossedVelocity) && wantsNext && activePage < totalPages - 1) {
         settle(activePage + 1);
@@ -445,8 +439,8 @@ function FeedPlaceholder({ height }: { height: number }) {
   );
 }
 
-export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPreviewProps>(
-  function XhsPreview(
+export const XhsPreview = React.memo(
+  React.forwardRef<XhsPreviewHandle, XhsPreviewProps>(function XhsPreview(
     {
       html,
       documentTitle,
@@ -482,8 +476,7 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
     const canvas = React.useMemo(() => getXhsCanvasSize(style), [style]);
     const innerWidth = contentWidth(style);
     const coverOffset = style.cover.enabled ? 1 : 0;
-    const pageNumberOffset =
-      style.cover.enabled && style.showPageNumberOnCover ? 1 : 0;
+    const pageNumberOffset = style.cover.enabled && style.showPageNumberOnCover ? 1 : 0;
     const identifierAtTop = style.identifier.position.startsWith("top");
     const identifierGap = XHS_IDENTIFIER_CONTENT_GAP * style.identifier.scale;
     const identifierReservedHeight = style.identifier.enabled
@@ -498,17 +491,37 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
 
     // 只渲染正文中明确存在的标题，不再用文件名补标题；样式里的自定义标题优先于 Markdown 的 H1。
     const bodyTitleOverride = style.bodyTitleOverride.trim();
+    /*
+     * 依赖精确到字段而不是整个 style：contentHtml 一变就会连锁触发「等图片 settle ->
+     * 重新测量分页 -> 重新克隆每页 DOM」，改个配色不该付这一整套代价。
+     */
+    const { headings, fontSize, accentColor } = style;
+    const coverEnabled = style.cover.enabled;
+    const hideBodyTitle = style.cover.hideBodyTitle;
     const contentHtml = React.useMemo(() => {
       if (!html) return "";
       const withOverride = bodyTitleOverride
         ? applyXhsBodyTitleOverride(html, bodyTitleOverride)
         : html;
       const withoutCoverTitle =
-        (hasTitle || bodyTitleOverride) && style.cover.enabled && style.cover.hideBodyTitle
+        (hasTitle || bodyTitleOverride) && coverEnabled && hideBodyTitle
           ? withOverride.replace(/<h1(?:\s[^>]*)?>[\s\S]*?<\/h1>/i, "")
           : withOverride;
-      return applyXhsHeadingNumbers(withoutCoverTitle, style);
-    }, [html, hasTitle, style, bodyTitleOverride]);
+      return applyXhsHeadingNumbers(withoutCoverTitle, {
+        headings,
+        fontSize,
+        accentColor,
+      });
+    }, [
+      html,
+      hasTitle,
+      bodyTitleOverride,
+      coverEnabled,
+      hideBodyTitle,
+      headings,
+      fontSize,
+      accentColor,
+    ]);
 
     const failedImages = useImageFallback(measureRef, t("image.failed"), [contentHtml]);
     React.useEffect(() => {
@@ -557,7 +570,11 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
       });
     }, [
       contentHtml,
-      style,
+      // 测量容器的排版完全由注入的 css 和 innerWidth 决定；css 是字符串，配色以外的
+      // 改动若没改变它的内容就不会重新测量。
+      css,
+      innerWidth,
+      style.padding,
       imagesTick,
       onPagesChange,
       coverOffset,
@@ -633,6 +650,8 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
       style.showPageNumberOnCover,
       pageNumberTotal,
       JSON.stringify(style.cover.graphics),
+      // 身份卡片的尺寸走内联 style，克隆卡片得跟着一起重刷。
+      JSON.stringify(style.identifier),
     ].join(":");
 
     const fullPreview = (
@@ -648,9 +667,7 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
             <ChevronLeft className="size-6" />
           </button>
           <UserAvatar src={profile.avatar} name={profile.name} className="size-7" />
-          <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">
-            {profile.name}
-          </span>
+          <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{profile.name}</span>
           <button
             type="button"
             className="h-6 rounded-full border border-zinc-200 bg-white px-3.5 text-xs text-zinc-500"
@@ -741,7 +758,10 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
               ) : (
                 <div
                   className="flex items-center justify-center px-4 text-center text-[11px] text-zinc-400"
-                  style={{ width: HOME_CARD_WIDTH, height: HOME_CARD_WIDTH * (canvas.height / canvas.width) }}
+                  style={{
+                    width: HOME_CARD_WIDTH,
+                    height: HOME_CARD_WIDTH * (canvas.height / canvas.width),
+                  }}
                 >
                   {t("xhs.empty")}
                 </div>
@@ -902,7 +922,7 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
               className="h-6 w-6"
               onClick={() =>
                 setPreviewZoom((zoom) =>
-                  Math.max(Math.round((zoom - ZOOM_STEP) * 10) / 10, ZOOM_MIN)
+                  Math.max(Math.round((zoom - ZOOM_STEP) * 10) / 10, ZOOM_MIN),
                 )
               }
               disabled={previewZoom <= ZOOM_MIN}
@@ -919,7 +939,7 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
               className="h-6 w-6"
               onClick={() =>
                 setPreviewZoom((zoom) =>
-                  Math.min(Math.round((zoom + ZOOM_STEP) * 10) / 10, ZOOM_MAX)
+                  Math.min(Math.round((zoom + ZOOM_STEP) * 10) / 10, ZOOM_MAX),
                 )
               }
               disabled={previewZoom >= ZOOM_MAX}
@@ -1017,10 +1037,7 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
                 color: resolvedCoverTextColor,
               }}
             >
-              <CoverGraphicsLayer
-                graphics={style.cover.graphics}
-                canvasWidth={canvas.width}
-              />
+              <CoverGraphicsLayer graphics={style.cover.graphics} canvasWidth={canvas.width} />
               {identifierAtTop && style.identifier.showOnCover ? (
                 <XhsIdentifier
                   identifier={style.identifier}
@@ -1032,10 +1049,7 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
                 />
               ) : null}
               {qrCodeAtTop && style.qrCode.showOnCover ? (
-                <XhsQrCode
-                  qrCode={style.qrCode}
-                  style={{ marginBottom: qrCodeGap }}
-                />
+                <XhsQrCode qrCode={style.qrCode} style={{ marginBottom: qrCodeGap }} />
               ) : null}
               <div
                 className="relative z-10 flex min-h-0 flex-1 flex-col justify-center"
@@ -1070,10 +1084,7 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
                 />
               ) : null}
               {!qrCodeAtTop && style.qrCode.showOnCover ? (
-                <XhsQrCode
-                  qrCode={style.qrCode}
-                  style={{ marginTop: qrCodeGap }}
-                />
+                <XhsQrCode qrCode={style.qrCode} style={{ marginTop: qrCodeGap }} />
               ) : null}
               {style.showPageNumber && style.showPageNumberOnCover ? (
                 <div
@@ -1113,10 +1124,7 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
                 />
               ) : null}
               {qrCodeAtTop ? (
-                <XhsQrCode
-                  qrCode={style.qrCode}
-                  style={{ marginBottom: qrCodeGap }}
-                />
+                <XhsQrCode qrCode={style.qrCode} style={{ marginBottom: qrCodeGap }} />
               ) : null}
               <div
                 className="ft-xhs-body min-h-0 flex-1 overflow-hidden"
@@ -1134,10 +1142,7 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
                 />
               ) : null}
               {!qrCodeAtTop ? (
-                <XhsQrCode
-                  qrCode={style.qrCode}
-                  style={{ marginTop: qrCodeGap }}
-                />
+                <XhsQrCode qrCode={style.qrCode} style={{ marginTop: qrCodeGap }} />
               ) : null}
               {style.showPageNumber ? (
                 <div className="ft-xhs-footer">
@@ -1161,5 +1166,5 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
         ) : null}
       </div>
     );
-  },
-));
+  }),
+);
