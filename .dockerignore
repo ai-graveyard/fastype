@@ -5,6 +5,7 @@ out
 .github
 .playwright-cli
 .pnpm-store
+src-tauri
 coverage
 output
 .env*

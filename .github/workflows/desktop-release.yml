@@ -1,0 +1,72 @@
+name: Desktop Release
+
+# 打 v* 标签时构建桌面客户端并发到 GitHub Release。
+# 跨平台交叉编译不可行（Windows 要 MSVC 链接器、macOS 要 Xcode），
+# 所以每个平台各用一台对应的 runner 原生构建。
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 一个 universal 包同时覆盖 Apple Silicon 和 Intel，用户只需下载一个 dmg。
+          - platform: macos-latest
+            target: universal-apple-darwin
+            name: macOS
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: Windows
+
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: ${{ matrix.target }}
+
+      - run: pnpm install --frozen-lockfile
+
+      # tauri-action 会自己跑 tauri.conf.json 里的 beforeBuildCommand（pnpm build）导出静态前端。
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --target ${{ matrix.target }}
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}-dev', github.run_number) }}
+          releaseName: FasType ${{ github.ref_type == 'tag' && github.ref_name || 'dev build' }}
+          releaseBody: |
+            桌面客户端安装包。
+
+            - macOS：下载 `.dmg`。安装包**未做 Apple 签名和公证**，首次打开会被 Gatekeeper 拦下，
+              需要在「访达」里右键点应用选「打开」，或执行
+              `xattr -dr com.apple.quarantine /Applications/FasType.app`。
+            - Windows：下载 `-setup.exe`（NSIS）或 `.msi`。安装包**未做代码签名**，
+              SmartScreen 可能提示「Windows 已保护你的电脑」，点「更多信息 → 仍要运行」即可。
+          releaseDraft: true
+          prerelease: false

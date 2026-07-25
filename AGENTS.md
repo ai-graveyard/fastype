@@ -54,7 +54,17 @@ lib/
   export/               PNG 导出
   file/                 File System Access API 封装
 tests/                  Vitest 单元测试，与 lib/ 下的模块一一对应
+src-tauri/              Tauri 桌面客户端外壳（只是把 out/ 装进原生窗口）
 ```
+
+## 桌面客户端
+
+`src-tauri/` 是一层薄壳：加载 `pnpm build` 导出的 `out/`，不含业务逻辑。改前端不需要动它。
+
+- 不要把功能实现进 Rust 侧。桌面版和网页版必须是同一份前端产物，行为一致。
+- `security.csp` 保持 `null`（Tauri 默认）。试过收紧成 `script-src/style-src 'self' 'unsafe-inline'`，结果 WKWebView 里 CodeMirror 的正文一个字都不渲染——只剩行号和布局，字数统计照常。要动 CSP 必须打包出来实机验证编辑器，不能只看网页版。
+- macOS 和 Windows 的包都只能在对应系统上原生构建，交叉编译不可行；正式包走 `.github/workflows/desktop-release.yml`。
+- `pnpm check` 不包含桌面构建。改了 `src-tauri/` 用 `pnpm desktop:build` 单独验证。
 
 ## 加一套主题（常见任务）
 

@@ -28,7 +28,11 @@ lib/
   storage/              带版本号的 localStorage 读写
   i18n/                 中英文文案
 tests/                  Vitest 单元测试
+src-tauri/              Tauri 桌面客户端外壳
+docs/                   产品需求文档等长文档
 ```
+
+`src-tauri/` 只是把 `pnpm build` 导出的 `out/` 装进原生窗口，不含业务逻辑。桌面版和网页版跑的是同一份前端产物，功能不做区分——不要把能力实现进 Rust 侧。打包说明见 [README](README.md#桌面客户端)。
 
 ## 项目的几条硬约束
 

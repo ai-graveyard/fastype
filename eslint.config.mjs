@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Tauri 的构建产物里有生成的 JS 资源，不是本仓库的源码。
+    "src-tauri/target/**",
+    "src-tauri/gen/**",
   ]),
 ]);
 
