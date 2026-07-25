@@ -316,12 +316,14 @@ export function getWechatTheme(id: string): WechatTheme {
   return WECHAT_THEMES.find((theme) => theme.id === normalized) ?? WECHAT_THEMES[0];
 }
 
-const DEFAULT_IDENTITY_CARD: IdentityCardStyle = {
+export const DEFAULT_IDENTITY_CARD: IdentityCardStyle = {
   enabled: false,
-  badge: "",
+  badge: "原创",
   badgeAlign: "left",
+  // 标题和副标题留空时由渲染层从正文的一级标题、首段兜底填充，见 deriveIdentityCardContent。
   title: "",
-  hideTitle: false,
+  // 卡片已经接管了标题，正文里默认不再重复一遍。
+  hideTitle: true,
   titleAlign: "left",
   subtitle: "",
   subtitleAlign: "left",

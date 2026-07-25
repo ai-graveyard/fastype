@@ -144,3 +144,36 @@ export function extractTitleFromSource(source: string): string | null {
   }
   return null;
 }
+
+/**
+ * 不依赖 DOM 的导语提取：一级标题之后的第一段普通正文，没有一级标题时返回 null。
+ * 用来给身份卡片的输入框做占位提示，和渲染层 deriveIdentityCardContent 的兜底口径保持一致。
+ */
+export function extractLeadParagraphFromSource(source: string): string | null {
+  let inFence = false;
+  let fenceMarker = "";
+  let seenHeading = false;
+  for (const line of source.split(/\r?\n/)) {
+    const fence = line.match(/^\s{0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      if (!inFence) {
+        inFence = true;
+        fenceMarker = fence[1][0];
+      } else if (fence[1][0] === fenceMarker) {
+        inFence = false;
+      }
+      continue;
+    }
+    if (inFence) continue;
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (/^#{1,6}\s/.test(trimmed)) {
+      if (/^#\s/.test(trimmed)) seenHeading = true;
+      continue;
+    }
+    // 引用、列表、表格、分隔线这些块不当成导语。
+    if (/^([>\-*+|]|\d+[.)]|-{3,}|_{3,})/.test(trimmed)) continue;
+    if (seenHeading) return trimmed;
+  }
+  return null;
+}

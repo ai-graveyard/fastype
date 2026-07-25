@@ -35,10 +35,12 @@ import { ThemePicker } from "@/components/workbench/style-drawers";
 import type { WechatWorkspaceTab } from "@/components/workbench/wechat-preview";
 import { useElementWidth } from "@/hooks/use-media-query";
 import type { TKey } from "@/lib/i18n";
+import { extractLeadParagraphFromSource, extractTitleFromSource } from "@/lib/markdown/parse";
 import { strongHighlightBackground } from "@/lib/render/wechat";
 import type { PlatformEditorMode } from "@/lib/types";
 import {
   CARD_ALIGNS,
+  DEFAULT_IDENTITY_CARD,
   GUIDE_AUTHOR_ALIGNS,
   HEADING_TEMPLATES,
   STRONG_HIGHLIGHT_HEIGHTS,
@@ -101,10 +103,14 @@ const WECHAT_TYPOGRAPHY_SECTIONS: Array<{ id: string; key: TKey }> = [
 /** 目录常驻在排版 Tab 左侧；设置区总宽度低于这个值放不下「目录 + 内容」两栏，就先隐藏目录让内容独占空间。 */
 const WECHAT_TYPOGRAPHY_OUTLINE_MIN_WIDTH = 880;
 
-function SettingCard({ id, title, description, children }: { id?: string; title: string; description?: string; children: React.ReactNode }) {
+/** action 放在卡片标题右上角，用于承载整块的启用开关，省掉单独占一行的开关。 */
+function SettingCard({ id, title, description, action, children }: { id?: string; title: string; description?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section id={id} className="scroll-mt-4 space-y-4 rounded-lg border border-border bg-card p-4">
-      <div><h3 className="text-sm font-semibold">{title}</h3>{description ? <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p> : null}</div>
+      <div className="flex items-start justify-between gap-3">
+        <div><h3 className="text-sm font-semibold">{title}</h3>{description ? <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p> : null}</div>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -126,6 +132,60 @@ function AlignPicker({ label, value, onChange }: { label: string; value: CardAli
         })}
       </div>
     </div>
+  );
+}
+
+/** 贴在字段标签右侧的紧凑对齐切换，省掉一整格 AlignPicker 的纵向空间。 */
+function InlineAlignPicker({ label, value, onChange }: { label: string; value: CardAlign; onChange: (value: CardAlign) => void }) {
+  const icons = { left: AlignLeft, center: AlignCenter, right: AlignRight } as const;
+  return (
+    <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5">
+      {CARD_ALIGNS.map((align) => {
+        const Icon = icons[align];
+        return (
+          <button
+            key={align}
+            type="button"
+            aria-label={`${label}-${align}`}
+            onClick={() => onChange(align)}
+            className={cn("flex size-6 items-center justify-center rounded-sm transition-colors", value === align ? "bg-background text-brand-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
+          >
+            <Icon className="size-3" />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** 身份卡片的一行设置：标签 + 行内对齐切换，控件在下方。 */
+function CardField({ label, align, onAlignChange, hint, children }: React.PropsWithChildren<{ label: string; align?: CardAlign; onAlignChange?: (value: CardAlign) => void; hint?: string }>) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <Label>{label}</Label>
+        {align && onAlignChange ? <InlineAlignPicker label={label} value={align} onChange={onAlignChange} /> : null}
+      </div>
+      {children}
+      {hint ? <p className="text-[11px] leading-4 text-muted-foreground">{hint}</p> : null}
+    </div>
+  );
+}
+
+function CardGroupLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{children}</p>;
+}
+
+function CardInput({ label, value, placeholder, readOnly, onChange }: { label: string; value: string; placeholder?: string; readOnly?: boolean; onChange: (value: string) => void }) {
+  return (
+    <input
+      aria-label={label}
+      value={value}
+      placeholder={placeholder}
+      readOnly={readOnly}
+      onChange={(event) => onChange(event.target.value)}
+      className={cn("h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm", readOnly && "text-muted-foreground")}
+    />
   );
 }
 
@@ -293,6 +353,14 @@ export function WechatWorkspace({ activeTab, onActiveTabChange, contentMode, onC
       tailGuide: { ...wechat.tailGuide, enabled: false },
     }),
     [wechat],
+  );
+  /** 标题、副标题留空时渲染层会从正文兜底，这里把兜底值显示成占位符，让用户知道卡片上会出现什么。 */
+  const derivedCard = React.useMemo(
+    () => ({
+      title: extractTitleFromSource(content) ?? "",
+      subtitle: extractLeadParagraphFromSource(content) ?? "",
+    }),
+    [content],
   );
   const tailPreviewStyle = React.useMemo(
     () => ({
@@ -583,10 +651,14 @@ export function WechatWorkspace({ activeTab, onActiveTabChange, contentMode, onC
 
         {activeTab === "enhance" ? (
           <div className="mx-auto max-w-2xl space-y-4">
-            <SettingCard id="wechat-identity-card" title={t("wechat.identityCard")} description={t("wechat.identityCardDesc")}>
-              <SectionToggle label={t("wechat.enableIdentityCard")} checked={wechat.identityCard.enabled} onChange={(enabled) => setIdentity({ enabled })} />
+            <SettingCard
+              id="wechat-identity-card"
+              title={t("wechat.identityCard")}
+              description={t("wechat.identityCardDesc")}
+              action={<Switch checked={wechat.identityCard.enabled} onCheckedChange={(enabled) => setIdentity({ enabled })} aria-label={t("wechat.enableIdentityCard")} />}
+            >
               {wechat.identityCard.enabled ? (
-                <div className="space-y-4 border-t border-border/70 pt-4">
+                <div className="space-y-4">
                   <WechatSettingExample
                     label={t("common.examplePreview")}
                     html={`<h1>${example.h1}</h1><p>${example.paragraph1}</p>`}
@@ -599,18 +671,30 @@ export function WechatWorkspace({ activeTab, onActiveTabChange, contentMode, onC
                     hint={t("wechat.profileSynced")}
                     className="bg-background"
                   />
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <TextControl label={t("wechat.cardBadge")} value={wechat.identityCard.badge} onChange={(badge) => setIdentity({ badge })} />
-                    <AlignPicker label={t("wechat.cardBadgeAlign")} value={wechat.identityCard.badgeAlign} onChange={(badgeAlign) => setIdentity({ badgeAlign })} />
-                    <TextControl label={t("wechat.cardTitle")} value={wechat.identityCard.title} onChange={(title) => setIdentity({ title })} />
-                    <AlignPicker label={t("wechat.cardTitleAlign")} value={wechat.identityCard.titleAlign} onChange={(titleAlign) => setIdentity({ titleAlign })} />
-                    <TextControl label={t("wechat.cardSubtitle")} value={wechat.identityCard.subtitle} onChange={(subtitle) => setIdentity({ subtitle })} />
-                    <AlignPicker label={t("wechat.cardSubtitleAlign")} value={wechat.identityCard.subtitleAlign} onChange={(subtitleAlign) => setIdentity({ subtitleAlign })} />
-                    <AlignPicker label={t("wechat.cardSloganAlign")} value={wechat.identityCard.sloganAlign} onChange={(sloganAlign) => setIdentity({ sloganAlign })} />
-                    <TextControl label={t("wechat.cardTag")} value={wechat.identityCard.tag} onChange={(tag) => setIdentity({ tag })} />
-                    <AlignPicker label={t("wechat.cardAuthorAlign")} value={wechat.identityCard.authorAlign} onChange={(authorAlign) => setIdentity({ authorAlign })} />
+
+                  <CardGroupLabel>{t("wechat.cardContentGroup")}</CardGroupLabel>
+                  <div className="space-y-3">
+                    <CardField label={t("wechat.cardBadge")} align={wechat.identityCard.badgeAlign} onAlignChange={(badgeAlign) => setIdentity({ badgeAlign })}>
+                      <CardInput label={t("wechat.cardBadge")} value={wechat.identityCard.badge} onChange={(badge) => setIdentity({ badge })} />
+                    </CardField>
+                    <CardField label={t("wechat.cardTitle")} align={wechat.identityCard.titleAlign} onAlignChange={(titleAlign) => setIdentity({ titleAlign })} hint={t("wechat.cardTitleAutoHint")}>
+                      <CardInput label={t("wechat.cardTitle")} value={wechat.identityCard.title} placeholder={derivedCard.title} onChange={(title) => setIdentity({ title })} />
+                    </CardField>
+                    <CardField label={t("wechat.cardSubtitle")} align={wechat.identityCard.subtitleAlign} onAlignChange={(subtitleAlign) => setIdentity({ subtitleAlign })} hint={t("wechat.cardSubtitleAutoHint")}>
+                      <CardInput label={t("wechat.cardSubtitle")} value={wechat.identityCard.subtitle} placeholder={derivedCard.subtitle} onChange={(subtitle) => setIdentity({ subtitle })} />
+                    </CardField>
+                    <CardField label={t("wechat.cardSlogan")} align={wechat.identityCard.sloganAlign} onAlignChange={(sloganAlign) => setIdentity({ sloganAlign })}>
+                      <CardInput label={t("wechat.cardSlogan")} value={profile?.slogan ?? ""} readOnly onChange={() => {}} />
+                    </CardField>
+                    <CardField label={t("wechat.cardTag")} align={wechat.identityCard.authorAlign} onAlignChange={(authorAlign) => setIdentity({ authorAlign })}>
+                      <CardInput label={t("wechat.cardTag")} value={wechat.identityCard.tag} placeholder={t("wechat.cardTagPlaceholder")} onChange={(tag) => setIdentity({ tag })} />
+                    </CardField>
+                    <SectionToggle label={t("wechat.hideArticleTitle")} checked={wechat.identityCard.hideTitle} onChange={(hideTitle) => setIdentity({ hideTitle })} />
                   </div>
-                  <SectionToggle label={t("wechat.hideArticleTitle")} checked={wechat.identityCard.hideTitle} onChange={(hideTitle) => setIdentity({ hideTitle })} />
+
+                  <div className="border-t border-border/70" />
+
+                  <CardGroupLabel>{t("wechat.cardStyleGroup")}</CardGroupLabel>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <ColorControl label={t("wechat.cardBackground")} value={wechat.identityCard.backgroundColor} fallback={palette.titleBg} onChange={(backgroundColor) => setIdentity({ backgroundColor })} />
                     <ColorControl label={t("wechat.cardTextColor")} value={wechat.identityCard.textColor} fallback={palette.titleColor} onChange={(textColor) => setIdentity({ textColor })} />
@@ -618,13 +702,22 @@ export function WechatWorkspace({ activeTab, onActiveTabChange, contentMode, onC
                     <SliderField label={t("wechat.cardTitleSize")} value={wechat.identityCard.titleFontSize} min={20} max={36} suffix="px" onChange={(titleFontSize) => setIdentity({ titleFontSize })} />
                     <SliderField label={t("wechat.cardSubtitleSize")} value={wechat.identityCard.subtitleFontSize} min={12} max={20} suffix="px" onChange={(subtitleFontSize) => setIdentity({ subtitleFontSize })} />
                   </div>
+
+                  <Button variant="ghost" size="sm" className="w-full gap-1.5 text-xs" onClick={() => setIdentity({ ...DEFAULT_IDENTITY_CARD, enabled: true })}>
+                    <RotateCcw className="size-3" />
+                    {t("wechat.cardReset")}
+                  </Button>
                 </div>
               ) : null}
             </SettingCard>
-            <SettingCard id="wechat-tail-guide" title={t("wechat.tailGuide")} description={t("wechat.tailGuideDesc")}>
-              <SectionToggle label={t("wechat.enableTailGuide")} checked={wechat.tailGuide.enabled} onChange={(enabled) => setTail({ enabled })} />
+            <SettingCard
+              id="wechat-tail-guide"
+              title={t("wechat.tailGuide")}
+              description={t("wechat.tailGuideDesc")}
+              action={<Switch checked={wechat.tailGuide.enabled} onCheckedChange={(enabled) => setTail({ enabled })} aria-label={t("wechat.enableTailGuide")} />}
+            >
               {wechat.tailGuide.enabled ? (
-                <div className="space-y-4 border-t border-border/70 pt-4">
+                <div className="space-y-4">
                   <WechatSettingExample
                     label={t("common.examplePreview")}
                     html={`<p>${example.paragraph1}</p>`}

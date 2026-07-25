@@ -283,89 +283,202 @@ function resolveCardColors(background: string, text: string, palette: Palette) {
   return { bg, text: text || palette.titleText };
 }
 
-function appendAuthor(doc: Document, card: HTMLElement, config: IdentityCardStyle, colors: { bg: string; text: string }) {
-  if (!config.nickname && !config.tag && !config.avatarUrl) return;
-  const author = doc.createElement("div");
-  author.setAttribute("style", css({
-    display: "flex",
-    "flex-direction": config.authorAlign === "center" ? "column" : config.authorAlign === "right" ? "row-reverse" : "row",
-    "align-items": "center",
-    "justify-content": config.authorAlign === "center" ? "center" : config.authorAlign === "right" ? "flex-start" : "flex-start",
-    gap: "10px",
-    "margin-top": "18px",
-    "padding-top": "16px",
-    "border-top": `1px solid ${rgba(colors.text, 0.2)}`,
-    "text-align": config.authorAlign,
-  }));
-  if (config.avatarUrl) {
-    const avatar = doc.createElement("img");
-    avatar.setAttribute("src", config.avatarUrl);
-    avatar.setAttribute("alt", config.nickname);
-    avatar.setAttribute("style", css({ width: "44px", height: "44px", "object-fit": "cover", "border-radius": "50%", margin: "0", border: `2px solid ${rgba(colors.text, 0.28)}` }));
-    author.appendChild(avatar);
-  } else {
-    const fallback = doc.createElement("span");
-    fallback.textContent = config.nickname.charAt(0) || "?";
-    fallback.setAttribute("style", css({ display: "inline-block", width: "44px", height: "44px", "border-radius": "50%", background: rgba(colors.text, 0.12), border: `2px solid ${rgba(colors.text, 0.28)}`, color: colors.text, "font-size": "18px", "line-height": "44px", "text-align": "center" }));
-    author.appendChild(fallback);
-  }
-  const meta = doc.createElement("div");
-  meta.style.textAlign = config.authorAlign;
-  if (config.nickname) {
-    const name = doc.createElement("p");
-    name.textContent = config.nickname;
-    name.setAttribute("style", css({ margin: "0", color: colors.text, "font-size": "14px", "font-weight": 700, "text-align": config.authorAlign }));
-    meta.appendChild(name);
-  }
-  if (config.tag) {
-    const tag = doc.createElement("p");
-    tag.textContent = config.tag;
-    tag.setAttribute("style", css({ margin: "3px 0 0", color: colors.text, "font-size": "11px", opacity: 0.7, "text-align": config.authorAlign }));
-    meta.appendChild(tag);
-  }
-  author.appendChild(meta);
-  card.appendChild(author);
+/** YIQ 亮度判定；非 6 位 hex（渐变、颜色关键字等）一律当浅色处理，宁可用深色字也不要糊掉。 */
+function isLightColor(color: string): boolean {
+  const clean = color.replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(clean)) return true;
+  const value = Number.parseInt(clean, 16);
+  const [r, g, b] = [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+  return (r * 299 + g * 587 + b * 114) / 1000 > 155;
 }
 
-function buildIdentityCard(doc: Document, config: IdentityCardStyle, palette: Palette): HTMLElement | null {
+const CARD_INK_DARK = "#111827";
+const CARD_INK_LIGHT = "#ffffff";
+
+interface CardPalette {
+  bg: string;
+  title: string;
+  text: string;
+  subtle: string;
+  badge: string;
+  badgeBorder: string;
+  decorator: string;
+  divider: string;
+  avatarBg: string;
+  avatarBorder: string;
+}
+
+/**
+ * 身份卡片的多层配色。
+ *
+ * 文字色留空时：沿用主题背景就取主题配好的 titleColor；一旦用户自定义了背景色，
+ * 就按背景明暗自动翻转墨色，避免出现浅底白字这种直接看不见的组合。
+ */
+function identityCardPalette(config: IdentityCardStyle, palette: Palette): CardPalette {
+  const bg = config.backgroundColor.trim() || palette.titleBg;
+  const light = isLightColor(bg);
+  const custom = config.textColor.trim();
+  const base = custom || (config.backgroundColor.trim() ? (light ? CARD_INK_DARK : CARD_INK_LIGHT) : palette.titleText);
+  return {
+    bg,
+    title: base,
+    text: rgba(base, 0.85),
+    subtle: rgba(base, 0.65),
+    badge: rgba(base, 0.9),
+    badgeBorder: rgba(base, light ? 0.24 : 0.45),
+    decorator: rgba(base, 0.55),
+    divider: rgba(base, 0.18),
+    avatarBg: rgba(base, light ? 0.08 : 0.2),
+    avatarBorder: rgba(base, 0.3),
+  };
+}
+
+/**
+ * 身份卡片作者区。
+ *
+ * 公众号编辑器对 flex 的支持很不稳（gap 会被吃掉、粘贴后常塌成竖排），
+ * 这里统一用 inline-block + vertical-align 排版，代价是要手动收掉行高空隙。
+ */
+function buildAuthorSection(
+  doc: Document,
+  config: IdentityCardStyle,
+  colors: CardPalette,
+  fontSize: number,
+): HTMLElement[] {
+  if (!config.nickname && !config.tag && !config.avatarUrl) return [];
+  const center = config.authorAlign === "center";
+  const right = config.authorAlign === "right";
+
+  const divider = doc.createElement("section");
+  divider.setAttribute("style", css({ border: "none", "border-top": `1px solid ${colors.divider}`, margin: "18px 0 16px", height: "0" }));
+
+  const avatarBox = css({ display: "inline-block", width: "44px", height: "44px", "border-radius": "50%", "object-fit": "cover", background: colors.avatarBg, border: `2px solid ${colors.avatarBorder}`, color: colors.title, "font-size": "18px", "line-height": "44px", "text-align": "center" });
+  const avatar = doc.createElement(config.avatarUrl ? "img" : "span");
+  if (config.avatarUrl) {
+    avatar.setAttribute("src", config.avatarUrl);
+    avatar.setAttribute("alt", config.nickname);
+  } else {
+    avatar.textContent = config.nickname.charAt(0) || "?";
+  }
+  avatar.setAttribute("style", avatarBox);
+
+  const nameSize = fontSize;
+  const tagSize = Math.max(Math.round(fontSize * 0.8), 11);
+  const texts: HTMLElement[] = [];
+  if (config.nickname) {
+    const name = doc.createElement("span");
+    name.textContent = config.nickname;
+    name.setAttribute("style", css({ display: "block", margin: "0", color: colors.title, "font-size": `${nameSize}px`, "font-weight": 700, "line-height": 1.4 }));
+    texts.push(name);
+  }
+  if (config.tag) {
+    const tag = doc.createElement("span");
+    tag.textContent = config.tag;
+    tag.setAttribute("style", css({ display: "block", margin: "2px 0 0", color: colors.subtle, "font-size": `${tagSize}px`, "line-height": 1.4 }));
+    texts.push(tag);
+  }
+
+  const row = doc.createElement("section");
+  const avatarHolder = doc.createElement("span");
+  avatarHolder.setAttribute("style", css({ display: "inline-block", "vertical-align": "middle" }));
+  avatarHolder.appendChild(avatar);
+
+  if (center) {
+    row.setAttribute("style", css({ margin: "0", "text-align": "center" }));
+    row.appendChild(avatarHolder);
+    if (texts.length) {
+      const meta = doc.createElement("section");
+      meta.setAttribute("style", css({ margin: "8px 0 0", "text-align": "center" }));
+      texts.forEach((el) => meta.appendChild(el));
+      row.appendChild(meta);
+    }
+    return [divider, row];
+  }
+
+  row.setAttribute("style", css({ margin: "0", "line-height": 0, "text-align": config.authorAlign }));
+  const meta = doc.createElement("span");
+  meta.setAttribute("style", css({ display: "inline-block", "vertical-align": "middle", [right ? "margin-right" : "margin-left"]: "12px", "text-align": config.authorAlign }));
+  texts.forEach((el) => meta.appendChild(el));
+  if (right) {
+    if (texts.length) row.appendChild(meta);
+    row.appendChild(avatarHolder);
+  } else {
+    row.appendChild(avatarHolder);
+    if (texts.length) row.appendChild(meta);
+  }
+  return [divider, row];
+}
+
+/** 身份卡片副标题的兜底长度：超出就截断成摘要，避免整段正文被搬到卡片里。 */
+const DERIVED_SUBTITLE_MAX = 54;
+
+/**
+ * 从正文里推导身份卡片留空字段的兜底内容。
+ *
+ * 标题取第一个一级标题；副标题取它后面的第一段正文，过长时截断成摘要。
+ * 必须在 hideTitle 摘掉 h1 之前调用。
+ */
+export function deriveIdentityCardContent(holder: HTMLElement): { title: string; subtitle: string } {
+  const heading = holder.querySelector("h1");
+  // 没有一级标题就没有「标题 + 导语」这个结构，硬取首段只会把正文原样搬到卡片上重复一遍。
+  if (!heading) return { title: "", subtitle: "" };
+  let node = heading.nextElementSibling;
+  while (node && node.tagName.toLowerCase() !== "p") node = node.nextElementSibling;
+  const raw = node?.textContent?.trim() ?? "";
+  const subtitle = raw.length > DERIVED_SUBTITLE_MAX ? `${raw.slice(0, DERIVED_SUBTITLE_MAX)}…` : raw;
+  return { title: heading.textContent?.trim() ?? "", subtitle };
+}
+
+function buildIdentityCard(
+  doc: Document,
+  config: IdentityCardStyle,
+  palette: Palette,
+  fontSize: number,
+  lineHeight: number,
+): HTMLElement | null {
   if (!config.enabled) return null;
-  const colors = resolveCardColors(config.backgroundColor, config.textColor, palette);
-  const card = doc.createElement("section");
-  card.setAttribute("data-wechat-card", "identity");
-  card.setAttribute("style", css({ padding: "24px", margin: "0 0 16px", background: colors.bg, color: colors.text, "border-radius": `${config.borderRadius}px`, "box-sizing": "border-box" }));
+  const colors = identityCardPalette(config, palette);
+  const parts: HTMLElement[] = [];
   if (config.badge) {
     const row = doc.createElement("p");
     row.setAttribute("style", css({ margin: "0 0 20px", "text-align": config.badgeAlign }));
     const badge = doc.createElement("span");
     badge.textContent = config.badge;
-    badge.setAttribute("style", css({ display: "inline-block", padding: "4px 14px", border: `1px solid ${rgba(colors.text, 0.65)}`, "border-radius": "999px", "font-size": "11px", "letter-spacing": "2px", opacity: 0.8 }));
+    badge.setAttribute("style", css({ display: "inline-block", padding: "4px 14px", border: `1px solid ${colors.badgeBorder}`, "border-radius": "999px", color: colors.badge, "font-size": `${Math.max(Math.round(fontSize * 0.8), 11)}px`, "letter-spacing": "2px", "text-transform": "uppercase" }));
     row.appendChild(badge);
-    card.appendChild(row);
+    parts.push(row);
   }
   if (config.title) {
     const title = doc.createElement("p");
     title.textContent = config.title;
-    title.setAttribute("style", css({ margin: "0 0 16px", color: colors.text, "font-size": `${config.titleFontSize}px`, "font-weight": 800, "line-height": 1.35, "letter-spacing": "1px", "text-align": config.titleAlign }));
-    card.appendChild(title);
+    title.setAttribute("style", css({ margin: "0 0 16px", color: colors.title, "font-size": `${config.titleFontSize}px`, "font-weight": 800, "line-height": 1.35, "letter-spacing": "1px", "text-align": config.titleAlign }));
+    parts.push(title);
   }
   if (config.title && (config.subtitle || config.slogan)) {
-    const line = doc.createElement("span");
-    line.setAttribute("style", css({ display: "block", width: "40px", height: "3px", background: colors.text, opacity: 0.65, "border-radius": "2px", margin: config.titleAlign === "center" ? "0 auto 16px" : config.titleAlign === "right" ? "0 0 16px auto" : "0 0 16px" }));
-    card.appendChild(line);
+    const line = doc.createElement("section");
+    line.setAttribute("style", css({ display: "block", width: "40px", height: "3px", "line-height": 0, "font-size": 0, overflow: "hidden", background: colors.decorator, "border-radius": "2px", border: "none", margin: config.titleAlign === "center" ? "0 auto 16px" : config.titleAlign === "right" ? "0 0 16px auto" : "0 0 16px" }));
+    parts.push(line);
   }
   if (config.subtitle) {
     const subtitle = doc.createElement("p");
     subtitle.textContent = config.subtitle;
-    subtitle.setAttribute("style", css({ margin: "0 0 8px", color: colors.text, "font-size": `${config.subtitleFontSize}px`, opacity: 0.82, "line-height": 1.6, "text-align": config.subtitleAlign }));
-    card.appendChild(subtitle);
+    subtitle.setAttribute("style", css({ margin: "0 0 8px", color: colors.text, "font-size": `${config.subtitleFontSize}px`, "line-height": lineHeight, "letter-spacing": "0.5px", "text-align": config.subtitleAlign }));
+    parts.push(subtitle);
   }
   if (config.slogan) {
     const slogan = doc.createElement("p");
     slogan.textContent = config.slogan;
-    slogan.setAttribute("style", css({ margin: "0 0 8px", color: colors.text, "font-size": `${Math.max(config.subtitleFontSize - 1, 12)}px`, opacity: 0.68, "font-style": "italic", "line-height": 1.6, "text-align": config.sloganAlign }));
-    card.appendChild(slogan);
+    slogan.setAttribute("style", css({ margin: "0 0 8px", color: colors.subtle, "font-size": `${Math.max(config.subtitleFontSize - 1, 12)}px`, "font-style": "italic", "line-height": lineHeight, "letter-spacing": "0.5px", "text-align": config.sloganAlign }));
+    parts.push(slogan);
   }
-  appendAuthor(doc, card, config, colors);
+  parts.push(...buildAuthorSection(doc, config, colors, fontSize));
+  // 字段全空时不要留一个纯色块在正文顶上。
+  if (!parts.length) return null;
+
+  const card = doc.createElement("section");
+  card.setAttribute("data-wechat-card", "identity");
+  card.setAttribute("style", css({ padding: "24px", margin: "0 0 16px", background: colors.bg, color: colors.title, "border-radius": `${config.borderRadius}px`, "box-sizing": "border-box" }));
+  parts.forEach((el) => card.appendChild(el));
   return card;
 }
 
@@ -482,17 +595,24 @@ export function renderWechat(
 ): WechatRenderResult {
   if (!sanitizedHtml.trim() || typeof window === "undefined") return EMPTY_RESULT;
   const palette = paletteFor(style);
-  const identityCard = profile
-    ? {
-        ...style.identityCard,
-        avatarUrl: profile.avatar,
-        nickname: profile.name,
-        slogan: profile.slogan,
-      }
-    : style.identityCard;
   const holder = window.document.createElement("div");
   // 不完全依赖调用方「已经消毒过」的命名约定，这里再兜底消毒一次（纵深防御）。
   holder.appendChild(sanitizeHtml(sanitizedHtml));
+  // 卡片留空的字段从正文里兜底：标题取第一个一级标题，副标题取紧随其后的第一段。
+  const derived = deriveIdentityCardContent(holder);
+  const subtitleFromBody = !style.identityCard.subtitle.trim() && Boolean(derived.subtitle);
+  const identityCard: IdentityCardStyle = {
+    ...style.identityCard,
+    title: style.identityCard.title.trim() || derived.title,
+    subtitle: style.identityCard.subtitle.trim() || derived.subtitle,
+    ...(profile
+      ? {
+          avatarUrl: profile.avatar,
+          nickname: profile.name,
+          slogan: profile.slogan,
+        }
+      : {}),
+  };
   const warnings = new Set<WechatWarning>();
   const issues: WechatCompatibilityIssue[] = [];
   const issueCounts = new Map<WechatWarning, number>();
@@ -504,7 +624,17 @@ export function renderWechat(
     issues.push({ warning, index, ...compatibilityText(el, warning) });
   };
 
-  if (identityCard.enabled && identityCard.hideTitle) holder.querySelector("h1")?.remove();
+  // hideTitle 的语义是「卡片接管文章开头」：既然标题挪进了卡片，
+  // 被自动提升成副标题的那段导语也要从正文摘掉，否则开头会原样重复一遍。
+  if (identityCard.enabled && identityCard.hideTitle) {
+    const heading = holder.querySelector("h1");
+    if (heading && subtitleFromBody) {
+      let node = heading.nextElementSibling;
+      while (node && node.tagName.toLowerCase() !== "p") node = node.nextElementSibling;
+      node?.remove();
+    }
+    heading?.remove();
+  }
   holder.querySelectorAll("*").forEach((el) => {
     const tag = el.tagName.toLowerCase();
     if (tag === "table") addIssue("wechat.compatTable", el);
@@ -526,7 +656,7 @@ export function renderWechat(
   const section = window.document.createElement("section");
   section.setAttribute("style", wechatRootStyle(style));
   section.innerHTML = holder.innerHTML;
-  const identity = buildIdentityCard(window.document, identityCard, palette);
+  const identity = buildIdentityCard(window.document, identityCard, palette, style.fontSize, style.lineHeight);
   if (identity) section.insertBefore(identity, section.firstChild);
   const guide = buildTailGuide(window.document, style.tailGuide, identityCard, palette);
   if (guide) section.appendChild(guide);

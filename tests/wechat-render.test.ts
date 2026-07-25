@@ -2,10 +2,33 @@ import { describe, expect, it } from "vitest";
 
 import { renderMarkdown } from "@/lib/markdown/parse";
 import { buildWechatDocument, renderWechat, wechatRootStyle } from "@/lib/render/wechat";
-import { DEFAULT_WECHAT_STYLE, wechatStyleFromTheme } from "@/lib/themes/wechat";
+import { DEFAULT_WECHAT_STYLE, wechatStyleFromTheme, type WechatStyle } from "@/lib/themes/wechat";
 
 function render(markdown: string, style = DEFAULT_WECHAT_STYLE) {
   return renderWechat(renderMarkdown(markdown).html, style);
+}
+
+/** 卡片内部也有 <section>（装饰线、作者区），所以按标签配对切，不能用非贪婪正则。 */
+function splitIdentityCard(html: string): { card: string; body: string } {
+  const start = html.indexOf('<section data-wechat-card="identity"');
+  if (start < 0) return { card: "", body: html };
+  let depth = 0;
+  for (const match of html.slice(start).matchAll(/<section\b|<\/section>/g)) {
+    depth += match[0] === "</section>" ? -1 : 1;
+    if (depth === 0) {
+      const end = start + match.index + match[0].length;
+      return { card: html.slice(start, end), body: html.slice(0, start) + html.slice(end) };
+    }
+  }
+  return { card: "", body: html };
+}
+
+function identityCardHtml(markdown: string, identityCard: WechatStyle["identityCard"]): string {
+  return splitIdentityCard(render(markdown, { ...DEFAULT_WECHAT_STYLE, identityCard }).html).card;
+}
+
+function identityBodyHtml(markdown: string, identityCard: WechatStyle["identityCard"]): string {
+  return splitIdentityCard(render(markdown, { ...DEFAULT_WECHAT_STYLE, identityCard }).html).body;
 }
 
 describe("renderWechat", () => {
@@ -187,6 +210,106 @@ describe("renderWechat", () => {
     expect(html).toContain("font-size: 18px");
     expect(html).toContain("text-align: center");
     expect(html).toContain(">小<");
+  });
+
+  it("身份卡片标题、副标题留空时从正文兜底填充", () => {
+    const card = identityCardHtml("# 正文标题\n\n第一段导语。\n\n第二段。", {
+      ...DEFAULT_WECHAT_STYLE.identityCard,
+      enabled: true,
+      hideTitle: false,
+    });
+    expect(card).toContain("正文标题");
+    expect(card).toContain("第一段导语。");
+    expect(card).not.toContain("第二段。");
+  });
+
+  it("身份卡片自填的副标题过长时截断成摘要", () => {
+    const card = identityCardHtml(`# 标题\n\n${"导".repeat(80)}`, {
+      ...DEFAULT_WECHAT_STYLE.identityCard,
+      enabled: true,
+    });
+    expect(card).toContain(`${"导".repeat(54)}…`);
+    expect(card).not.toContain("导".repeat(56));
+  });
+
+  it("卡片接管开头时，被提升成副标题的导语不在正文里重复", () => {
+    const body = identityBodyHtml("# 正文标题\n\n第一段导语。\n\n第二段。", {
+      ...DEFAULT_WECHAT_STYLE.identityCard,
+      enabled: true,
+      hideTitle: true,
+    });
+    expect(body).not.toContain("正文标题");
+    expect(body).not.toContain("第一段导语。");
+    expect(body).toContain("第二段。");
+  });
+
+  it("手填副标题时不动正文导语", () => {
+    const body = identityBodyHtml("# 正文标题\n\n第一段导语。", {
+      ...DEFAULT_WECHAT_STYLE.identityCard,
+      enabled: true,
+      hideTitle: true,
+      subtitle: "手填副标题",
+    });
+    expect(body).toContain("第一段导语。");
+  });
+
+  it("没有一级标题时不硬凑副标题，避免把正文原样搬进卡片", () => {
+    const card = identityCardHtml("正文没有标题也没有别的", {
+      ...DEFAULT_WECHAT_STYLE.identityCard,
+      enabled: true,
+    });
+    expect(card).not.toContain("正文没有标题也没有别的");
+  });
+
+  it("身份卡片手填的标题、副标题优先于正文兜底", () => {
+    const card = identityCardHtml("# 正文标题\n\n第一段导语。", {
+      ...DEFAULT_WECHAT_STYLE.identityCard,
+      enabled: true,
+      title: "手填标题",
+      subtitle: "手填副标题",
+    });
+    expect(card).toContain("手填标题");
+    expect(card).toContain("手填副标题");
+    expect(card).not.toContain("正文标题");
+  });
+
+  it("身份卡片所有字段为空时不输出空色块", () => {
+    const { html } = render("正文没有标题也没有别的", {
+      ...DEFAULT_WECHAT_STYLE,
+      identityCard: {
+        ...DEFAULT_WECHAT_STYLE.identityCard,
+        enabled: true,
+        badge: "",
+        title: "",
+        subtitle: "",
+        slogan: "",
+        nickname: "",
+        tag: "",
+        avatarUrl: "",
+      },
+    });
+    expect(html).not.toContain('data-wechat-card="identity"');
+  });
+
+  it("身份卡片自定义浅色背景时文字自动翻成深色", () => {
+    const card = identityCardHtml("# 标题\n\n正文", {
+      ...DEFAULT_WECHAT_STYLE.identityCard,
+      enabled: true,
+      backgroundColor: "#f2ece1",
+    });
+    expect(card).toContain("#111827");
+    expect(card).not.toContain("color: #ffffff");
+  });
+
+  it("身份卡片作者区不使用 flex，保证粘进公众号不塌", () => {
+    const card = identityCardHtml("正文", {
+      ...DEFAULT_WECHAT_STYLE.identityCard,
+      enabled: true,
+      nickname: "小明",
+      tag: "AI 工程师",
+    });
+    expect(card).toContain("vertical-align: middle");
+    expect(card).not.toContain("display: flex");
   });
 
   it("身份卡片始终使用 Header 人设中的头像、名称和 Slogan", () => {
