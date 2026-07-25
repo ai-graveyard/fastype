@@ -1,5 +1,9 @@
 services:
   fastype:
+    # 就地构建，不依赖任何镜像仓库。首次或代码更新后用 `docker compose up -d --build`。
+    build:
+      context: ..
+      dockerfile: Dockerfile
     image: ai-graveyard/fastype:latest
     container_name: fastype
     restart: unless-stopped
