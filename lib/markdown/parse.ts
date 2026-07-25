@@ -85,8 +85,10 @@ export function renderMarkdown(source: string): RenderResult {
   holder.querySelectorAll("img").forEach((img) => {
     const src = img.getAttribute("src") ?? "";
     if (src && !images.includes(src)) images.push(src);
-    // 导出到 canvas 需要图片来源允许跨域；不允许时会在导出阶段单独提示（FT-IMG-001）。
-    img.setAttribute("crossorigin", "anonymous");
+    // 这里刻意不加 crossorigin="anonymous"：html-to-image 导出时是自己 fetch 图片
+    // 再转成 data URL 的，跟 <img> 上有没有这个属性无关；而加上它会让所有不发
+    // Access-Control-Allow-Origin 的图床（绝大多数）连预览都显示不出来。
+    // 导不进 PNG 的图由 findUnexportableImages() 在导出前探测并提示（FT-IMG-001）。
     img.setAttribute("referrerpolicy", "no-referrer");
     img.setAttribute("loading", "lazy");
   });

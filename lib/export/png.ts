@@ -24,6 +24,16 @@ export interface PageExportResult {
   blob?: Blob;
 }
 
+/**
+ * 1×1 全透明 PNG。
+ *
+ * html-to-image 取不到图片时默认会把整个渲染 promise reject 掉——一张跨域读不了的图
+ * 会让整页导出失败，而不是只缺这一张。给它一个占位图，让这一张变成空白、其余内容照常
+ * 导出；哪些图会缺已经由 findUnexportableImages() 在导出前提示过了（PRD 12.1）。
+ */
+const TRANSPARENT_PIXEL =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
 export async function renderPageToBlob(
   node: HTMLElement,
   options: Pick<ExportOptions, "scale" | "backgroundColor">,
@@ -34,6 +44,7 @@ export async function renderPageToBlob(
     // 只用系统字体，跳过字体内联能省掉一轮必然失败的远程请求（PRD 10.2）。
     skipFonts: true,
     cacheBust: false,
+    imagePlaceholder: TRANSPARENT_PIXEL,
   });
 }
 
@@ -121,4 +132,63 @@ export function findBrokenImages(root: HTMLElement): string[] {
     }
   });
   return broken;
+}
+
+/** 跨域探测的超时上限：探测本身不该把导出拖住。 */
+const CORS_PROBE_TIMEOUT_MS = 6_000;
+
+function isCrossOrigin(url: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return new URL(url, window.location.href).origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+/** 收集根节点里所有需要探测的跨域图片地址。 */
+export function collectCrossOriginImages(roots: HTMLElement[]): string[] {
+  const sources = new Set<string>();
+  for (const root of roots) {
+    root.querySelectorAll("img").forEach((img) => {
+      const src = img.getAttribute("src") ?? "";
+      if (src && /^https?:/i.test(src) && isCrossOrigin(src)) sources.add(src);
+    });
+  }
+  return [...sources];
+}
+
+/**
+ * 探测哪些图片进不了导出的 PNG（FT-IMG-001）。
+ *
+ * html-to-image 是自己 `fetch` 图片再转 data URL 的，所以一张图能不能导出，
+ * 取决于图源允不允许跨域读取，而不是它在预览里显示得好不好。这里用同样的 fetch
+ * 提前探一次：探通的响应会进浏览器缓存，导出时那次 fetch 基本是白拿；探不通的
+ * 就是导出后会缺的那些，导出前先告诉用户。
+ *
+ * 同时把预览里就没加载出来的图片一并算进去——那些图导出自然也不会有。
+ */
+export async function findUnexportableImages(roots: HTMLElement[]): Promise<string[]> {
+  const missing = new Set<string>();
+  for (const root of roots) {
+    for (const src of findBrokenImages(root)) missing.add(src);
+  }
+
+  const probes = collectCrossOriginImages(roots).filter((src) => !missing.has(src));
+  await Promise.all(
+    probes.map(async (src) => {
+      try {
+        const response = await fetch(src, {
+          mode: "cors",
+          signal: AbortSignal.timeout(CORS_PROBE_TIMEOUT_MS),
+        });
+        if (!response.ok) missing.add(src);
+      } catch {
+        // 跨域被拒、网络失败或超时：导出时那次 fetch 同样会失败。
+        missing.add(src);
+      }
+    }),
+  );
+
+  return [...missing];
 }

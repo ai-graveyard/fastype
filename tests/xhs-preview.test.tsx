@@ -999,4 +999,32 @@ describe("小红书内容正文预览", () => {
     const badge = container.querySelector('[data-testid="xhs-identifier-badge"]');
     expect((badge as HTMLElement).style.height).not.toBe(baseHeight);
   });
+  // 直接把 onExport 挂到 onClick 上会让 React 把 MouseEvent 当作「导出第几页」传进去，
+  // 上层 slice(event, event + 1) 得到空数组，点「导出」会毫无反应地静默失败。
+  it("点「导出」时不把点击事件当成页码传出去", () => {
+    const onExport = vi.fn();
+    render(
+      <PrefsProvider>
+        <UserProfileProvider>
+          <XhsPreview
+            html="<p>正文</p>"
+            documentTitle="标题"
+            hasTitle
+            metadata={{ title: "", content: "", tags: [] }}
+            style={DEFAULT_XHS_STYLE}
+            onPagesChange={vi.fn()}
+            onExport={onExport}
+            onExportPage={vi.fn()}
+            exportDisabled={false}
+            exporting={false}
+          />
+        </UserProfileProvider>
+      </PrefsProvider>,
+    );
+
+    fireEvent.click(screen.getByTitle(/导出全部|Export all/));
+
+    expect(onExport).toHaveBeenCalledTimes(1);
+    expect(onExport.mock.calls[0]).toEqual([]);
+  });
 });

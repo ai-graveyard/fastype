@@ -64,12 +64,19 @@ describe("renderMarkdown", () => {
     expect(html).toContain("noopener");
   });
 
-  it("收集图片地址并标记跨域属性", () => {
+  it("收集图片地址并去重", () => {
     const { html, images } = renderMarkdown(
       "![a](https://example.com/1.png)\n\n![b](https://example.com/2.png)\n\n![dup](https://example.com/1.png)",
     );
     expect(images).toEqual(["https://example.com/1.png", "https://example.com/2.png"]);
-    expect(html).toContain('crossorigin="anonymous"');
+    expect(html).toContain('referrerpolicy="no-referrer"');
+  });
+
+  // 加上 crossorigin 会让不发 Access-Control-Allow-Origin 的图床连预览都显示不出来，
+  // 而导出走的是 html-to-image 自己的 fetch，根本不看这个属性。
+  it("不给图片加 crossorigin，避免图床不放行时预览直接空掉", () => {
+    const { html } = renderMarkdown("![a](https://example.com/1.png)");
+    expect(html).not.toContain("crossorigin");
   });
 
   it("单换行渲染为换行，符合中文写作习惯", () => {

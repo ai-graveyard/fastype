@@ -42,7 +42,7 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import {
   downloadPagesAsZip,
   exportPages,
-  findBrokenImages,
+  findUnexportableImages,
   pageFilename,
   renderPageToBlob,
 } from "@/lib/export/png";
@@ -221,7 +221,13 @@ export function Workbench() {
   const copyPlainRef = React.useRef<() => Promise<void>>(async () => {});
   const downloadHtmlRef = React.useRef<() => void>(() => {});
 
-  const stableExportPng = React.useCallback((pageIndex?: number) => void exportPngRef.current(pageIndex), []);
+  // 「导出全部」和「导出当前页」拆成两个回调：共用一个可选参数的函数，
+  // 一旦被直接挂到 onClick 上就会把事件对象当成页码传进去。
+  const stableExportAll = React.useCallback(() => void exportPngRef.current(), []);
+  const stableExportPage = React.useCallback(
+    (pageIndex: number) => void exportPngRef.current(pageIndex),
+    [],
+  );
   const stableExportLongImage = React.useCallback(() => void exportLongImageRef.current(), []);
   const stableCopyRich = React.useCallback(() => void copyRichRef.current(), []);
   const stableCopyPlain = React.useCallback(() => void copyPlainRef.current(), []);
@@ -239,9 +245,9 @@ export function Workbench() {
       return;
     }
 
-    const broken = findBrokenImages(node);
-    if (broken.length > 0) {
-      toast.warning(t("image.exportTaintWarn", { n: new Set(broken).size }), { duration: 8000 });
+    const missing = await findUnexportableImages([node]);
+    if (missing.length > 0) {
+      toast.warning(t("image.exportTaintWarn", { n: missing.length }), { duration: 8000 });
     }
 
     setExportingLongImage(true);
@@ -271,9 +277,9 @@ export function Workbench() {
     const nodes = pageIndex === undefined ? allNodes : allNodes.slice(pageIndex, pageIndex + 1);
     if (nodes.length === 0) return;
 
-    const broken = nodes.flatMap((node) => findBrokenImages(node));
-    if (broken.length > 0) {
-      toast.warning(t("image.exportTaintWarn", { n: new Set(broken).size }), { duration: 8000 });
+    const missing = await findUnexportableImages(nodes);
+    if (missing.length > 0) {
+      toast.warning(t("image.exportTaintWarn", { n: missing.length }), { duration: 8000 });
     }
 
     const size = getExportSize();
@@ -482,8 +488,8 @@ export function Workbench() {
           metadata={xhsMetadata}
           style={xhs}
           onPagesChange={setPageInfo}
-          onExport={stableExportPng}
-          onExportPage={stableExportPng}
+          onExport={stableExportAll}
+          onExportPage={stableExportPage}
           exportDisabled={pageInfo.total === 0 || exporting !== null}
           exporting={exporting !== null}
           onImageFailuresChange={setXhsFailedImages}

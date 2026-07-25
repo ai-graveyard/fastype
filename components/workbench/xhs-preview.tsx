@@ -819,7 +819,8 @@ export const XhsPreview = React.memo(React.forwardRef<XhsPreviewHandle, XhsPrevi
               size="sm"
               className="border border-brand-primary/30 bg-brand-primary/10 text-brand-primary shadow-none hover:bg-brand-primary/15"
               disabled={exportDisabled}
-              onClick={onExport}
+              // 必须包一层：直接传 onExport 会把 MouseEvent 当成「导出第几页」的实参。
+              onClick={() => onExport()}
               title={t("xhs.exportAll", { n: totalPages })}
             >
               {exporting ? <Loader2 className="animate-spin" /> : <ImageDown />}
