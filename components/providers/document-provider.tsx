@@ -84,6 +84,13 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   const [local, setLocal] = React.useState<LocalDoc | null>(null);
   const [pending, setPending] = React.useState<PendingAction | null>(null);
   const [autoSavePending, setAutoSavePending] = React.useState(false);
+  /**
+   * 本地草稿最后一次写入失败了（配额耗尽、无痕模式等）。
+   *
+   * 只有这种情况关掉页面才真的会丢内容——正常情况下草稿在 localStorage 里，
+   * 刷新回来就在，没必要拿浏览器的「确定要离开吗」去拦一次什么都没丢的关闭。
+   */
+  const [draftWriteFailed, setDraftWriteFailed] = React.useState(false);
 
   /**
    * 最后一次真正落盘（写回文件或下载）的内容。
@@ -145,6 +152,7 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
           content: pendingSave.content,
           savedAt: Date.now(),
         } satisfies Draft);
+        setDraftWriteFailed(!draftResult.ok);
         if (draftResult.ok) setAutoSavePending(false);
 
         // 通过文件选择器打开的文档同时静默写回原文件。
@@ -204,11 +212,12 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
       handleRef.current = handle ?? null;
       setPersisted(nextContent);
       setLocal({ filename: nextName, content: nextContent });
-      draftStore.setQuiet({
+      const result = draftStore.setQuiet({
         filename: nextName,
         content: nextContent,
         savedAt: Date.now(),
       } satisfies Draft);
+      setDraftWriteFailed(!result.ok);
     },
     [cancelAutoSave],
   );
@@ -279,16 +288,21 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     [pending, downloadMarkdown],
   );
 
-  // 关闭页面前提醒（浏览器只允许标准提示文案）。
+  /**
+   * 关闭页面前提醒（浏览器只允许标准提示文案）。
+   *
+   * 只在草稿存不进 localStorage 时才拦。用 dirty 当条件是不对的：恢复出来的草稿
+   * 和首次访问的教程内容一律算「未落盘」，用户一个字都没改也会被拦一次。
+   */
   React.useEffect(() => {
-    if (!dirty) return;
+    if (!draftWriteFailed) return;
     const handler = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [dirty]);
+  }, [draftWriteFailed]);
 
   // 移动端 / PWA 被系统回收时不触发 beforeunload，必须在 visibilitychange / pagehide 紧急落盘。
   React.useEffect(() => {
