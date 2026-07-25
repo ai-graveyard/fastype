@@ -2,7 +2,9 @@
 
 import {
   Bold,
+  ClipboardType,
   Code,
+  Copy,
   Heading1,
   Heading2,
   Heading3,
@@ -22,6 +24,7 @@ import {
   Undo2,
 } from "lucide-react";
 import * as React from "react";
+import { toast } from "sonner";
 
 import { EditorSearchReplacePopover } from "@/components/editor/editor-search-replace-popover";
 import {
@@ -34,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { EditorApi } from "@/components/editor/markdown-editor";
 import type { TKey } from "@/lib/i18n";
+import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import { cn } from "@/lib/utils";
 
 interface ToolbarAction {
@@ -118,6 +122,26 @@ export function EditorPane({
     api.focus();
   };
 
+  /** 两个按钮都复制整篇（选区复制用 Cmd/Ctrl+C 就够了）；纯文本模式再去掉 Markdown 标记。 */
+  const copy = async (plain: boolean) => {
+    const api = editorRef.current;
+    if (!api) return;
+
+    const source = api.getValue();
+    const text = plain ? markdownToPlainText(source) : source;
+    if (!text.trim()) {
+      toast.error(t("editor.copyEmpty"));
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(t(plain ? "editor.copyPlainDone" : "editor.copyAllDone"));
+    } catch {
+      toast.error(t("editor.copyFailed"), { duration: 8000 });
+    }
+  };
+
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-card">
       <div
@@ -164,6 +188,28 @@ export function EditorPane({
             </Button>
           </Tooltip>
           <EditorSearchReplacePopover editorRef={editorRef} />
+          <Tooltip label={t("editor.copyAll")}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="size-7 rounded-sm"
+              aria-label={t("editor.copyAll")}
+              onClick={() => void copy(false)}
+            >
+              <Copy />
+            </Button>
+          </Tooltip>
+          <Tooltip label={t("editor.copyPlain")}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="size-7 rounded-sm"
+              aria-label={t("editor.copyPlain")}
+              onClick={() => void copy(true)}
+            >
+              <ClipboardType />
+            </Button>
+          </Tooltip>
           <span aria-hidden className="mx-1 h-5 w-px bg-border" />
         </div>
 

@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { RefObject } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { EditorApi } from "@/components/editor/markdown-editor";
 import { AiProvider } from "@/components/providers/ai-provider";
@@ -8,21 +8,43 @@ import { PrefsProvider } from "@/components/providers/prefs-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { EditorPane } from "@/components/workbench/editor-pane";
 
-function renderPane(savePending: boolean) {
+function renderPane(
+  savePending: boolean,
+  editorRef: RefObject<EditorApi | null> = { current: null },
+) {
   return render(
     <PrefsProvider>
       <AiProvider>
         <TooltipProvider>
-          <EditorPane
-            editorRef={{ current: null } as RefObject<EditorApi | null>}
-            savePending={savePending}
-          >
+          <EditorPane editorRef={editorRef} savePending={savePending}>
             <div>Editor</div>
           </EditorPane>
         </TooltipProvider>
       </AiProvider>
     </PrefsProvider>,
   );
+}
+
+/** 只补齐工具栏与浮层会碰到的方法，其余成员本用例用不到。 */
+function createEditorApi(value: string): EditorApi {
+  return {
+    getValue: () => value,
+    getSelection: () => ({ text: "", from: 0, to: 0 }),
+    getSelectionRect: () => null,
+    subscribeSelection: () => () => undefined,
+    subscribeSearchPanel: () => () => undefined,
+    subscribeSearchUpdate: () => () => undefined,
+    getSearchStatus: () => ({ current: 0, count: 0 }),
+  } as unknown as EditorApi;
+}
+
+function stubClipboard() {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText },
+    configurable: true,
+  });
+  return writeText;
 }
 
 describe("编辑器保存状态", () => {
@@ -58,5 +80,40 @@ describe("编辑器保存状态", () => {
     const actions = humanize.closest("div.absolute");
     expect(actions?.classList.contains("top-3")).toBe(true);
     expect(actions?.classList.contains("flex-col")).toBe(true);
+  });
+});
+
+describe("编辑器复制按钮", () => {
+  const source = "# 标题\n\n**粗体**和[链接](https://example.com)";
+
+  it("复制全文按钮原样复制 Markdown", async () => {
+    const writeText = stubClipboard();
+    const editorRef = { current: createEditorApi(source) };
+    renderPane(false, editorRef);
+
+    fireEvent.click(screen.getByRole("button", { name: /Copy all|复制全文/ }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(source));
+  });
+
+  it("复制纯文本按钮去掉 Markdown 标记", async () => {
+    const writeText = stubClipboard();
+    const editorRef = { current: createEditorApi(source) };
+    renderPane(false, editorRef);
+
+    fireEvent.click(screen.getByRole("button", { name: /plain text|纯文本/ }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("标题\n\n粗体和链接"));
+  });
+
+  it("正文为空时不写剪贴板", async () => {
+    const writeText = stubClipboard();
+    const editorRef = { current: createEditorApi("   ") };
+    renderPane(false, editorRef);
+
+    fireEvent.click(screen.getByRole("button", { name: /Copy all|复制全文/ }));
+    fireEvent.click(screen.getByRole("button", { name: /plain text|纯文本/ }));
+
+    expect(writeText).not.toHaveBeenCalled();
   });
 });
