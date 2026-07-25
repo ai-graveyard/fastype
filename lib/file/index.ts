@@ -10,7 +10,12 @@ export function hasAcceptedExtension(name: string): boolean {
 
 export type OpenFileResult =
   | { ok: true; name: string; content: string; handle?: FileSystemFileHandle }
-  | { ok: false; reason: "unsupportedType" | "decodeFailed" | "readFailed"; name: string; detail?: string };
+  | {
+      ok: false;
+      reason: "unsupportedType" | "decodeFailed" | "readFailed";
+      name: string;
+      detail?: string;
+    };
 
 /** UTF-8 严格解码：解不出来说明不是文本或用了别的编码，明确报错而不是显示乱码。 */
 export async function readTextFile(
@@ -45,7 +50,9 @@ interface FilePickerOptions {
 }
 
 interface FileSystemWindow extends Window {
-  showOpenFilePicker?: (options?: FilePickerOptions & { multiple?: boolean }) => Promise<FileSystemFileHandle[]>;
+  showOpenFilePicker?: (
+    options?: FilePickerOptions & { multiple?: boolean },
+  ) => Promise<FileSystemFileHandle[]>;
   showSaveFilePicker?: (options?: FilePickerOptions) => Promise<FileSystemFileHandle>;
 }
 
@@ -138,10 +145,7 @@ async function queryWritePermission(handle: FileSystemFileHandle): Promise<boole
 }
 
 /** 「另存为」：拿到新 handle 并写入，用户之后可以继续写回这个文件。 */
-export async function saveWithPicker(
-  content: string,
-  suggestedName: string,
-): Promise<SaveOutcome> {
+export async function saveWithPicker(content: string, suggestedName: string): Promise<SaveOutcome> {
   const win = window as FileSystemWindow;
   if (typeof win.showSaveFilePicker !== "function") return { ok: true, wroteToFile: false };
   try {
@@ -177,7 +181,7 @@ export function downloadText(content: string, filename: string, mime = "text/mar
 }
 
 /** 文件名清洗：去掉路径分隔符和控制字符，保证下载名合法。 */
-const ILLEGAL_FILENAME_CHARS = new RegExp("[\\u0000-\\u001f<>:\"/\\\\|?*]", "g");
+const ILLEGAL_FILENAME_CHARS = new RegExp('[\\u0000-\\u001f<>:"/\\\\|?*]', "g");
 
 export function sanitizeFilename(name: string, fallback: string): string {
   // 去掉开头的点：避免拼出 `.` / `..` / 隐藏文件这类看起来像路径操作符的名字。

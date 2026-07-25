@@ -52,7 +52,9 @@ export class ErrorBoundary extends React.Component<
   render() {
     if (!this.state.error) return this.props.children;
 
-    return <ErrorFallback error={this.state.error} onReset={this.handleReset} onCopy={this.handleCopy} />;
+    return (
+      <ErrorFallback error={this.state.error} onReset={this.handleReset} onCopy={this.handleCopy} />
+    );
   }
 }
 
@@ -85,9 +87,7 @@ function ErrorFallback({
           <summary className="cursor-pointer select-none text-xs text-muted-foreground">
             错误详情
           </summary>
-          <p className="mt-2 break-all font-mono text-xs text-muted-foreground">
-            {error.message}
-          </p>
+          <p className="mt-2 break-all font-mono text-xs text-muted-foreground">{error.message}</p>
         </details>
       </div>
 

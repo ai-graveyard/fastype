@@ -188,9 +188,7 @@ export function EditorPane({
         {extraActions ? (
           <>
             <span aria-hidden className="mx-2 h-5 w-px shrink-0 bg-border" />
-            <div className="flex shrink-0 items-center gap-2 [&>button]:h-7">
-              {extraActions}
-            </div>
+            <div className="flex shrink-0 items-center gap-2 [&>button]:h-7">{extraActions}</div>
           </>
         ) : null}
       </div>

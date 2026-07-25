@@ -97,11 +97,7 @@ export function usePhoneFitScale(
 
   const availableWidth = Math.max(containerSize.width - horizontalPadding, 1);
   const availableHeight = Math.max(containerSize.height - CONTROLS_SAFE_AREA, 1);
-  const fitScale = Math.min(
-    availableWidth / PHONE_WIDTH,
-    availableHeight / PHONE_HEIGHT,
-    1,
-  );
+  const fitScale = Math.min(availableWidth / PHONE_WIDTH, availableHeight / PHONE_HEIGHT, 1);
   return fitScale * zoom;
 }
 
@@ -113,10 +109,7 @@ interface PhoneFrameProps {
 
 export function PhoneFrame({ scale, screenClassName, children }: PhoneFrameProps) {
   return (
-    <div
-      className="relative"
-      style={{ width: PHONE_WIDTH * scale, height: PHONE_HEIGHT * scale }}
-    >
+    <div className="relative" style={{ width: PHONE_WIDTH * scale, height: PHONE_HEIGHT * scale }}>
       <div
         className="relative flex shrink-0 flex-col rounded-[2.4rem] bg-[#d4d4d4] p-3 shadow-2xl shadow-black/10 ring-1 ring-black/5"
         style={{

@@ -32,18 +32,18 @@ function renderWorkspace(activeTab: XhsWorkspaceTab, content = "") {
           <AiProvider>
             <TooltipProvider>
               <XhsWorkspace
-              activeTab={activeTab}
-              onActiveTabChange={vi.fn()}
-              contentMode="text"
-              onContentModeChange={vi.fn()}
-              editorRef={{ current: null } as RefObject<EditorApi | null>}
-              content={content}
-              onContentChange={vi.fn()}
-              metadata={{ title: "", content: "", tags: [] }}
-              onMetadataChange={vi.fn()}
-              onSelectionChange={vi.fn()}
-              resetKey="test"
-              savePending={false}
+                activeTab={activeTab}
+                onActiveTabChange={vi.fn()}
+                contentMode="text"
+                onContentModeChange={vi.fn()}
+                editorRef={{ current: null } as RefObject<EditorApi | null>}
+                content={content}
+                onContentChange={vi.fn()}
+                metadata={{ title: "", content: "", tags: [] }}
+                onMetadataChange={vi.fn()}
+                onSelectionChange={vi.fn()}
+                resetKey="test"
+                savePending={false}
               />
             </TooltipProvider>
           </AiProvider>
@@ -62,9 +62,7 @@ describe("小红书设置导航", () => {
     expect(screen.getByRole("tab", { name: /^Content$|^内容$/ })).toBeTruthy();
     expect(screen.queryByRole("tab", { name: /Image body|图片正文/ })).toBeNull();
     expect(screen.queryByRole("tab", { name: /Text body|正文/ })).toBeNull();
-    expect(
-      screen.getByRole("toolbar", { name: /Formatting toolbar|格式工具栏/ }),
-    ).toBeTruthy();
+    expect(screen.getByRole("toolbar", { name: /Formatting toolbar|格式工具栏/ })).toBeTruthy();
 
     view.rerender(
       <PrefsProvider>
@@ -157,15 +155,11 @@ describe("小红书设置导航", () => {
 
     expect(screen.queryByText(/Export settings|导出设置/)).toBeNull();
     expect(screen.queryByText(/Export size|导出尺寸/)).toBeNull();
-    const pageLayoutCard = screen
-      .getByText(/^Page and spacing$|^留白$/)
-      .closest("section");
+    const pageLayoutCard = screen.getByText(/^Page and spacing$|^留白$/).closest("section");
     expect(pageLayoutCard).not.toBeNull();
     expect(within(pageLayoutCard!).getByText(/Page padding|页面内边距/)).toBeTruthy();
     expect(within(pageLayoutCard!).getByRole("slider")).toBeTruthy();
-    expect(
-      view.container.querySelector('[data-setting-example="xhs-page-layout"]'),
-    ).toBeTruthy();
+    expect(view.container.querySelector('[data-setting-example="xhs-page-layout"]')).toBeTruthy();
 
     const themeColorsCard = screen.getByText(/Theme colors|^配色$/).closest("section");
     expect(themeColorsCard).not.toBeNull();
@@ -176,9 +170,7 @@ describe("小红书设置导航", () => {
     ).toBeTruthy();
 
     expect(screen.getByText(/Canvas size|^比例$/)).toBeTruthy();
-    expect(
-      view.container.querySelector('[data-setting-example="xhs-canvas"]'),
-    ).toBeTruthy();
+    expect(view.container.querySelector('[data-setting-example="xhs-canvas"]')).toBeTruthy();
   });
 
   it("目录随排版设置区可用宽度自动显示或隐藏", () => {
@@ -224,18 +216,18 @@ describe("小红书设置导航", () => {
             <AiProvider>
               <TooltipProvider>
                 <XhsWorkspace
-                activeTab="enhance"
-                onActiveTabChange={vi.fn()}
-                contentMode="text"
-                onContentModeChange={vi.fn()}
-                editorRef={{ current: null } as RefObject<EditorApi | null>}
-                content=""
-                onContentChange={vi.fn()}
-                metadata={{ title: "", content: "", tags: [] }}
-                onMetadataChange={vi.fn()}
-                onSelectionChange={vi.fn()}
-                resetKey="test"
-                savePending={false}
+                  activeTab="enhance"
+                  onActiveTabChange={vi.fn()}
+                  contentMode="text"
+                  onContentModeChange={vi.fn()}
+                  editorRef={{ current: null } as RefObject<EditorApi | null>}
+                  content=""
+                  onContentChange={vi.fn()}
+                  metadata={{ title: "", content: "", tags: [] }}
+                  onMetadataChange={vi.fn()}
+                  onSelectionChange={vi.fn()}
+                  resetKey="test"
+                  savePending={false}
                 />
               </TooltipProvider>
             </AiProvider>
@@ -267,17 +259,13 @@ describe("小红书设置导航", () => {
     );
     expect(identifierExample).not.toBeNull();
     expect(identifierExample?.classList.contains("border-dashed")).toBe(true);
-    expect(identifierExample?.firstElementChild?.textContent).toMatch(
-      /Example preview|示例预览/,
-    );
+    expect(identifierExample?.firstElementChild?.textContent).toMatch(/Example preview|示例预览/);
     const canvasSize = getXhsCanvasSize(DEFAULT_XHS_STYLE);
     const identifierCard = identifierExample?.querySelector<HTMLElement>(
       ".overflow-hidden.rounded-lg.border",
     );
     expect(identifierCard).not.toBeNull();
-    expect(identifierCard?.style.aspectRatio).toBe(
-      `${canvasSize.width} / ${canvasSize.height}`,
-    );
+    expect(identifierCard?.style.aspectRatio).toBe(`${canvasSize.width} / ${canvasSize.height}`);
     expect(showIdentifierOnCover.getAttribute("data-state")).toBe("unchecked");
     fireEvent.click(showIdentifierOnCover);
     expect(showIdentifierOnCover.getAttribute("data-state")).toBe("checked");
@@ -293,9 +281,9 @@ describe("小红书设置导航", () => {
     const qrCodeSection = qrCodeHeading.closest("section");
     expect(qrCodeSection).not.toBeNull();
     expect(
-      within(qrCodeSection!).getByRole("button", { name: /Top left|左上/ }).hasAttribute(
-        "disabled",
-      ),
+      within(qrCodeSection!)
+        .getByRole("button", { name: /Top left|左上/ })
+        .hasAttribute("disabled"),
     ).toBe(false);
     expect(showQrCodeOnCover.getAttribute("data-state")).toBe("unchecked");
     fireEvent.click(showQrCodeOnCover);

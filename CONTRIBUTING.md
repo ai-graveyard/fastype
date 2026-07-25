@@ -5,10 +5,10 @@
 ## 提交前
 
 ```bash
-pnpm check   # typecheck + lint + test + build
+pnpm check   # typecheck + lint + format:check + test + build
 ```
 
-四项都要通过。CI 跑的就是这条命令。
+五项都要通过。CI 跑的就是这条命令。格式没过时跑 `pnpm format` 自动改写。
 
 ## 目录结构
 
@@ -16,7 +16,7 @@ pnpm check   # typecheck + lint + test + build
 app/                    Next.js App Router（只有一个页面）
 components/
   ui/                   Shadcn 风格基础组件
-  common/               跨工作区共用组件（配额警告横幅、颜色选择器等）
+  common/               跨工作区共用组件（设置卡片、配额警告横幅、颜色选择器等）
   providers/            偏好、样式、文档、AI 的 context
   editor/               CodeMirror 封装
   workbench/            工作台各区域

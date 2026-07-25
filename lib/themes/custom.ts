@@ -25,7 +25,10 @@ export function isSavedCustomThemeId(id: string): boolean {
   return id.startsWith(CUSTOM_THEME_ID_PREFIX);
 }
 
-export function createSavedCustomTheme<TStyle>(name: string, style: TStyle): SavedCustomTheme<TStyle> {
+export function createSavedCustomTheme<TStyle>(
+  name: string,
+  style: TStyle,
+): SavedCustomTheme<TStyle> {
   const suffix = Math.random().toString(36).slice(2, 8);
   return {
     id: `${CUSTOM_THEME_ID_PREFIX}${Date.now().toString(36)}-${suffix}`,

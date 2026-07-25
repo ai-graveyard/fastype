@@ -23,7 +23,9 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     url: SITE_URL,
     locale: "zh_CN",
-    images: [{ url: "/screenshot-xhs.png", width: 1463, height: 977, alt: "FasType 小红书图文排版预览" }],
+    images: [
+      { url: "/screenshot-xhs.png", width: 1463, height: 977, alt: "FasType 小红书图文排版预览" },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -42,9 +44,7 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     // 主题由客户端根据 localStorage 决定，服务端产物必然不同，明确跳过水合警告。
     <html lang="zh-CN" suppressHydrationWarning>

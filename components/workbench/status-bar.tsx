@@ -50,15 +50,10 @@ export function StatusBar({
   const t = useT();
 
   return (
-    <footer
-      aria-label={t("a11y.editorStatusBar")}
-      className={STATUS_BAR_CLASS}
-    >
+    <footer aria-label={t("a11y.editorStatusBar")} className={STATUS_BAR_CLASS}>
       <div className="flex min-w-0 items-center gap-3">
         <span>{t("status.cursor", { line, col })}</span>
-        {selectionLength > 0 ? (
-          <span>{t("status.selection", { n: selectionLength })}</span>
-        ) : null}
+        {selectionLength > 0 ? <span>{t("status.selection", { n: selectionLength })}</span> : null}
       </div>
 
       <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">

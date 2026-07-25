@@ -25,9 +25,9 @@ describe("LovType 主题选择卡", () => {
     );
 
     expect(screen.getAllByRole("radio")).toHaveLength(7);
-    expect(
-      screen.getByRole("radio", { name: /Classic|经典/ }).getAttribute("aria-checked"),
-    ).toBe("true");
+    expect(screen.getByRole("radio", { name: /Classic|经典/ }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
     expect(view.container.querySelectorAll('[data-theme-variant="xhs"]')).toHaveLength(7);
     expect(view.container.querySelector('[data-theme-preview="deepsea"]')).not.toBeNull();
 
@@ -50,9 +50,9 @@ describe("LovType 主题选择卡", () => {
     expect(screen.getAllByRole("radio")).toHaveLength(7);
     expect(view.container.querySelectorAll('[data-theme-variant="wechat"]')).toHaveLength(7);
     expect(screen.getAllByText("Title")).toHaveLength(7);
-    expect(
-      screen.getByRole("radio", { name: /Deep Sea|深海/ }).getAttribute("aria-checked"),
-    ).toBe("true");
+    expect(screen.getByRole("radio", { name: /Deep Sea|深海/ }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
   });
 
   it("展示 LovType 自定义主题入口、已保存主题和本地主题操作", () => {

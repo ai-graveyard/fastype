@@ -4,11 +4,7 @@ import * as React from "react";
 
 import { StorageKey } from "@/lib/storage";
 import { createLocalStore } from "@/lib/storage/store";
-import {
-  DEFAULT_USER_PROFILE,
-  parseUserProfile,
-  type UserProfile,
-} from "@/lib/user-profile";
+import { DEFAULT_USER_PROFILE, parseUserProfile, type UserProfile } from "@/lib/user-profile";
 
 const profileStore = createLocalStore(
   StorageKey.userProfile,
@@ -48,4 +44,3 @@ export function useUserProfile(): UserProfileContextValue {
   if (!context) throw new Error("useUserProfile must be used inside <UserProfileProvider>");
   return context;
 }
-

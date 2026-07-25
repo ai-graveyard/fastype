@@ -52,11 +52,7 @@ interface TopBarProps {
   onOpenSettings: () => void;
 }
 
-export function TopBar({
-  view,
-  onViewChange,
-  onOpenSettings,
-}: TopBarProps) {
+export function TopBar({ view, onViewChange, onOpenSettings }: TopBarProps) {
   const { t, themeMode, setThemeMode } = usePrefs();
   const { configured: aiConfigured } = useAi();
   const { filename, setFilename, newDocument, openFile, downloadMarkdown } = useDocument();
@@ -251,11 +247,7 @@ export function TopBar({
           className="ml-1 hidden border-brand-primary/40 text-brand-primary hover:border-brand-primary/60 hover:bg-brand-primary/10 hover:text-brand-primary sm:inline-flex"
           asChild
         >
-          <a
-            href="https://lovtype.com"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href="https://lovtype.com" target="_blank" rel="noopener noreferrer">
             {t("app.useProfessional")}
           </a>
         </Button>

@@ -217,9 +217,7 @@ export function parseSseLine(line: string): SseEvent | null {
       choices?: Array<{ delta?: { content?: unknown } }>;
     };
     const delta = payload.choices?.[0]?.delta?.content;
-    return typeof delta === "string" && delta.length > 0
-      ? { type: "delta", text: delta }
-      : null;
+    return typeof delta === "string" && delta.length > 0 ? { type: "delta", text: delta } : null;
   } catch {
     // 中途被截断的 JSON 行直接跳过，下一轮 buffer 会补齐。
     return null;
@@ -227,10 +225,7 @@ export function parseSseLine(line: string): SseEvent | null {
 }
 
 /** 连接测试：发一个极短的请求，验证鉴权、模型名和响应格式（PRD FT-AI-002）。 */
-export async function testConnection(
-  config: AiConfig,
-  signal?: AbortSignal,
-): Promise<AiResult> {
+export async function testConnection(config: AiConfig, signal?: AbortSignal): Promise<AiResult> {
   return request(config, {
     messages: [{ role: "user", content: "ping" }],
     stream: false,

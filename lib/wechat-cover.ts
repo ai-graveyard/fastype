@@ -78,21 +78,12 @@ export function parseWechatCover(raw: unknown): WechatCover | null {
         ? Math.min(0.85, Math.max(0, input.overlayOpacity))
         : DEFAULT_WECHAT_COVER.overlayOpacity,
     align: pick(input.align, ["left", "center", "right"], DEFAULT_WECHAT_COVER.align),
-    position: pick(
-      input.position,
-      ["top", "center", "bottom"],
-      DEFAULT_WECHAT_COVER.position,
-    ),
+    position: pick(input.position, ["top", "center", "bottom"], DEFAULT_WECHAT_COVER.position),
     showProfile:
-      typeof input.showProfile === "boolean"
-        ? input.showProfile
-        : DEFAULT_WECHAT_COVER.showProfile,
+      typeof input.showProfile === "boolean" ? input.showProfile : DEFAULT_WECHAT_COVER.showProfile,
   };
 }
 
-export function wechatCoverFilename(
-  docBaseName: string,
-  format: WechatCoverFormat,
-): string {
+export function wechatCoverFilename(docBaseName: string, format: WechatCoverFormat): string {
   return `${docBaseName}-wechat-cover-${format === "wide" ? "900x383" : "500x500"}.png`;
 }

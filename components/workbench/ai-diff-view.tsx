@@ -22,10 +22,7 @@ export function AiDiffView({
   if (!hasResult) {
     return (
       <div
-        className={cn(
-          "flex items-center justify-center text-sm text-muted-foreground",
-          className,
-        )}
+        className={cn("flex items-center justify-center text-sm text-muted-foreground", className)}
       >
         {emptyLabel}
       </div>

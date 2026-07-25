@@ -9,16 +9,17 @@ FasType 是一个**无需账号、没有后端**的纯前端 Markdown 写作工�
 ## 提交前必须跑通
 
 ```bash
-pnpm check   # typecheck + lint + test + build，四项都要过
+pnpm check   # typecheck + lint + format:check + test + build，五项都要过
 ```
 
 也可以单独跑：
 
 ```bash
-pnpm typecheck   # TypeScript
-pnpm lint        # ESLint
-pnpm test        # Vitest（jsdom 环境，tests/**/*.test.ts(x)）
-pnpm build       # 静态导出到 out/
+pnpm typecheck      # TypeScript
+pnpm lint           # ESLint
+pnpm format:check   # Prettier（只查不改；`pnpm format` 直接改写）
+pnpm test           # Vitest（jsdom 环境，tests/**/*.test.ts(x)）
+pnpm build          # 静态导出到 out/
 ```
 
 改动前先跑一次确认基线是绿的，改完再跑一次确认没有引入新问题。不要跳过 `pnpm check` 中的任何一步。
@@ -40,12 +41,12 @@ pnpm build       # 静态导出到 out/
 app/                    Next.js App Router（只有一个页面）
 components/
   ui/                   Shadcn 风格基础组件
-  common/               跨工作区共用组件（配额警告横幅、颜色选择器等）
+  common/               跨工作区共用组件（设置卡片、配额警告横幅、颜色选择器等）
   providers/            偏好、样式、文档、AI 的 context
   editor/               CodeMirror 封装
   workbench/            工作台各区域（小红书 / 公众号 / 编辑器三视图）
 lib/
-  markdown/             解析、消毒、字数、分页算法
+  markdown/             解析、消毒、字数、分页算法、Front Matter 切分
   render/               小红书卡片样式与布局、公众号内联样式
   themes/               结构化主题配置（xhs.ts / wechat.ts）
   ai/                   OpenAI 兼容客户端与错误分类
@@ -86,6 +87,8 @@ src-tauri/              Tauri 桌面客户端外壳（只是把 out/ 装进原�
 - TypeScript `strict` 模式开启（见 `tsconfig.json`），不要用 `any` 绕过类型检查。
 - 路径别名 `@/*` 指向仓库根目录。
 - ESLint 用 `eslint-config-next`（core-web-vitals + typescript），提交前必须 `pnpm lint` 通过。
+- 格式交给 Prettier（`printWidth: 100`，其余用默认值），不要手工排版；`*.md` 不归它管。
+- 签名需要但用不上的参数用 `_` 前缀，ESLint 已按这个约定放行。
 - 不要写解释代码在做什么的注释；只在有非显而易见的取舍或约束时才加注释。
 - 不引入新的运行时依赖除非确有必要；这是一个刻意保持轻量、无后端的项目。
 

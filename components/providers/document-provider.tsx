@@ -38,7 +38,12 @@ function buildFirstVisitDraft(fallback: Draft): Draft {
 }
 
 /** 草稿独立成一条记录，清样式或 AI 配置不会误删正文（PRD FT-SET-001）。 */
-const draftStore = createLocalStore(StorageKey.draft, parseDraft, DEFAULT_DRAFT, buildFirstVisitDraft);
+const draftStore = createLocalStore(
+  StorageKey.draft,
+  parseDraft,
+  DEFAULT_DRAFT,
+  buildFirstVisitDraft,
+);
 
 interface PendingAction {
   run: () => void | Promise<void>;

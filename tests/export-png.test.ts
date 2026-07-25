@@ -1,11 +1,7 @@
 import JSZip from "jszip";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  buildPagesZip,
-  collectCrossOriginImages,
-  findUnexportableImages,
-} from "@/lib/export/png";
+import { buildPagesZip, collectCrossOriginImages, findUnexportableImages } from "@/lib/export/png";
 
 describe("小红书 ZIP 导出", () => {
   it("只打包成功生成的 PNG，并保留原页码", async () => {
@@ -20,10 +16,7 @@ describe("小红书 ZIP 导出", () => {
 
     expect(archive?.included).toBe(2);
     const zip = await JSZip.loadAsync(await archive!.blob.arrayBuffer());
-    expect(Object.keys(zip.files)).toEqual([
-      "我的文章-xhs-01.png",
-      "我的文章-xhs-03.png",
-    ]);
+    expect(Object.keys(zip.files)).toEqual(["我的文章-xhs-01.png", "我的文章-xhs-03.png"]);
     expect(await zip.file("我的文章-xhs-01.png")?.async("text")).toBe("page one");
   });
 

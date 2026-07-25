@@ -112,8 +112,7 @@ export const zh = {
     readFailed: "读取文件失败：{reason}",
     tooLarge: "文档较大（{size}），编辑和预览可能变慢。仍可继续使用。",
     confirmReplaceTitle: "当前文档还有未保存的更改",
-    confirmReplaceBody:
-      "「{name}」的更改还没有写回文件或下载。继续操作会用新内容替换当前文档。",
+    confirmReplaceBody: "「{name}」的更改还没有写回文件或下载。继续操作会用新内容替换当前文档。",
     confirmReplaceSave: "先下载再继续",
     confirmReplaceDiscard: "放弃更改并继续",
     beforeUnload: "当前文档有未保存的更改。",
@@ -196,7 +195,8 @@ export const zh = {
     tabEnhance: "增强",
     imageContent: "图片正文",
     autoFillFromBody: "自动填充",
-    autoFillFromBodyDesc: "标题取图片正文的一级标题，正文取图片正文前 1000 字；点击后会覆盖当前标题和正文。",
+    autoFillFromBodyDesc:
+      "标题取图片正文的一级标题，正文取图片正文前 1000 字；点击后会覆盖当前标题和正文。",
     textContent: "正文",
     textTitle: "标题",
     textTitleDesc: "小红书笔记顶部的标题，不会修改图片正文或导出卡片标题。",
@@ -257,7 +257,8 @@ export const zh = {
     codeFontSize: "代码块字号",
     codeRadius: "代码块圆角",
     identifierTitle: "用户标识",
-    identifierDescription: "在正文导出图片的四角显示头像、昵称、日期和签名，也可以单独选择在封面展示。",
+    identifierDescription:
+      "在正文导出图片的四角显示头像、昵称、日期和签名，也可以单独选择在封面展示。",
     identifierEnabled: "显示用户标识",
     identifierEditHint: "点击编辑",
     identifierPosition: "标识位置",
@@ -585,7 +586,8 @@ export const zh = {
     letterSpacing: "字间距",
     textIndent: "段落首行缩进",
     headingSystem: "标题",
-    headingSystemDesc: "标题模板全局统一，H1/H2/H3 可以分别设置字号比例、间距、字重、对齐和自动编号。",
+    headingSystemDesc:
+      "标题模板全局统一，H1/H2/H3 可以分别设置字号比例、间距、字重、对齐和自动编号。",
     headingTemplate: "模板",
     headingTemplateClassic: "经典",
     headingTemplateHighlight: "高亮",
@@ -719,7 +721,8 @@ export const zh = {
     guideAuthorRight: "右侧",
     guideAuthorHidden: "隐藏",
     guideFooter: "底部补充文案",
-    localFeatureNote: "FasType 保持纯前端：排版设置、身份卡片和引导卡都只保存在当前浏览器，不依赖账号、积分或服务端。",
+    localFeatureNote:
+      "FasType 保持纯前端：排版设置、身份卡片和引导卡都只保存在当前浏览器，不依赖账号、积分或服务端。",
     fontFamily: "字体",
     fontSize: "字号",
     lineHeight: "行高",
@@ -777,7 +780,8 @@ export const zh = {
     sensitive: "去敏感词",
     sensitiveDescription: "已按当前平台语境降低风险表达。确认结果后再替换当前文档。",
     pendingHint: "点击下方按钮开始处理当前文档。",
-    pendingDescription: "将把编辑区完整正文发送给 AI 进行处理，原文不会自动被覆盖。处理完成后可预览结果并决定是否替换。",
+    pendingDescription:
+      "将把编辑区完整正文发送给 AI 进行处理，原文不会自动被覆盖。处理完成后可预览结果并决定是否替换。",
     startAction: "开始处理",
     notConfigured: "未配置模型",
     configurePrompt: "填写 Base URL、API Key 和模型名即可使用 AI 全文优化。",
@@ -902,7 +906,8 @@ export const zh = {
     clearStyles: "清除平台样式",
     clearAi: "清除 AI 配置",
     clearAll: "清除全部本地数据",
-    clearDraftDesc: "删除浏览器里保存的正文和文件名，并恢复为默认的使用教程。当前未下载的内容将无法恢复。",
+    clearDraftDesc:
+      "删除浏览器里保存的正文和文件名，并恢复为默认的使用教程。当前未下载的内容将无法恢复。",
     clearStylesDesc: "把小红书和公众号样式恢复为默认值，并删除已保存的自定义主题。",
     clearAiDesc: "删除 Base URL、API Key、模型名和自定义提示词。",
     clearAllDesc: "删除草稿、样式、AI 配置、语言和主题在内的全部本地数据，并恢复为默认的使用教程。",
@@ -910,8 +915,7 @@ export const zh = {
     cleared: "已清除",
     storageUnavailable:
       "浏览器禁用了 localStorage，本次的内容和配置无法自动恢复。仍可正常编辑并下载 Markdown。",
-    storageQuota:
-      "浏览器本地存储已满，草稿停止自动保存。请立即下载 Markdown，避免丢失内容。",
+    storageQuota: "浏览器本地存储已满，草稿停止自动保存。请立即下载 Markdown，避免丢失内容。",
     storageCorrupted: "检测到损坏的本地数据，已跳过该部分并使用默认值。",
     about: "关于",
     aboutDesc: "开源、纯前端的多平台 Markdown 排版工具。",

@@ -27,7 +27,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ColorField, Field, Label, Separator, SliderField, Switch } from "@/components/ui/misc";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetBody,
@@ -99,7 +105,6 @@ const HEADING_TEMPLATE_LABELS: Record<XhsHeadingTemplate, TKey> = {
   dot: "xhs.headingDot",
   corner: "xhs.headingCorner",
 };
-
 
 export function AlignPicker({
   value,
@@ -173,8 +178,10 @@ export function HeadingTemplatePicker({
                   template === "underline" && "border-b-2 border-brand-primary pb-0.5",
                   template === "accent" && "border-l-2 border-brand-primary pl-1.5",
                   template === "block" && "rounded-full border border-brand-primary px-2 py-0.5",
-                  template === "elegant" && "before:mr-1 before:inline-block before:w-2 before:border-t before:border-brand-primary after:ml-1 after:inline-block after:w-2 after:border-t after:border-brand-primary",
-                  template === "dot" && "flex items-center gap-1.5 before:inline-block before:size-1.5 before:rounded-full before:bg-brand-primary",
+                  template === "elegant" &&
+                    "before:mr-1 before:inline-block before:w-2 before:border-t before:border-brand-primary after:ml-1 after:inline-block after:w-2 after:border-t after:border-brand-primary",
+                  template === "dot" &&
+                    "flex items-center gap-1.5 before:inline-block before:size-1.5 before:rounded-full before:bg-brand-primary",
                   template === "corner" &&
                     "relative px-2.5 py-1 before:absolute before:left-0 before:top-0 before:size-2 before:border-l-2 before:border-t-2 before:border-brand-primary after:absolute after:bottom-0 after:right-0 after:size-2 after:border-b-2 after:border-r-2 after:border-brand-primary",
                 )}
@@ -391,7 +398,9 @@ export function HeadingLevelEditor({
                     `xhs.number${position[0].toUpperCase()}${position.slice(1)}` as "xhs.numberBehind",
                   ),
                 }))}
-                onChange={(labelPosition) => onChange({ number: { ...value.number, labelPosition } })}
+                onChange={(labelPosition) =>
+                  onChange({ number: { ...value.number, labelPosition } })
+                }
               />
               <SliderField
                 label={t("xhs.headingLabelSize")}
@@ -409,9 +418,7 @@ export function HeadingLevelEditor({
                 min={0.05}
                 max={1}
                 step={0.05}
-                onChange={(labelOpacity) =>
-                  onChange({ number: { ...value.number, labelOpacity } })
-                }
+                onChange={(labelOpacity) => onChange({ number: { ...value.number, labelOpacity } })}
               />
               <ColorField
                 label={t("xhs.headingLabelColor")}
@@ -523,9 +530,18 @@ function ThemeSwatch({
         </span>
       )}
       <span className="block space-y-1 px-2 py-2">
-        <span className="block h-2 rounded-sm" style={{ backgroundColor: colors.sectionBackground }} />
-        <span className="block h-1.5 w-4/5 rounded-sm" style={{ backgroundColor: colors.textColor, opacity: 0.22 }} />
-        <span className="block h-1.5 w-3/4 rounded-sm" style={{ backgroundColor: colors.accentColor, opacity: 0.24 }} />
+        <span
+          className="block h-2 rounded-sm"
+          style={{ backgroundColor: colors.sectionBackground }}
+        />
+        <span
+          className="block h-1.5 w-4/5 rounded-sm"
+          style={{ backgroundColor: colors.textColor, opacity: 0.22 }}
+        />
+        <span
+          className="block h-1.5 w-3/4 rounded-sm"
+          style={{ backgroundColor: colors.accentColor, opacity: 0.24 }}
+        />
       </span>
     </span>
   );
@@ -570,8 +586,7 @@ export function ThemePicker({
     themeId: value,
     name: selectedCustomTheme?.name ?? "",
   }));
-  const name =
-    nameDraft.themeId === value ? nameDraft.name : (selectedCustomTheme?.name ?? "");
+  const name = nameDraft.themeId === value ? nameDraft.name : (selectedCustomTheme?.name ?? "");
   const setName = (nextName: string) => setNameDraft({ themeId: value, name: nextName });
 
   const cardClass = (selected: boolean) =>
@@ -585,11 +600,7 @@ export function ThemePicker({
   return (
     <div className="space-y-2.5">
       {showLabel ? <p className="text-sm font-medium">{label}</p> : null}
-      <div
-        role="radiogroup"
-        aria-label={label}
-        className="grid grid-cols-2 gap-2 sm:grid-cols-4"
-      >
+      <div role="radiogroup" aria-label={label} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {themes.map((theme) => {
           const colors = themePreviewColors(theme, variant);
           const selected = value === theme.id;
@@ -608,7 +619,9 @@ export function ThemePicker({
                 className={cardClass(selected)}
               >
                 <ThemeSwatch id={theme.id} colors={colors} variant={variant} />
-                <span className="mt-2 block truncate text-center text-[11px] leading-tight">{themeLabel}</span>
+                <span className="mt-2 block truncate text-center text-[11px] leading-tight">
+                  {themeLabel}
+                </span>
               </button>
               {onCopyTheme ? (
                 <button
@@ -645,7 +658,9 @@ export function ThemePicker({
               variant={variant}
               custom
             />
-            <span className="mt-2 block truncate text-center text-[11px] leading-tight">{t("common.customTheme")}</span>
+            <span className="mt-2 block truncate text-center text-[11px] leading-tight">
+              {t("common.customTheme")}
+            </span>
           </button>
         ) : null}
         {customThemes.map((savedTheme) => {
@@ -663,15 +678,39 @@ export function ThemePicker({
                 }}
                 className={cardClass(selected)}
               >
-                <ThemeSwatch id={savedTheme.id} colors={customThemePreviewColors(savedTheme.style, variant)} variant={variant} />
-                <span className="mt-2 block truncate text-center text-[11px] leading-tight">{savedTheme.name}</span>
+                <ThemeSwatch
+                  id={savedTheme.id}
+                  colors={customThemePreviewColors(savedTheme.style, variant)}
+                  variant={variant}
+                />
+                <span className="mt-2 block truncate text-center text-[11px] leading-tight">
+                  {savedTheme.name}
+                </span>
               </button>
               <span className="absolute right-1 top-1 flex gap-0.5">
                 {onCopyTheme ? (
-                  <button type="button" className="rounded-full border bg-background/90 p-1 text-muted-foreground hover:text-primary" aria-label={`${t("common.copyTheme")} ${savedTheme.name}`} onClick={() => { const copyName = `${savedTheme.name} ${t("common.copySuffix")}`; setNameDraft({ themeId: "", name: copyName }); onCopyTheme(savedTheme.id, copyName); }}><Copy className="size-3" /></button>
+                  <button
+                    type="button"
+                    className="rounded-full border bg-background/90 p-1 text-muted-foreground hover:text-primary"
+                    aria-label={`${t("common.copyTheme")} ${savedTheme.name}`}
+                    onClick={() => {
+                      const copyName = `${savedTheme.name} ${t("common.copySuffix")}`;
+                      setNameDraft({ themeId: "", name: copyName });
+                      onCopyTheme(savedTheme.id, copyName);
+                    }}
+                  >
+                    <Copy className="size-3" />
+                  </button>
                 ) : null}
                 {onDeleteCustomTheme ? (
-                  <button type="button" className="rounded-full border bg-background/90 p-1 text-muted-foreground hover:text-destructive" aria-label={`${t("common.deleteTheme")} ${savedTheme.name}`} onClick={() => setPendingDeleteId(savedTheme.id)}><Trash2 className="size-3" /></button>
+                  <button
+                    type="button"
+                    className="rounded-full border bg-background/90 p-1 text-muted-foreground hover:text-destructive"
+                    aria-label={`${t("common.deleteTheme")} ${savedTheme.name}`}
+                    onClick={() => setPendingDeleteId(savedTheme.id)}
+                  >
+                    <Trash2 className="size-3" />
+                  </button>
                 ) : null}
               </span>
             </div>
@@ -680,24 +719,78 @@ export function ThemePicker({
       </div>
       {value === CUSTOM_THEME_DRAFT_ID || selectedCustomTheme ? (
         <div className="space-y-2 rounded-xl border bg-muted/20 p-3">
-          <label className="text-xs font-medium" htmlFor={`${variant}-custom-theme-name`}>{t("common.customThemeName")}</label>
+          <label className="text-xs font-medium" htmlFor={`${variant}-custom-theme-name`}>
+            {t("common.customThemeName")}
+          </label>
           <div className="flex gap-2">
-            <Input id={`${variant}-custom-theme-name`} value={name} onChange={(event) => setName(event.target.value)} placeholder={t("common.customThemeNamePlaceholder")} />
+            <Input
+              id={`${variant}-custom-theme-name`}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={t("common.customThemeNamePlaceholder")}
+            />
             {selectedCustomTheme ? (
               <>
-                <Button variant="outline" size="sm" onClick={() => { onSaveCustomTheme?.(name); toast.success(t("common.customThemeSaved")); }} disabled={!name.trim()}>{t("common.saveAsNewTheme")}</Button>
-                <Button size="sm" onClick={() => { onUpdateCustomTheme?.(name); toast.success(t("common.customThemeUpdated")); }} disabled={!name.trim() || !isSelectedCustomThemeDirty}>{t("common.updateCurrentTheme")}</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onSaveCustomTheme?.(name);
+                    toast.success(t("common.customThemeSaved"));
+                  }}
+                  disabled={!name.trim()}
+                >
+                  {t("common.saveAsNewTheme")}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    onUpdateCustomTheme?.(name);
+                    toast.success(t("common.customThemeUpdated"));
+                  }}
+                  disabled={!name.trim() || !isSelectedCustomThemeDirty}
+                >
+                  {t("common.updateCurrentTheme")}
+                </Button>
               </>
             ) : (
-              <Button size="sm" onClick={() => { onSaveCustomTheme?.(name); toast.success(t("common.customThemeSaved")); }} disabled={!name.trim()}>{t("common.saveCustomTheme")}</Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  onSaveCustomTheme?.(name);
+                  toast.success(t("common.customThemeSaved"));
+                }}
+                disabled={!name.trim()}
+              >
+                {t("common.saveCustomTheme")}
+              </Button>
             )}
           </div>
         </div>
       ) : null}
-      <Dialog open={pendingDeleteId !== null} onOpenChange={(open) => !open && setPendingDeleteId(null)}>
+      <Dialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+      >
         <DialogContent closeLabel={t("common.close")}>
-          <DialogHeader><DialogTitle>{t("common.deleteTheme")}</DialogTitle><DialogDescription>{t("common.deleteThemeConfirm")}</DialogDescription></DialogHeader>
-          <DialogFooter><Button variant="outline" onClick={() => setPendingDeleteId(null)}>{t("common.cancel")}</Button><Button variant="destructive" onClick={() => { if (pendingDeleteId) onDeleteCustomTheme?.(pendingDeleteId); setPendingDeleteId(null); }}>{t("common.delete")}</Button></DialogFooter>
+          <DialogHeader>
+            <DialogTitle>{t("common.deleteTheme")}</DialogTitle>
+            <DialogDescription>{t("common.deleteThemeConfirm")}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingDeleteId(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (pendingDeleteId) onDeleteCustomTheme?.(pendingDeleteId);
+                setPendingDeleteId(null);
+              }}
+            >
+              {t("common.delete")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -723,13 +816,40 @@ export function FontPicker({
             onClick={() => onChange(font)}
             className={cn(
               "relative cursor-pointer rounded-lg border-2 p-2 text-center transition-all",
-              value === font ? "border-brand-primary ring-2 ring-brand-primary/20" : "border-border hover:border-muted-foreground/40",
+              value === font
+                ? "border-brand-primary ring-2 ring-brand-primary/20"
+                : "border-border hover:border-muted-foreground/40",
             )}
           >
             <span className="block text-base leading-none" style={{ fontFamily: fontStack(font) }}>
-              Aa {font === "sans" ? "现" : font === "serif" ? "宋" : font === "hei" ? "黑" : font === "kai" ? "楷" : font === "fangsong" ? "仿" : font === "rounded" ? "圆" : font === "mono" ? "等" : font === "xingkai" ? "行" : font === "lishu" ? "隶" : font === "youyuan" ? "幼" : font === "xinwei" ? "魏" : "琥"}
+              Aa{" "}
+              {font === "sans"
+                ? "现"
+                : font === "serif"
+                  ? "宋"
+                  : font === "hei"
+                    ? "黑"
+                    : font === "kai"
+                      ? "楷"
+                      : font === "fangsong"
+                        ? "仿"
+                        : font === "rounded"
+                          ? "圆"
+                          : font === "mono"
+                            ? "等"
+                            : font === "xingkai"
+                              ? "行"
+                              : font === "lishu"
+                                ? "隶"
+                                : font === "youyuan"
+                                  ? "幼"
+                                  : font === "xinwei"
+                                    ? "魏"
+                                    : "琥"}
             </span>
-            <span className="mt-1 block text-[11px] text-muted-foreground">{t(FONT_LABEL_KEYS[font])}</span>
+            <span className="mt-1 block text-[11px] text-muted-foreground">
+              {t(FONT_LABEL_KEYS[font])}
+            </span>
           </button>
         ))}
       </div>
@@ -889,9 +1009,7 @@ export function XhsStyleDrawer({
             </div>
             <Switch
               checked={xhs.cover.enabled}
-              onCheckedChange={(enabled) =>
-                setXhs({ cover: { ...xhs.cover, enabled } })
-              }
+              onCheckedChange={(enabled) => setXhs({ cover: { ...xhs.cover, enabled } })}
               aria-label={t("xhs.bigTextCover")}
             />
           </div>
@@ -927,9 +1045,7 @@ export function XhsStyleDrawer({
               maxLength={120}
               rows={3}
               disabled={!xhs.cover.enabled}
-              onChange={(event) =>
-                setXhs({ cover: { ...xhs.cover, text: event.target.value } })
-              }
+              onChange={(event) => setXhs({ cover: { ...xhs.cover, text: event.target.value } })}
               className="w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             />
           </Field>
@@ -959,9 +1075,7 @@ export function XhsStyleDrawer({
             label={t("xhs.coverBackground")}
             value={xhs.cover.background || xhs.accentColor}
             themeColor={xhs.accentColor}
-            onChange={(background) =>
-              setXhs({ cover: { ...xhs.cover, background } })
-            }
+            onChange={(background) => setXhs({ cover: { ...xhs.cover, background } })}
           />
           <ColorField
             label={t("xhs.coverTextColor")}
@@ -1048,9 +1162,7 @@ export function WechatStyleDrawer({
               <SelectContent>
                 {WECHAT_FONT_CHOICES.map((font) => (
                   <SelectItem key={font} value={font}>
-                    {t(
-                      `wechat.font${font[0].toUpperCase()}${font.slice(1)}` as "wechat.fontSans",
-                    )}
+                    {t(`wechat.font${font[0].toUpperCase()}${font.slice(1)}` as "wechat.fontSans")}
                   </SelectItem>
                 ))}
               </SelectContent>

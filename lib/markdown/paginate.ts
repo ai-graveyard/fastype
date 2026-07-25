@@ -13,14 +13,7 @@
  *    绝不静默裁切。
  */
 
-export type BlockKind =
-  | "heading"
-  | "paragraph"
-  | "list"
-  | "code"
-  | "table"
-  | "media"
-  | "other";
+export type BlockKind = "heading" | "paragraph" | "list" | "code" | "table" | "media" | "other";
 
 export interface MeasuredChild {
   /** 子项在父块 children 中的下标。 */

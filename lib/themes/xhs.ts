@@ -9,10 +9,7 @@ import {
   type HeadingNumberStyle,
   type ThemeMeta,
 } from "./types";
-import {
-  XHS_IDENTIFIER_BADGES,
-  type XhsIdentifierBadge,
-} from "@/components/ui/identifier-badges";
+import { XHS_IDENTIFIER_BADGES, type XhsIdentifierBadge } from "@/components/ui/identifier-badges";
 
 export {
   HEADING_NUMBER_LABEL_POSITIONS,
@@ -72,11 +69,7 @@ export const XHS_HEADING_TEMPLATES = [
 
 export type XhsHeadingTemplate = (typeof XHS_HEADING_TEMPLATES)[number];
 export type XhsTextAlign = "left" | "center" | "right";
-export type XhsIdentifierPosition =
-  | "top-left"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-right";
+export type XhsIdentifierPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type XhsLinkUnderline = "solid" | "dashed" | "none";
 export type XhsUnorderedListStyle = "disc" | "circle" | "square";
 export type XhsOrderedListStyle = "decimal" | "lower-alpha" | "lower-roman" | "cjk-ideographic";
@@ -757,17 +750,18 @@ function parseHeadingNumber(raw: unknown, fallback: HeadingNumberStyle): Heading
     color: optionalColor(input.color, fallback.color),
     opacity: num(input.opacity, fallback.opacity, 0.02, 1),
     labelText: text(input.labelText, fallback.labelText),
-    labelPosition: pick(input.labelPosition, HEADING_NUMBER_LABEL_POSITIONS, fallback.labelPosition),
+    labelPosition: pick(
+      input.labelPosition,
+      HEADING_NUMBER_LABEL_POSITIONS,
+      fallback.labelPosition,
+    ),
     labelSizeMultiplier: num(input.labelSizeMultiplier, fallback.labelSizeMultiplier, 0.4, 1.5),
     labelColor: optionalColor(input.labelColor, fallback.labelColor),
     labelOpacity: num(input.labelOpacity, fallback.labelOpacity, 0.02, 1),
   };
 }
 
-function parseHeadingLevel(
-  raw: unknown,
-  fallback: XhsHeadingLevelStyle,
-): XhsHeadingLevelStyle {
+function parseHeadingLevel(raw: unknown, fallback: XhsHeadingLevelStyle): XhsHeadingLevelStyle {
   const input = raw && typeof raw === "object" ? (raw as Partial<XhsHeadingLevelStyle>) : {};
   return {
     scale: num(input.scale, fallback.scale, 0.7, 2.4),
@@ -813,26 +807,25 @@ function parseCoverGraphics(raw: unknown): XhsCoverGraphic[] {
   if (!Array.isArray(raw)) return [];
   const usedIds = new Set<string>();
 
-  return raw
-    .slice(0, XHS_COVER_GRAPHICS_LIMIT)
-    .flatMap((candidate, index): XhsCoverGraphic[] => {
-      if (!candidate || typeof candidate !== "object") return [];
-      const input = candidate as Partial<XhsCoverGraphic>;
-      if (!XHS_COVER_GRAPHIC_ICONS.includes(input.icon as XhsCoverGraphicIcon)) return [];
+  return raw.slice(0, XHS_COVER_GRAPHICS_LIMIT).flatMap((candidate, index): XhsCoverGraphic[] => {
+    if (!candidate || typeof candidate !== "object") return [];
+    const input = candidate as Partial<XhsCoverGraphic>;
+    if (!XHS_COVER_GRAPHIC_ICONS.includes(input.icon as XhsCoverGraphicIcon)) return [];
 
-      const rawId =
-        typeof input.id === "string" && input.id.trim()
-          ? input.id.trim().slice(0, 80)
-          : `cover-graphic-${index + 1}`;
-      let id = rawId;
-      let suffix = 2;
-      while (usedIds.has(id)) {
-        id = `${rawId}-${suffix}`;
-        suffix += 1;
-      }
-      usedIds.add(id);
+    const rawId =
+      typeof input.id === "string" && input.id.trim()
+        ? input.id.trim().slice(0, 80)
+        : `cover-graphic-${index + 1}`;
+    let id = rawId;
+    let suffix = 2;
+    while (usedIds.has(id)) {
+      id = `${rawId}-${suffix}`;
+      suffix += 1;
+    }
+    usedIds.add(id);
 
-      return [{
+    return [
+      {
         id,
         icon: input.icon as XhsCoverGraphicIcon,
         x: num(input.x, 50, 0, 100),
@@ -842,8 +835,9 @@ function parseCoverGraphics(raw: unknown): XhsCoverGraphic[] {
         color: color(input.color, "#ffffff"),
         opacity: num(input.opacity, 0.85, 0.1, 1),
         strokeWidth: num(input.strokeWidth, 2, 1, 5),
-      }];
-    });
+      },
+    ];
+  });
 }
 
 function isIdentifierPosition(value: unknown): value is XhsIdentifierPosition {
@@ -858,8 +852,7 @@ function isIdentifierPosition(value: unknown): value is XhsIdentifierPosition {
 function parseIdentifier(raw: unknown): XhsIdentifierStyle {
   const input = raw && typeof raw === "object" ? (raw as Partial<XhsIdentifierStyle>) : {};
   return {
-    enabled:
-      typeof input.enabled === "boolean" ? input.enabled : DEFAULT_XHS_IDENTIFIER.enabled,
+    enabled: typeof input.enabled === "boolean" ? input.enabled : DEFAULT_XHS_IDENTIFIER.enabled,
     showOnCover:
       typeof input.showOnCover === "boolean"
         ? input.showOnCover
@@ -949,9 +942,7 @@ function parseQrCode(raw: unknown): XhsQrCodeStyle {
   return {
     enabled: typeof input.enabled === "boolean" ? input.enabled : DEFAULT_XHS_QR_CODE.enabled,
     showOnCover:
-      typeof input.showOnCover === "boolean"
-        ? input.showOnCover
-        : DEFAULT_XHS_QR_CODE.showOnCover,
+      typeof input.showOnCover === "boolean" ? input.showOnCover : DEFAULT_XHS_QR_CODE.showOnCover,
     url: typeof input.url === "string" ? input.url.slice(0, 2_000) : DEFAULT_XHS_QR_CODE.url,
     position: isIdentifierPosition(input.position) ? input.position : DEFAULT_XHS_QR_CODE.position,
     scale: num(input.scale, DEFAULT_XHS_QR_CODE.scale, 0.5, 2),
@@ -987,9 +978,7 @@ export function parseXhsStyle(raw: unknown): XhsStyle | null {
       typeof input.showPageNumberOnCover === "boolean"
         ? input.showPageNumberOnCover
         : d.showPageNumberOnCover,
-    pageNumberAlign: isAlign(input.pageNumberAlign)
-      ? input.pageNumberAlign
-      : d.pageNumberAlign,
+    pageNumberAlign: isAlign(input.pageNumberAlign) ? input.pageNumberAlign : d.pageNumberAlign,
     pageNumberScale: num(
       input.pageNumberScale,
       d.pageNumberScale,
@@ -1015,7 +1004,9 @@ export function parseXhsStyle(raw: unknown): XhsStyle | null {
   };
 }
 
-export function getXhsCanvasSize(style: Pick<XhsStyle, "aspectRatio" | "customWidth" | "customHeight">): {
+export function getXhsCanvasSize(
+  style: Pick<XhsStyle, "aspectRatio" | "customWidth" | "customHeight">,
+): {
   width: number;
   height: number;
 } {

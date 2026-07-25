@@ -36,4 +36,3 @@ export function parseUserProfile(raw: unknown): UserProfile | null {
         : DEFAULT_USER_PROFILE.slogan,
   };
 }
-

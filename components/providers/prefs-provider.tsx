@@ -2,13 +2,7 @@
 
 import * as React from "react";
 
-import {
-  detectLocale,
-  translate,
-  type Locale,
-  type TKey,
-  type TParams,
-} from "@/lib/i18n";
+import { detectLocale, translate, type Locale, type TKey, type TParams } from "@/lib/i18n";
 import { DEFAULT_PREFS, parsePrefs, type Prefs } from "@/lib/prefs";
 import { StorageKey } from "@/lib/storage";
 import { clientOnlyStore, createLocalStore } from "@/lib/storage/store";
@@ -16,18 +10,13 @@ import type { MarkdownPreviewTheme } from "@/lib/themes/markdown";
 import { DEFAULT_RATIOS, type ThemeMode, type ViewId } from "@/lib/types";
 
 /** 首次访问优先跟随浏览器语言，不匹配时默认中文（PRD FT-SET-004）。 */
-const prefsStore = createLocalStore(
-  StorageKey.prefs,
-  parsePrefs,
-  DEFAULT_PREFS,
-  (fallback) => ({
-    ...fallback,
-    locale:
-      typeof navigator === "undefined"
-        ? fallback.locale
-        : detectLocale(navigator.languages ?? [navigator.language]),
-  }),
-);
+const prefsStore = createLocalStore(StorageKey.prefs, parsePrefs, DEFAULT_PREFS, (fallback) => ({
+  ...fallback,
+  locale:
+    typeof navigator === "undefined"
+      ? fallback.locale
+      : detectLocale(navigator.languages ?? [navigator.language]),
+}));
 
 interface PrefsContextValue extends Prefs {
   t: (key: TKey, params?: TParams) => string;

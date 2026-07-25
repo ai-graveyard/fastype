@@ -154,14 +154,7 @@ export function SettingsDialog({
   onOpenChange: (open: boolean) => void;
   initialSection?: SettingsSection;
 }) {
-  const {
-    t,
-    locale,
-    setLocale,
-    themeMode,
-    setThemeMode,
-    resetPrefs,
-  } = usePrefs();
+  const { t, locale, setLocale, themeMode, setThemeMode, resetPrefs } = usePrefs();
   const { config, configured, setConfig, clearConfig, settingsOpen, closeSettings } = useAi();
   const { clearDraft } = useDocument();
   const { clearStyles } = useStyles();
@@ -176,8 +169,7 @@ export function SettingsDialog({
   const [testing, setTesting] = React.useState(false);
   const [includeKey, setIncludeKey] = React.useState(false);
   const [promptTab, setPromptTab] = React.useState<"humanize" | "sensitive">("humanize");
-  const [selectionPromptTab, setSelectionPromptTab] =
-    React.useState<AiAction>("polish");
+  const [selectionPromptTab, setSelectionPromptTab] = React.useState<AiAction>("polish");
   const [clearTarget, setClearTarget] = React.useState<ClearTarget | null>(null);
   const [cropSrc, setCropSrc] = React.useState<string | null>(null);
   const importRef = React.useRef<HTMLInputElement>(null);
@@ -278,11 +270,7 @@ export function SettingsDialog({
         emptyCustomThemeLibrary(),
       ).value,
       wechat: readRecord(StorageKey.wechatStyle, parseWechatStyle, DEFAULT_WECHAT_STYLE).value,
-      wechatCover: readRecord(
-        StorageKey.wechatCover,
-        parseWechatCover,
-        DEFAULT_WECHAT_COVER,
-      ).value,
+      wechatCover: readRecord(StorageKey.wechatCover, parseWechatCover, DEFAULT_WECHAT_COVER).value,
       wechatThemes: readRecord(
         StorageKey.wechatThemes,
         (raw) => parseCustomThemeLibrary(raw, parseWechatStyle),
@@ -303,7 +291,8 @@ export function SettingsDialog({
       const xhsThemes = parseCustomThemeLibrary(parsed.xhsThemes, parseXhsStyle);
       const wechatThemes = parseCustomThemeLibrary(parsed.wechatThemes, parseWechatStyle);
       const ai = parseAiConfig(parsed.ai);
-      if (!xhs && !wechat && !wechatCover && !xhsThemes && !wechatThemes && !parsed.ai) throw new Error("empty");
+      if (!xhs && !wechat && !wechatCover && !xhsThemes && !wechatThemes && !parsed.ai)
+        throw new Error("empty");
       // 逐项写入，坏掉的字段由各自的 parse 兜底。
       if (xhs) writeRecord(StorageKey.xhsStyle, xhs);
       if (xhsThemes) writeRecord(StorageKey.xhsThemes, xhsThemes);
@@ -599,15 +588,19 @@ export function SettingsDialog({
                       description={t("settings.aiConnectionDesc")}
                       contentClassName="space-y-4"
                     >
-                      <Field label={t("ai.baseUrl")} hint={t("ai.baseUrlHint")} htmlFor="ai-base-url">
-                      <Input
-                        id="ai-base-url"
-                        value={draft.baseUrl}
-                        spellCheck={false}
-                        autoComplete="off"
-                        placeholder={t("ai.baseUrlPlaceholder")}
-                        onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })}
-                      />
+                      <Field
+                        label={t("ai.baseUrl")}
+                        hint={t("ai.baseUrlHint")}
+                        htmlFor="ai-base-url"
+                      >
+                        <Input
+                          id="ai-base-url"
+                          value={draft.baseUrl}
+                          spellCheck={false}
+                          autoComplete="off"
+                          placeholder={t("ai.baseUrlPlaceholder")}
+                          onChange={(event) => setDraft({ ...draft, baseUrl: event.target.value })}
+                        />
                       </Field>
 
                       <Field label={t("ai.apiKey")} htmlFor="ai-api-key">
@@ -696,7 +689,9 @@ export function SettingsDialog({
                           {testing ? <Loader2 className="animate-spin" /> : <Check />}
                           {testing ? t("ai.testing") : t("ai.test")}
                         </Button>
-                        <Button size="sm" onClick={handleSave}>{t("ai.save")}</Button>
+                        <Button size="sm" onClick={handleSave}>
+                          {t("ai.save")}
+                        </Button>
                       </div>
                     </SettingsCard>
 
@@ -718,10 +713,7 @@ export function SettingsDialog({
                       description={t("ai.promptSettingsHint")}
                     />
 
-                    <SettingsCard
-                      title={t("ai.promptSettings")}
-                      contentClassName="space-y-4"
-                    >
+                    <SettingsCard title={t("ai.promptSettings")} contentClassName="space-y-4">
                       <Tabs
                         value={promptTab}
                         onValueChange={(value) => setPromptTab(value as "humanize" | "sensitive")}
@@ -866,7 +858,9 @@ export function SettingsDialog({
                       </Tabs>
 
                       <div className="flex justify-end border-t border-dashed border-border pt-4">
-                        <Button size="sm" onClick={handleSave}>{t("ai.save")}</Button>
+                        <Button size="sm" onClick={handleSave}>
+                          {t("ai.save")}
+                        </Button>
                       </div>
                     </SettingsCard>
                   </section>

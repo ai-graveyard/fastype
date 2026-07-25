@@ -4,7 +4,11 @@ import { ArrowUpRight, FileCode2, Type } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
-import { MarkdownEditor, type EditorApi, type EditorSelectionInfo } from "@/components/editor/markdown-editor";
+import {
+  MarkdownEditor,
+  type EditorApi,
+  type EditorSelectionInfo,
+} from "@/components/editor/markdown-editor";
 import { QuotaWarningBanner } from "@/components/common/quota-warning-banner";
 import { useDocument } from "@/components/providers/document-provider";
 import { usePrefs } from "@/components/providers/prefs-provider";
@@ -24,15 +28,16 @@ import {
   MarkdownPreview,
   type MarkdownPreviewHandle,
 } from "@/components/workbench/markdown-preview";
-import {
-  SettingsDialog,
-  type SettingsSection,
-} from "@/components/workbench/settings-dialog";
+import { SettingsDialog, type SettingsSection } from "@/components/workbench/settings-dialog";
 import { SplitPane } from "@/components/workbench/split-pane";
 import { StatusBar } from "@/components/workbench/status-bar";
 import { TopBar } from "@/components/workbench/top-bar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/misc";
-import { WechatPreview, type WechatSettingsTarget, type WechatWorkspaceTab } from "@/components/workbench/wechat-preview";
+import {
+  WechatPreview,
+  type WechatSettingsTarget,
+  type WechatWorkspaceTab,
+} from "@/components/workbench/wechat-preview";
 import { WechatPreviewStatus } from "@/components/workbench/wechat-preview-status";
 import { WechatWorkspace } from "@/components/workbench/wechat-workspace";
 import { XhsPreview, type XhsPreviewHandle } from "@/components/workbench/xhs-preview";
@@ -80,7 +85,8 @@ const WECHAT_EDITOR_URL = "https://mp.weixin.qq.com/";
 
 export function Workbench() {
   const { t, lastView, setLastView, ratios, setRatio, hydrated } = usePrefs();
-  const { content, filename, autoSavePending, setContent, pending, resolvePending, openFile } = useDocument();
+  const { content, filename, autoSavePending, setContent, pending, resolvePending, openFile } =
+    useDocument();
   const { xhs, wechat, setWechat } = useStyles();
   const { profile } = useUserProfile();
   const editorRef = React.useRef<EditorApi>(null);
@@ -90,8 +96,7 @@ export function Workbench() {
   const [narrow, setNarrow] = React.useState(false);
   const [narrowSide, setNarrowSide] = React.useState<"preview" | "editor">("editor");
   const [settingsDialogOpen, setSettingsDialogOpen] = React.useState(false);
-  const [settingsSection, setSettingsSection] =
-    React.useState<SettingsSection>("appearance");
+  const [settingsSection, setSettingsSection] = React.useState<SettingsSection>("appearance");
   const [xhsTab, setXhsTab] = React.useState<XhsWorkspaceTab>("image");
   const [xhsScrollTarget, setXhsScrollTarget] = React.useState<{
     id: string;
@@ -133,11 +138,7 @@ export function Workbench() {
   const setXhsMetadata = React.useCallback(
     (patch: Partial<XhsMetadata>) =>
       setContent(
-        stringifyXhsMarkdown(
-          imageContent,
-          { ...xhsMetadata, ...patch },
-          parsedDocument.otherData,
-        ),
+        stringifyXhsMarkdown(imageContent, { ...xhsMetadata, ...patch }, parsedDocument.otherData),
       ),
     [imageContent, parsedDocument.otherData, setContent, xhsMetadata],
   );
@@ -149,23 +150,14 @@ export function Workbench() {
   );
 
   const stats = React.useMemo(() => countText(rendered.text), [rendered.text]);
-  const editorInputStats = React.useMemo(
-    () => countEditorInput(imageContent),
-    [imageContent],
-  );
+  const editorInputStats = React.useMemo(() => countEditorInput(imageContent), [imageContent]);
   const previewContentStats = React.useMemo(
     () => countPreviewContent(rendered.html),
     [rendered.html],
   );
-  const readingMinutes = React.useMemo(
-    () => estimateReadingMinutes(stats.words),
-    [stats.words],
-  );
+  const readingMinutes = React.useMemo(() => estimateReadingMinutes(stats.words), [stats.words]);
   const xhsCanvas = React.useMemo(() => getXhsCanvasSize(xhs), [xhs]);
-  const currentImageSources = React.useMemo(
-    () => new Set(rendered.images),
-    [rendered.images],
-  );
+  const currentImageSources = React.useMemo(() => new Set(rendered.images), [rendered.images]);
   const xhsFailedImageCount = React.useMemo(
     () => xhsFailedImages.filter((source) => currentImageSources.has(source)).length,
     [currentImageSources, xhsFailedImages],
@@ -183,25 +175,19 @@ export function Workbench() {
   );
 
   const changeView = (next: ViewId) => setLastView(next);
-  const locateWechatIssue = React.useCallback(
-    (issue: WechatCompatibilityIssue) => {
-      setNarrowSide("editor");
-      setWechatTab("content");
-      window.requestAnimationFrame(() => {
-        editorRef.current?.locateText(issue.searchText);
-      });
-    },
-    [],
-  );
+  const locateWechatIssue = React.useCallback((issue: WechatCompatibilityIssue) => {
+    setNarrowSide("editor");
+    setWechatTab("content");
+    window.requestAnimationFrame(() => {
+      editorRef.current?.locateText(issue.searchText);
+    });
+  }, []);
 
   const openSettings = React.useCallback((section: SettingsSection = "appearance") => {
     setSettingsSection(section);
     setSettingsDialogOpen(true);
   }, []);
-  const openProfileSettings = React.useCallback(
-    () => openSettings("profile"),
-    [openSettings],
-  );
+  const openProfileSettings = React.useCallback(() => openSettings("profile"), [openSettings]);
   const openXhsCanvasSettings = React.useCallback(() => {
     setNarrowSide("editor");
     setXhsTab("theme");
@@ -558,12 +544,21 @@ export function Workbench() {
               value={narrowSide}
               onValueChange={(next) => setNarrowSide(next as "preview" | "editor")}
             >
-              <TabsList className="h-8 gap-0.5 rounded-lg p-0.5" aria-label={t("a11y.narrowSideSwitcher")}>
-                <TabsTrigger value="preview" className="h-full gap-1.5 rounded-md px-3 py-0 text-xs [&_svg]:size-3.5">
+              <TabsList
+                className="h-8 gap-0.5 rounded-lg p-0.5"
+                aria-label={t("a11y.narrowSideSwitcher")}
+              >
+                <TabsTrigger
+                  value="preview"
+                  className="h-full gap-1.5 rounded-md px-3 py-0 text-xs [&_svg]:size-3.5"
+                >
                   <Type />
                   {t("view.preview")}
                 </TabsTrigger>
-                <TabsTrigger value="editor" className="h-full gap-1.5 rounded-md px-3 py-0 text-xs [&_svg]:size-3.5">
+                <TabsTrigger
+                  value="editor"
+                  className="h-full gap-1.5 rounded-md px-3 py-0 text-xs [&_svg]:size-3.5"
+                >
                   <FileCode2 />
                   {t("view.edit")}
                 </TabsTrigger>
@@ -656,9 +651,7 @@ export function Workbench() {
         <DialogContent closeLabel={t("common.close")}>
           <DialogHeader>
             <DialogTitle>{t("doc.confirmReplaceTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("doc.confirmReplaceBody", { name: filename })}
-            </DialogDescription>
+            <DialogDescription>{t("doc.confirmReplaceBody", { name: filename })}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => resolvePending("cancel")}>

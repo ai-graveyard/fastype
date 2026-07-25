@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  blockKindOf,
-  paginate,
-  type MeasuredBlock,
-} from "@/lib/markdown/paginate";
+import { blockKindOf, paginate, type MeasuredBlock } from "@/lib/markdown/paginate";
 
 function block(
   index: number,
@@ -42,10 +38,7 @@ describe("paginate", () => {
 
   it("页尾的孤儿标题顺延到下一页", () => {
     // 正文 500 + 标题 200 = 700，下一段 400 放不下，标题应该跟着走。
-    const pages = paginate(
-      [block(0, 500), block(1, 200, "heading"), block(2, 400)],
-      1000,
-    );
+    const pages = paginate([block(0, 500), block(1, 200, "heading"), block(2, 400)], 1000);
     expect(pages).toHaveLength(2);
     expect(pages[0].blocks.map((b) => b.blockIndex)).toEqual([0]);
     expect(pages[1].blocks.map((b) => b.blockIndex)).toEqual([1, 2]);
@@ -62,9 +55,7 @@ describe("paginate", () => {
     const pages = paginate([list], 1000);
     expect(pages.length).toBeGreaterThan(1);
     // 拆出来的片段必须首尾相接，不能漏掉子项。
-    const ranges = pages.flatMap((page) =>
-      page.blocks.map((b) => b.childRange ?? [0, 3]),
-    );
+    const ranges = pages.flatMap((page) => page.blocks.map((b) => b.childRange ?? [0, 3]));
     expect(ranges[0][0]).toBe(0);
     expect(ranges[ranges.length - 1][1]).toBe(3);
     for (let i = 1; i < ranges.length; i += 1) {

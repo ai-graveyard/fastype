@@ -38,12 +38,7 @@ export const SheetContent = React.forwardRef<
 SheetContent.displayName = "SheetContent";
 
 export function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      className={cn("shrink-0 border-b border-border px-5 py-4", className)}
-      {...props}
-    />
-  );
+  return <div className={cn("shrink-0 border-b border-border px-5 py-4", className)} {...props} />;
 }
 
 export function SheetBody({ className, ...props }: React.ComponentProps<"div">) {
@@ -54,11 +49,7 @@ export const SheetTitle = React.forwardRef<
   React.ComponentRef<typeof SheetPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Title>
 >(({ className, ...props }, ref) => (
-  <SheetPrimitive.Title
-    ref={ref}
-    className={cn("text-base font-semibold", className)}
-    {...props}
-  />
+  <SheetPrimitive.Title ref={ref} className={cn("text-base font-semibold", className)} {...props} />
 ));
 SheetTitle.displayName = "SheetTitle";
 

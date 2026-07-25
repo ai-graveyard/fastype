@@ -92,11 +92,9 @@ describe("文档自动保存", () => {
       </PrefsProvider>,
     );
 
-    const setItem = vi
-      .spyOn(Storage.prototype, "setItem")
-      .mockImplementation(() => {
-        throw Object.assign(new Error("full"), { name: "QuotaExceededError" });
-      });
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw Object.assign(new Error("full"), { name: "QuotaExceededError" });
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "first" }));
     act(() => vi.advanceTimersByTime(3_000));

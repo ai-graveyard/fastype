@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
+import { SettingCard } from "@/components/common/setting-card";
 import {
   MarkdownEditor,
   type EditorApi,
@@ -39,10 +40,7 @@ import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
 import { EditorPane } from "@/components/workbench/editor-pane";
 import { PlatformModeSwitcher } from "@/components/workbench/platform-mode-switcher";
 import { ProfileCard } from "@/components/workbench/profile-button";
-import {
-  SettingExample,
-  XhsSettingExample,
-} from "@/components/workbench/setting-example";
+import { SettingExample, XhsSettingExample } from "@/components/workbench/setting-example";
 import { SettingsOutline } from "@/components/workbench/settings-outline";
 import { XhsContentEditor } from "@/components/workbench/xhs-content-editor";
 import {
@@ -50,10 +48,7 @@ import {
   CoverGraphicsEditor,
   CoverGraphicsLayer,
 } from "@/components/workbench/xhs-cover-graphics";
-import {
-  XHS_IDENTIFIER_CONTENT_GAP,
-  XhsIdentifier,
-} from "@/components/workbench/xhs-identifier";
+import { XHS_IDENTIFIER_CONTENT_GAP, XhsIdentifier } from "@/components/workbench/xhs-identifier";
 import {
   AlignPicker,
   FontPicker,
@@ -81,8 +76,7 @@ import { cn, scrollToSection } from "@/lib/utils";
 import { PLATFORM_INPUT_LIMITS } from "@/lib/constants";
 import { useElementWidth } from "@/hooks/use-media-query";
 
-export type XhsWorkspaceTab =
-  "image" | "content" | "cover" | "theme" | "typography" | "enhance";
+export type XhsWorkspaceTab = "image" | "content" | "cover" | "theme" | "typography" | "enhance";
 
 interface XhsWorkspaceProps {
   activeTab: XhsWorkspaceTab;
@@ -138,10 +132,7 @@ const CANVAS_PREVIEW_MAX_HEIGHT = 192;
 
 function canvasPreviewWidth(width: number, height: number): number {
   return Math.round(
-    Math.min(
-      CANVAS_PREVIEW_MAX_WIDTH,
-      CANVAS_PREVIEW_MAX_HEIGHT * (width / height),
-    ),
+    Math.min(CANVAS_PREVIEW_MAX_WIDTH, CANVAS_PREVIEW_MAX_HEIGHT * (width / height)),
   );
 }
 
@@ -162,10 +153,7 @@ const IDENTIFIER_PREVIEW_MAX_HEIGHT = 280;
 
 function identifierPreviewWidth(width: number, height: number): number {
   return Math.round(
-    Math.min(
-      IDENTIFIER_PREVIEW_MAX_WIDTH,
-      IDENTIFIER_PREVIEW_MAX_HEIGHT * (width / height),
-    ),
+    Math.min(IDENTIFIER_PREVIEW_MAX_WIDTH, IDENTIFIER_PREVIEW_MAX_HEIGHT * (width / height)),
   );
 }
 
@@ -239,40 +227,6 @@ function PositionIndicator({ position }: { position: XhsIdentifierPosition }) {
   );
 }
 
-function SettingCard({
-  id,
-  title,
-  description,
-  action,
-  children,
-}: {
-  id?: string;
-  title: string;
-  description?: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section
-      id={id}
-      className="scroll-mt-4 space-y-4 rounded-lg border border-border bg-card p-4"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold">{title}</h3>
-          {description ? (
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              {description}
-            </p>
-          ) : null}
-        </div>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
 export function XhsWorkspace({
   activeTab,
   onActiveTabChange,
@@ -307,13 +261,8 @@ export function XhsWorkspace({
   } = useStyles();
   const { profile } = useUserProfile();
   const theme = getXhsTheme(xhs.themeId);
-  const documentTitle = React.useMemo(
-    () => extractTitleFromSource(content) ?? "",
-    [content],
-  );
-  const resolvedCoverText = xhs.cover.text.trim()
-    ? xhs.cover.text
-    : documentTitle.slice(0, 120);
+  const documentTitle = React.useMemo(() => extractTitleFromSource(content) ?? "", [content]);
+  const resolvedCoverText = xhs.cover.text.trim() ? xhs.cover.text : documentTitle.slice(0, 120);
   const canvasSize = getXhsCanvasSize(xhs);
   const settingsScrollRef = React.useRef<HTMLDivElement>(null);
   const [settingsAreaRef, settingsAreaWidth] = useElementWidth<HTMLDivElement>();
@@ -321,9 +270,7 @@ export function XhsWorkspace({
   const settingsAreaNarrow =
     settingsAreaWidth > 0 && settingsAreaWidth < TYPOGRAPHY_OUTLINE_MIN_WIDTH;
   const showTypographyOutline = activeTab === "typography" && !settingsAreaNarrow;
-  const [selectedCoverGraphicId, setSelectedCoverGraphicId] = React.useState<
-    string | null
-  >(null);
+  const [selectedCoverGraphicId, setSelectedCoverGraphicId] = React.useState<string | null>(null);
 
   const updateCoverGraphic = (
     id: string,
@@ -375,12 +322,7 @@ export function XhsWorkspace({
         <EditorPane
           editorRef={editorRef}
           savePending={savePending}
-          extraActions={
-            <PlatformModeSwitcher
-              value={contentMode}
-              onChange={onContentModeChange}
-            />
-          }
+          extraActions={<PlatformModeSwitcher value={contentMode} onChange={onContentModeChange} />}
           aiPlatform="xiaohongshu"
         >
           <div className="flex h-full flex-col">
@@ -401,10 +343,7 @@ export function XhsWorkspace({
         </EditorPane>
       </TabsContent>
 
-      <TabsContent
-        value="content"
-        className="mt-0 min-h-0 overflow-y-auto bg-background/35 p-4"
-      >
+      <TabsContent value="content" className="mt-0 min-h-0 overflow-y-auto bg-background/35 p-4">
         <XhsContentEditor
           sourceBody={content}
           metadata={metadata}
@@ -442,9 +381,7 @@ export function XhsWorkspace({
                 action={
                   <Switch
                     checked={xhs.cover.enabled}
-                    onCheckedChange={(enabled) =>
-                      setXhs({ cover: { ...xhs.cover, enabled } })
-                    }
+                    onCheckedChange={(enabled) => setXhs({ cover: { ...xhs.cover, enabled } })}
                     aria-label={t("xhs.bigTextCover")}
                   />
                 }
@@ -452,17 +389,11 @@ export function XhsWorkspace({
                 {xhs.cover.enabled ? (
                   <>
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <SettingExample
-                        label={t("common.examplePreview")}
-                        testId="xhs-cover"
-                      >
+                      <SettingExample label={t("common.examplePreview")} testId="xhs-cover">
                         <div
                           className="relative mx-auto flex w-full items-center overflow-hidden rounded-lg border p-[4.5%]"
                           style={{
-                            maxWidth: coverPreviewMaxWidth(
-                              canvasSize.width,
-                              canvasSize.height,
-                            ),
+                            maxWidth: coverPreviewMaxWidth(canvasSize.width, canvasSize.height),
                             aspectRatio: `${canvasSize.width} / ${canvasSize.height}`,
                             justifyContent:
                               xhs.cover.align === "left"
@@ -501,9 +432,7 @@ export function XhsWorkspace({
                         defaultColor={xhs.cover.textColor || xhs.background}
                         selectedId={selectedCoverGraphicId}
                         onSelectedIdChange={setSelectedCoverGraphicId}
-                        onChange={(graphics) =>
-                          setXhs({ cover: { ...xhs.cover, graphics } })
-                        }
+                        onChange={(graphics) => setXhs({ cover: { ...xhs.cover, graphics } })}
                       />
                     </div>
                     <CoverGraphicsEditor
@@ -511,9 +440,7 @@ export function XhsWorkspace({
                       defaultColor={xhs.cover.textColor || xhs.background}
                       selectedId={selectedCoverGraphicId}
                       onSelectedIdChange={setSelectedCoverGraphicId}
-                      onChange={(graphics) =>
-                        setXhs({ cover: { ...xhs.cover, graphics } })
-                      }
+                      onChange={(graphics) => setXhs({ cover: { ...xhs.cover, graphics } })}
                     />
                     <Field label={t("xhs.coverText")} hint={t("xhs.coverTextHint")}>
                       <textarea
@@ -532,9 +459,7 @@ export function XhsWorkspace({
                       <AlignPicker
                         label={t("xhs.coverAlign")}
                         value={xhs.cover.align}
-                        onChange={(align) =>
-                          setXhs({ cover: { ...xhs.cover, align } })
-                        }
+                        onChange={(align) => setXhs({ cover: { ...xhs.cover, align } })}
                       />
                       <SliderField
                         label={t("xhs.coverLineHeight")}
@@ -542,9 +467,7 @@ export function XhsWorkspace({
                         min={1}
                         max={1.8}
                         step={0.05}
-                        onChange={(lineHeight) =>
-                          setXhs({ cover: { ...xhs.cover, lineHeight } })
-                        }
+                        onChange={(lineHeight) => setXhs({ cover: { ...xhs.cover, lineHeight } })}
                       />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -555,9 +478,7 @@ export function XhsWorkspace({
                         max={280}
                         step={4}
                         suffix="px"
-                        onChange={(fontSize) =>
-                          setXhs({ cover: { ...xhs.cover, fontSize } })
-                        }
+                        onChange={(fontSize) => setXhs({ cover: { ...xhs.cover, fontSize } })}
                       />
                       <SliderField
                         label={t("xhs.coverFontWeight")}
@@ -565,25 +486,19 @@ export function XhsWorkspace({
                         min={400}
                         max={900}
                         step={100}
-                        onChange={(fontWeight) =>
-                          setXhs({ cover: { ...xhs.cover, fontWeight } })
-                        }
+                        onChange={(fontWeight) => setXhs({ cover: { ...xhs.cover, fontWeight } })}
                       />
                       <ColorField
                         label={t("xhs.coverBackground")}
                         value={xhs.cover.background || xhs.accentColor}
                         themeColor={xhs.accentColor}
-                        onChange={(background) =>
-                          setXhs({ cover: { ...xhs.cover, background } })
-                        }
+                        onChange={(background) => setXhs({ cover: { ...xhs.cover, background } })}
                       />
                       <ColorField
                         label={t("xhs.coverTextColor")}
                         value={xhs.cover.textColor || xhs.background}
                         themeColor={xhs.background}
-                        onChange={(textColor) =>
-                          setXhs({ cover: { ...xhs.cover, textColor } })
-                        }
+                        onChange={(textColor) => setXhs({ cover: { ...xhs.cover, textColor } })}
                       />
                     </div>
                     <label className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
@@ -600,7 +515,7 @@ export function XhsWorkspace({
               </SettingCard>
             </div>
           </TabsContent>
-  
+
           <TabsContent value="theme" className="mt-0">
             <div className="mx-auto max-w-2xl space-y-4">
               <SettingCard title={t("xhs.theme")}>
@@ -684,10 +599,7 @@ export function XhsWorkspace({
                 title={t("xhs.canvasLayout")}
                 description={t("xhs.canvasLayoutDesc")}
               >
-                <SettingExample
-                  label={t("common.examplePreview")}
-                  testId="xhs-canvas"
-                >
+                <SettingExample label={t("common.examplePreview")} testId="xhs-canvas">
                   <div className="flex min-h-40 items-center justify-center rounded-lg bg-background/90 p-3">
                     <div
                       className="relative max-h-52 w-auto max-w-full overflow-hidden rounded-md border shadow-sm"
@@ -759,9 +671,7 @@ export function XhsWorkspace({
                         min={720}
                         max={2160}
                         value={xhs.customWidth}
-                        onChange={(event) =>
-                          setXhs({ customWidth: Number(event.target.value) })
-                        }
+                        onChange={(event) => setXhs({ customWidth: Number(event.target.value) })}
                         className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
                       />
                     </Field>
@@ -771,9 +681,7 @@ export function XhsWorkspace({
                         min={720}
                         max={2160}
                         value={xhs.customHeight}
-                        onChange={(event) =>
-                          setXhs({ customHeight: Number(event.target.value) })
-                        }
+                        onChange={(event) => setXhs({ customHeight: Number(event.target.value) })}
                         className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
                       />
                     </Field>
@@ -782,7 +690,7 @@ export function XhsWorkspace({
               </SettingCard>
             </div>
           </TabsContent>
-  
+
           <TabsContent value="typography" className="mt-0">
             <div className="mx-auto max-w-2xl space-y-4">
               <SettingCard id="xhs-heading-design" title={t("xhs.headingDesign")}>
@@ -925,14 +833,10 @@ export function XhsWorkspace({
                 >
                   <div className="ft-xhs-body">
                     <p>
-                      {t("common.exampleParagraph1")}{" "}
-                      <strong>{t("common.exampleBold")}</strong>、{" "}
-                      <em>{t("common.exampleItalic")}</em>、{" "}
-                      <del>{t("common.exampleStrike")}</del>、{" "}
-                      <a
-                        href="#xhs-example-link"
-                        onClick={(event) => event.preventDefault()}
-                      >
+                      {t("common.exampleParagraph1")} <strong>{t("common.exampleBold")}</strong>、{" "}
+                      <em>{t("common.exampleItalic")}</em>、 <del>{t("common.exampleStrike")}</del>
+                      、{" "}
+                      <a href="#xhs-example-link" onClick={(event) => event.preventDefault()}>
                         {t("common.exampleLink")}
                       </a>
                     </p>
@@ -974,9 +878,7 @@ export function XhsWorkspace({
                     label={t("xhs.linkColor")}
                     value={xhs.elements.linkColor}
                     themeColor={theme.derived.linkColor}
-                    onChange={(linkColor) =>
-                      setXhs({ elements: { ...xhs.elements, linkColor } })
-                    }
+                    onChange={(linkColor) => setXhs({ elements: { ...xhs.elements, linkColor } })}
                   />
                 </div>
                 <Field label={t("xhs.linkUnderline")}>
@@ -1005,7 +907,7 @@ export function XhsWorkspace({
                   </div>
                 </Field>
               </SettingCard>
-  
+
               <SettingCard
                 id="xhs-list-elements"
                 title={t("xhs.listElements")}
@@ -1072,9 +974,7 @@ export function XhsWorkspace({
                     max={80}
                     step={2}
                     suffix="px"
-                    onChange={(listIndent) =>
-                      setXhs({ elements: { ...xhs.elements, listIndent } })
-                    }
+                    onChange={(listIndent) => setXhs({ elements: { ...xhs.elements, listIndent } })}
                   />
                   <SliderField
                     label={t("xhs.listSpacing")}
@@ -1089,7 +989,7 @@ export function XhsWorkspace({
                   />
                 </div>
               </SettingCard>
-  
+
               <SettingCard id="xhs-quote-elements" title={t("xhs.quoteElements")}>
                 <XhsSettingExample
                   label={t("common.examplePreview")}
@@ -1151,17 +1051,12 @@ export function XhsWorkspace({
                   />
                 </div>
               </SettingCard>
-  
+
               <SettingCard id="xhs-code-elements" title={t("xhs.codeElements")}>
-                <XhsSettingExample
-                  label={t("common.examplePreview")}
-                  style={xhs}
-                  testId="xhs-code"
-                >
+                <XhsSettingExample label={t("common.examplePreview")} style={xhs} testId="xhs-code">
                   <div className="ft-xhs-body">
                     <p>
-                      {t("common.exampleParagraph1")}{" "}
-                      <code>{t("common.exampleInlineCode")}</code>
+                      {t("common.exampleParagraph1")} <code>{t("common.exampleInlineCode")}</code>
                     </p>
                     <pre>
                       <code>{'const publish = () => "FasType";'}</code>
@@ -1181,9 +1076,7 @@ export function XhsWorkspace({
                     label={t("xhs.codeColor")}
                     value={xhs.elements.codeColor}
                     themeColor={theme.derived.codeColor}
-                    onChange={(codeColor) =>
-                      setXhs({ elements: { ...xhs.elements, codeColor } })
-                    }
+                    onChange={(codeColor) => setXhs({ elements: { ...xhs.elements, codeColor } })}
                   />
                   <ColorField
                     label={t("xhs.inlineCodeBackground")}
@@ -1220,15 +1113,13 @@ export function XhsWorkspace({
                     max={32}
                     step={2}
                     suffix="px"
-                    onChange={(codeRadius) =>
-                      setXhs({ elements: { ...xhs.elements, codeRadius } })
-                    }
+                    onChange={(codeRadius) => setXhs({ elements: { ...xhs.elements, codeRadius } })}
                   />
                 </div>
               </SettingCard>
             </div>
           </TabsContent>
-  
+
           <TabsContent value="enhance" className="mt-0">
             <div className="mx-auto max-w-2xl space-y-4">
               <SettingCard
@@ -1247,10 +1138,7 @@ export function XhsWorkspace({
                 {xhs.identifier.enabled ? (
                   <>
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <SettingExample
-                        label={t("common.examplePreview")}
-                        testId="xhs-identifier"
-                      >
+                      <SettingExample label={t("common.examplePreview")} testId="xhs-identifier">
                         <div className="flex min-h-40 items-center justify-center rounded-lg bg-background/90 p-3">
                           <div
                             className="flex w-auto max-w-full flex-col overflow-hidden rounded-lg border p-4"
@@ -1271,9 +1159,7 @@ export function XhsWorkspace({
                                 unitScale={0.3}
                                 style={{
                                   marginBottom:
-                                    XHS_IDENTIFIER_CONTENT_GAP *
-                                    xhs.identifier.scale *
-                                    0.3,
+                                    XHS_IDENTIFIER_CONTENT_GAP * xhs.identifier.scale * 0.3,
                                 }}
                               />
                             ) : null}
@@ -1300,22 +1186,17 @@ export function XhsWorkspace({
                                 unitScale={0.3}
                                 style={{
                                   marginTop:
-                                    XHS_IDENTIFIER_CONTENT_GAP *
-                                    xhs.identifier.scale *
-                                    0.3,
+                                    XHS_IDENTIFIER_CONTENT_GAP * xhs.identifier.scale * 0.3,
                                 }}
                               />
                             ) : null}
                           </div>
                         </div>
                       </SettingExample>
-  
+
                       <div className="space-y-4">
-                        <ProfileCard
-                          onClick={onEditProfile}
-                          hint={t("xhs.identifierEditHint")}
-                        />
-  
+                        <ProfileCard onClick={onEditProfile} hint={t("xhs.identifierEditHint")} />
+
                         <Field label={t("xhs.identifierPosition")}>
                           <div className="grid grid-cols-2 gap-2">
                             {IDENTIFIER_POSITIONS.map((position) => (
@@ -1343,7 +1224,7 @@ export function XhsWorkspace({
                             ))}
                           </div>
                         </Field>
-  
+
                         <SliderField
                           label={t("xhs.identifierSize")}
                           value={xhs.identifier.scale}
@@ -1352,19 +1233,15 @@ export function XhsWorkspace({
                           step={0.1}
                           suffix="×"
                           presets={[1, 1.5, 2, 3]}
-                          onChange={(scale) =>
-                            setXhs({ identifier: { ...xhs.identifier, scale } })
-                          }
+                          onChange={(scale) => setXhs({ identifier: { ...xhs.identifier, scale } })}
                         />
                       </div>
                     </div>
-  
+
                     <TooltipProvider delayDuration={200}>
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm font-medium">
-                            {t("xhs.identifierBadge")}
-                          </span>
+                          <span className="text-sm font-medium">{t("xhs.identifierBadge")}</span>
                           <Switch
                             checked={xhs.identifier.badgeEnabled}
                             onCheckedChange={(badgeEnabled) =>
@@ -1422,7 +1299,7 @@ export function XhsWorkspace({
                           ))}
                         </div>
                       </div>
-  
+
                       <div
                         className={cn(
                           "grid gap-4 transition-opacity sm:grid-cols-2",
@@ -1470,7 +1347,7 @@ export function XhsWorkspace({
                         </div>
                       </div>
                     </TooltipProvider>
-  
+
                     <label className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
                       <span>{t("xhs.identifierShowOnCover")}</span>
                       <Switch
@@ -1483,7 +1360,7 @@ export function XhsWorkspace({
                         aria-label={t("xhs.identifierShowOnCover")}
                       />
                     </label>
-  
+
                     <label className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
                       <span>{t("xhs.identifierShowDate")}</span>
                       <Switch
@@ -1493,7 +1370,7 @@ export function XhsWorkspace({
                         }
                       />
                     </label>
-  
+
                     <label className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
                       <span>{t("xhs.identifierAvatarBorder")}</span>
                       <Switch
@@ -1508,16 +1385,14 @@ export function XhsWorkspace({
                   </>
                 ) : null}
               </SettingCard>
-  
+
               <SettingCard
                 title={t("xhs.qrCode")}
                 description={t("xhs.qrCodeDesc")}
                 action={
                   <Switch
                     checked={xhs.qrCode.enabled}
-                    onCheckedChange={(enabled) =>
-                      setXhs({ qrCode: { ...xhs.qrCode, enabled } })
-                    }
+                    onCheckedChange={(enabled) => setXhs({ qrCode: { ...xhs.qrCode, enabled } })}
                     aria-label={t("xhs.qrCode")}
                   />
                 }
@@ -1546,12 +1421,9 @@ export function XhsWorkspace({
                         />
                       </div>
                     </Field>
-  
+
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <SettingExample
-                        label={t("common.examplePreview")}
-                        testId="xhs-qr-code"
-                      >
+                      <SettingExample label={t("common.examplePreview")} testId="xhs-qr-code">
                         <div className="flex min-h-40 items-center justify-center rounded-lg bg-background/90 p-3">
                           <div
                             className="relative w-auto max-w-full overflow-hidden rounded-lg border p-4"
@@ -1580,12 +1452,8 @@ export function XhsWorkspace({
                             <div
                               className={cn(
                                 "absolute flex items-center gap-2",
-                                xhs.qrCode.position.startsWith("top")
-                                  ? "top-3"
-                                  : "bottom-3",
-                                xhs.qrCode.position.endsWith("left")
-                                  ? "left-3"
-                                  : "right-3",
+                                xhs.qrCode.position.startsWith("top") ? "top-3" : "bottom-3",
+                                xhs.qrCode.position.endsWith("left") ? "left-3" : "right-3",
                               )}
                             >
                               <span className="rounded-md bg-white p-1 shadow-sm ring-1 ring-black/10">
@@ -1601,7 +1469,7 @@ export function XhsWorkspace({
                           </div>
                         </div>
                       </SettingExample>
-  
+
                       <div className="space-y-4">
                         <Field label={t("xhs.qrCodePosition")}>
                           <div className="grid grid-cols-2 gap-2">
@@ -1630,7 +1498,7 @@ export function XhsWorkspace({
                             ))}
                           </div>
                         </Field>
-  
+
                         <SliderField
                           label={t("xhs.qrCodeSize")}
                           value={xhs.qrCode.scale}
@@ -1638,13 +1506,11 @@ export function XhsWorkspace({
                           max={2}
                           step={0.05}
                           suffix="×"
-                          onChange={(scale) =>
-                            setXhs({ qrCode: { ...xhs.qrCode, scale } })
-                          }
+                          onChange={(scale) => setXhs({ qrCode: { ...xhs.qrCode, scale } })}
                         />
                       </div>
                     </div>
-  
+
                     <label className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
                       <span>{t("xhs.qrCodeShowOnCover")}</span>
                       <Switch
@@ -1658,16 +1524,14 @@ export function XhsWorkspace({
                   </>
                 ) : null}
               </SettingCard>
-  
+
               <SettingCard
                 title={t("xhs.pageNumber")}
                 description={t("xhs.pageNumberDescription")}
                 action={
                   <Switch
                     checked={xhs.showPageNumber}
-                    onCheckedChange={(showPageNumber) =>
-                      setXhs({ showPageNumber })
-                    }
+                    onCheckedChange={(showPageNumber) => setXhs({ showPageNumber })}
                     aria-label={t("xhs.pageNumber")}
                   />
                 }
@@ -1675,10 +1539,7 @@ export function XhsWorkspace({
                 {xhs.showPageNumber ? (
                   <>
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <SettingExample
-                        label={t("common.examplePreview")}
-                        testId="xhs-page-number"
-                      >
+                      <SettingExample label={t("common.examplePreview")} testId="xhs-page-number">
                         <div className="flex min-h-40 items-center justify-center rounded-lg bg-background/90 p-3">
                           <div
                             className="relative w-auto max-w-full overflow-hidden rounded-lg border p-4"
@@ -1738,9 +1599,7 @@ export function XhsWorkspace({
                           max={XHS_PAGE_NUMBER_SCALE_RANGE.max}
                           step={XHS_PAGE_NUMBER_SCALE_RANGE.step}
                           suffix="×"
-                          onChange={(pageNumberScale) =>
-                            setXhs({ pageNumberScale })
-                          }
+                          onChange={(pageNumberScale) => setXhs({ pageNumberScale })}
                         />
                         <SliderField
                           label={t("xhs.pageNumberGap")}

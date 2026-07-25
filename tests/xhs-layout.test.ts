@@ -251,7 +251,13 @@ describe("卡片尺寸与样式", () => {
       headingTemplate: "underline",
       headings: {
         ...DEFAULT_XHS_STYLE.headings,
-        h1: { ...DEFAULT_XHS_STYLE.headings.h1, scale: 2, spacing: 1.5, weight: 900, align: "center" },
+        h1: {
+          ...DEFAULT_XHS_STYLE.headings.h1,
+          scale: 2,
+          spacing: 1.5,
+          weight: 900,
+          align: "center",
+        },
       },
     });
     expect(css).toContain("font-size: 68px");
@@ -293,12 +299,8 @@ describe("卡片尺寸与样式", () => {
     expect(css).toContain(
       ".ft-xhs-card h1::before, .ft-xhs-card h2::before, .ft-xhs-card h3::before",
     );
-    expect(css).toContain(
-      ".ft-xhs-card h1::after, .ft-xhs-card h2::after, .ft-xhs-card h3::after",
-    );
-    expect(css).not.toContain(
-      ".ft-xhs-card h1, .ft-xhs-card h2, .ft-xhs-card h3::before",
-    );
+    expect(css).toContain(".ft-xhs-card h1::after, .ft-xhs-card h2::after, .ft-xhs-card h3::after");
+    expect(css).not.toContain(".ft-xhs-card h1, .ft-xhs-card h2, .ft-xhs-card h3::before");
     expect(css).not.toContain("padding-inline");
     expect(css).not.toContain("display: flex; align-items: center; gap: 0.45em");
   });
@@ -370,9 +372,18 @@ describe("applyXhsHeadingNumbers", () => {
     const result = applyXhsHeadingNumbers(html, {
       ...DEFAULT_XHS_STYLE,
       headings: {
-        h1: { ...DEFAULT_XHS_STYLE.headings.h1, number: { ...DEFAULT_XHS_STYLE.headings.h1.number, enabled: false } },
-        h2: { ...DEFAULT_XHS_STYLE.headings.h2, number: { ...DEFAULT_XHS_STYLE.headings.h2.number, enabled: false } },
-        h3: { ...DEFAULT_XHS_STYLE.headings.h3, number: { ...DEFAULT_XHS_STYLE.headings.h3.number, enabled: true } },
+        h1: {
+          ...DEFAULT_XHS_STYLE.headings.h1,
+          number: { ...DEFAULT_XHS_STYLE.headings.h1.number, enabled: false },
+        },
+        h2: {
+          ...DEFAULT_XHS_STYLE.headings.h2,
+          number: { ...DEFAULT_XHS_STYLE.headings.h2.number, enabled: false },
+        },
+        h3: {
+          ...DEFAULT_XHS_STYLE.headings.h3,
+          number: { ...DEFAULT_XHS_STYLE.headings.h3.number, enabled: true },
+        },
       },
     });
     const h1 = result.match(/<h1[^>]*>[\s\S]*?<\/h1>/)?.[0] ?? "";

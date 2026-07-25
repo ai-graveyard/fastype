@@ -100,11 +100,12 @@ function renderPopover(api: EditorApi, { configured = true } = {}) {
 
 /** 模拟一次非流式的 Chat Completions 响应。 */
 function stubFetchOnce(content: string) {
-  const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-    new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    }),
+  const fetchMock = vi.fn(
+    async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
   );
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;

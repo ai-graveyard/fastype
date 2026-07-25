@@ -18,7 +18,17 @@
 
 - 选区 AI 的系统提示词从代码里的英文硬编码改为设置中的中文提示词，`buildMessages` 现在需要传入配置
 - `PRD.md` 移到 `docs/PRD.md`
+- PNG / ZIP 导出、二维码生成、图片裁剪改为用到时才加载，首屏 JS 从 745 KB 降到 620 KB（gzip）
+- Front Matter 的切分与拼装改为 `lib/markdown/front-matter.ts` 自己实现（js-yaml），不再经过 gray-matter
+- 小红书预览的重算依赖收窄到实际用到的样式字段，改配色不再触发「等图片加载 → 重新测量分页 → 重新克隆每页」
+- 小红书与公众号工作区重复的设置卡片抽成 `components/common/setting-card.tsx`
+- 引入 Prettier 统一代码格式（`printWidth: 100`，不含 Markdown），`pnpm check` 相应增加 `format:check`
+
+### 修复
+
+- 身份卡片的徽章、位置、缩放改动没有显式触发预览克隆卡片刷新，此前是靠「任意样式变动都重排一次」意外兜住的
 
 ### 移除
 
 - 删掉从未被挂载的 `components/workbench/ai-panel.tsx`，其能力由划词浮层承接
+- 移除 `gray-matter` 依赖（它为支持 JS Front Matter 引擎静态引入了 esprima，本项目只用 YAML）

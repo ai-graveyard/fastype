@@ -6,10 +6,7 @@ import * as React from "react";
 
 import { useT } from "@/components/providers/prefs-provider";
 import { PreviewStatusBar } from "@/components/workbench/status-bar";
-import type {
-  WechatCompatibilityIssue,
-  WechatWarning,
-} from "@/lib/render/wechat";
+import type { WechatCompatibilityIssue, WechatWarning } from "@/lib/render/wechat";
 import { cn } from "@/lib/utils";
 
 interface WechatPreviewStatusProps {
@@ -94,7 +91,13 @@ export function WechatPreviewStatus({
   );
 }
 
-const ISSUE_LABEL_KEYS: Record<WechatWarning, "wechat.compatIssueTable" | "wechat.compatIssueCode" | "wechat.compatIssueLink" | "wechat.compatIssueImage"> = {
+const ISSUE_LABEL_KEYS: Record<
+  WechatWarning,
+  | "wechat.compatIssueTable"
+  | "wechat.compatIssueCode"
+  | "wechat.compatIssueLink"
+  | "wechat.compatIssueImage"
+> = {
   "wechat.compatTable": "wechat.compatIssueTable",
   "wechat.compatCode": "wechat.compatIssueCode",
   "wechat.compatLink": "wechat.compatIssueLink",

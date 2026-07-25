@@ -117,7 +117,10 @@ function extractTitle(holder: HTMLElement): string | null {
 }
 
 function normalizeWhitespace(text: string): string {
-  return text.replace(/ /g, " ").replace(/[ \t]+/g, " ").trim();
+  return text
+    .replace(/ /g, " ")
+    .replace(/[ \t]+/g, " ")
+    .trim();
 }
 
 /**

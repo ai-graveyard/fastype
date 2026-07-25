@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildDocumentMessages,
-  buildMessages,
-  cleanAiOutput,
-  parseSseLine,
-} from "@/lib/ai/client";
+import { buildDocumentMessages, buildMessages, cleanAiOutput, parseSseLine } from "@/lib/ai/client";
 import {
   chatCompletionsUrl,
   classifyStatus,
@@ -137,7 +132,7 @@ describe("classifyThrown", () => {
   });
 
   it("错误信息里永远不会出现 API Key", () => {
-    const error = classifyStatus(401, 'key sk-secret-value leaked in body', CONTEXT);
+    const error = classifyStatus(401, "key sk-secret-value leaked in body", CONTEXT);
     expect(JSON.stringify(error)).not.toContain("sk-secret-value");
   });
 });
@@ -337,5 +332,4 @@ describe("parseAiConfig", () => {
       isAiConfigured({ ...DEFAULT_AI_CONFIG, baseUrl: "https://x", apiKey: "  ", model: "m" }),
     ).toBe(false);
   });
-
 });

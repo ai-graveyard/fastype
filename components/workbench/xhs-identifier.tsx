@@ -101,10 +101,7 @@ export function XhsIdentifier({
         ...style,
       }}
     >
-      <div
-        className="flex min-w-0 max-w-full items-center"
-        style={{ gap: BASE_GAP * scale }}
-      >
+      <div className="flex min-w-0 max-w-full items-center" style={{ gap: BASE_GAP * scale }}>
         <UserAvatar
           src={profile.avatar}
           name={profile.name}

@@ -16,6 +16,15 @@ const eslintConfig = defineConfig([
     "src-tauri/target/**",
     "src-tauri/gen/**",
   ]),
+  {
+    rules: {
+      // 下划线前缀表示「签名需要但用不上」，例如只为对齐 fetch 类型的 mock 参数。
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

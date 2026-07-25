@@ -35,11 +35,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 function AppToaster() {
   const { themeMode } = usePrefs();
   return (
-    <Toaster
-      position="top-right"
-      theme={themeMode}
-      closeButton
-      toastOptions={{ duration: 4000 }}
-    />
+    <Toaster position="top-right" theme={themeMode} closeButton toastOptions={{ duration: 4000 }} />
   );
 }

@@ -19,11 +19,7 @@ import {
   wechatStyleFromTheme,
   type WechatStyle,
 } from "@/lib/themes/wechat";
-import {
-  DEFAULT_WECHAT_COVER,
-  parseWechatCover,
-  type WechatCover,
-} from "@/lib/wechat-cover";
+import { DEFAULT_WECHAT_COVER, parseWechatCover, type WechatCover } from "@/lib/wechat-cover";
 import {
   DEFAULT_XHS_STYLE,
   parseXhsStyle,
@@ -160,9 +156,7 @@ export function StyleProvider({ children }: { children: React.ReactNode }) {
       wechatCustomThemes: wechatThemeLibrary.themes,
       selectedXhsThemeId: xhsThemeLibrary.selectedId ?? xhs.themeId,
       selectedWechatThemeId: wechatThemeLibrary.selectedId ?? wechat.themeId,
-      isSelectedXhsThemeDirty: Boolean(
-        selectedXhsTheme && selectedXhsThemeJson !== xhsJson,
-      ),
+      isSelectedXhsThemeDirty: Boolean(selectedXhsTheme && selectedXhsThemeJson !== xhsJson),
       isSelectedWechatThemeDirty: Boolean(
         selectedWechatTheme && selectedWechatThemeJson !== wechatJson,
       ),
@@ -246,14 +240,16 @@ export function StyleProvider({ children }: { children: React.ReactNode }) {
         });
       },
       copyXhsTheme: (themeId, name) => {
-        const source = xhsThemeLibrary.themes.find((theme) => theme.id === themeId)?.style ??
+        const source =
+          xhsThemeLibrary.themes.find((theme) => theme.id === themeId)?.style ??
           xhsStyleFromTheme(themeId, xhs.exportSizeId);
         const saved = createSavedCustomTheme(name, source);
         xhsStore.set(source);
         xhsThemeStore.set({ selectedId: saved.id, themes: [...xhsThemeLibrary.themes, saved] });
       },
       copyWechatTheme: (themeId, name) => {
-        const source = wechatThemeLibrary.themes.find((theme) => theme.id === themeId)?.style ??
+        const source =
+          wechatThemeLibrary.themes.find((theme) => theme.id === themeId)?.style ??
           wechatStyleFromTheme(themeId);
         const saved = createSavedCustomTheme(name, source);
         wechatStore.set(source);

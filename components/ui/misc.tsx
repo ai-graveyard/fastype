@@ -168,7 +168,10 @@ export function ChoiceGrid<T extends string>({
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      >
         {options.map((option) => (
           <button
             key={option.value}
@@ -181,9 +184,13 @@ export function ChoiceGrid<T extends string>({
                 : "border-border hover:bg-accent",
             )}
           >
-            {option.sample ? <span className="mb-1 block text-base text-foreground">{option.sample}</span> : null}
+            {option.sample ? (
+              <span className="mb-1 block text-base text-foreground">{option.sample}</span>
+            ) : null}
             {option.label}
-            {value === option.value ? <Check className="absolute right-1.5 top-1.5 size-3" /> : null}
+            {value === option.value ? (
+              <Check className="absolute right-1.5 top-1.5 size-3" />
+            ) : null}
           </button>
         ))}
       </div>
@@ -292,7 +299,5 @@ export function ColorField({
   /** 与当前主题一致的配色；提供时展示"恢复"按钮。 */
   themeColor?: string;
 }) {
-  return (
-    <ColorPicker label={label} value={value} onChange={onChange} themeColor={themeColor} />
-  );
+  return <ColorPicker label={label} value={value} onChange={onChange} themeColor={themeColor} />;
 }

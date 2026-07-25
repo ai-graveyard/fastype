@@ -145,10 +145,7 @@ export function CoverGraphicsLayer({
             style={{
               left: `${graphic.x}%`,
               top: `${graphic.y}%`,
-              width:
-                mode === "preview"
-                  ? `${(graphic.size / canvasWidth) * 100}%`
-                  : graphic.size,
+              width: mode === "preview" ? `${(graphic.size / canvasWidth) * 100}%` : graphic.size,
               color: graphic.color,
               opacity: graphic.opacity,
               transform: `translate(-50%, -50%) rotate(${graphic.rotation}deg)`,
@@ -253,9 +250,7 @@ export function CoverGraphicsControls({
             {graphics.length}/{XHS_COVER_GRAPHICS_LIMIT}
           </span>
         </div>
-        <p className="text-xs leading-5 text-muted-foreground">
-          {t("xhs.coverGraphicsDesc")}
-        </p>
+        <p className="text-xs leading-5 text-muted-foreground">{t("xhs.coverGraphicsDesc")}</p>
       </div>
 
       <div
@@ -306,9 +301,7 @@ export function CoverGraphicsEditor({
   const updateSelected = (patch: Partial<XhsCoverGraphic>) => {
     if (!selected) return;
     onChange(
-      graphics.map((graphic) =>
-        graphic.id === selected.id ? { ...graphic, ...patch } : graphic,
-      ),
+      graphics.map((graphic) => (graphic.id === selected.id ? { ...graphic, ...patch } : graphic)),
     );
   };
 

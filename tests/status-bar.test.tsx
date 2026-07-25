@@ -41,6 +41,8 @@ describe("底部状态栏", () => {
     expect(within(documentStatus as HTMLElement).getByText(/5040 (chars|字符)/)).toBeTruthy();
     expect(within(documentStatus as HTMLElement).getByText(/12 (lines|行)/)).toBeTruthy();
     expect(within(documentStatus as HTMLElement).queryByText(/(?:Ln|行) 2/)).toBeNull();
-    expect(within(documentStatus as HTMLElement).queryByText(/3 (?:chars selected|字符)/)).toBeNull();
+    expect(
+      within(documentStatus as HTMLElement).queryByText(/3 (?:chars selected|字符)/),
+    ).toBeNull();
   });
 });

@@ -1,0 +1,12 @@
+.next/
+out/
+node_modules/
+pnpm-lock.yaml
+tsconfig.tsbuildinfo
+src-tauri/target/
+src-tauri/gen/
+.playwright-cli/
+.pnpm-store/
+
+# Markdown 是手写排版（README 里的表格、对齐、换行都有意为之），交给 prettier 反而会打乱。
+*.md

@@ -28,8 +28,11 @@ interface MarkdownPreviewProps {
 }
 
 /** Markdown 视图左侧的通用渲染预览（PRD FT-EDT-004）。 */
-export const MarkdownPreview = React.memo(React.forwardRef<MarkdownPreviewHandle, MarkdownPreviewProps>(
-  function MarkdownPreview({ html, exporting, onExport }, ref) {
+export const MarkdownPreview = React.memo(
+  React.forwardRef<MarkdownPreviewHandle, MarkdownPreviewProps>(function MarkdownPreview(
+    { html, exporting, onExport },
+    ref,
+  ) {
     const { t, markdownPreviewTheme, setMarkdownPreviewTheme } = usePrefs();
     const containerRef = React.useRef<HTMLDivElement>(null);
     useImageFallback(containerRef, t("image.failed"), [html]);
@@ -91,8 +94,8 @@ export const MarkdownPreview = React.memo(React.forwardRef<MarkdownPreviewHandle
         )}
       </div>
     );
-  },
-));
+  }),
+);
 
 function ThemeButton({
   active,

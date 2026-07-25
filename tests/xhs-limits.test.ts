@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  isXhsImagePagesOverLimit,
-  XHS_INPUT_LIMITS,
-  XHS_LIMITS,
-} from "@/lib/themes/xhs";
+import { isXhsImagePagesOverLimit, XHS_INPUT_LIMITS, XHS_LIMITS } from "@/lib/themes/xhs";
 import { PLATFORM_INPUT_LIMITS } from "@/lib/constants";
 
 describe("小红书各内容区域的字数边界", () => {

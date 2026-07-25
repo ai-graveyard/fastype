@@ -76,9 +76,8 @@ export function countPreviewContent(html: string): PreviewContentStats {
   return {
     images: images.length,
     subheadings: holder.querySelectorAll("h2, h3, h4, h5, h6").length,
-    remoteImages: images.filter((image) =>
-      /^https?:/i.test(image.getAttribute("src") ?? ""),
-    ).length,
+    remoteImages: images.filter((image) => /^https?:/i.test(image.getAttribute("src") ?? ""))
+      .length,
   };
 }
 

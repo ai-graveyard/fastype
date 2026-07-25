@@ -6,13 +6,7 @@ import { PrefsProvider } from "@/components/providers/prefs-provider";
 import { XhsContentEditor } from "@/components/workbench/xhs-content-editor";
 import type { XhsMetadata } from "@/lib/markdown/xhs-frontmatter";
 
-function Harness({
-  title = "",
-  sourceBody = "",
-}: {
-  title?: string;
-  sourceBody?: string;
-}) {
+function Harness({ title = "", sourceBody = "" }: { title?: string; sourceBody?: string }) {
   const [metadata, setMetadata] = React.useState<XhsMetadata>({
     title,
     content: "",
@@ -62,20 +56,16 @@ describe("小红书内容编辑器", () => {
   });
 
   it("只对内容正文标题应用标题限制", () => {
-    render(
-      <Harness title="这是一个超过二十个字的内容正文标题用于验证范围" />,
-    );
+    render(<Harness title="这是一个超过二十个字的内容正文标题用于验证范围" />);
 
-    expect(
-      screen.getByRole("textbox", { name: /Title|标题/ }).getAttribute("aria-invalid"),
-    ).toBe("true");
+    expect(screen.getByRole("textbox", { name: /Title|标题/ }).getAttribute("aria-invalid")).toBe(
+      "true",
+    );
     expect(screen.getByText(/23\/20 (chars|字)/)).toBeTruthy();
   });
 
   it("点击自动填充后取一级标题作为标题、正文纯文本作为内容", () => {
-    render(
-      <Harness sourceBody={"# 我的标题\n\n第一段。\n\n第二段。"} />,
-    );
+    render(<Harness sourceBody={"# 我的标题\n\n第一段。\n\n第二段。"} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Auto-fill|自动填充/ }));
 
@@ -98,5 +88,4 @@ describe("小红书内容编辑器", () => {
       screen.getByRole("button", { name: /Auto-fill|自动填充/ }).hasAttribute("disabled"),
     ).toBe(true);
   });
-
 });

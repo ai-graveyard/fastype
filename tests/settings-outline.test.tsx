@@ -12,9 +12,7 @@ const SECTIONS = [
 
 function renderOutline(containerEl: HTMLDivElement) {
   const containerRef = { current: containerEl } as RefObject<HTMLDivElement | null>;
-  return render(
-    <SettingsOutline label="目录" containerRef={containerRef} sections={SECTIONS} />,
-  );
+  return render(<SettingsOutline label="目录" containerRef={containerRef} sections={SECTIONS} />);
 }
 
 beforeEach(() => {
@@ -54,11 +52,7 @@ describe("SettingsOutline", () => {
     const container = document.createElement("div");
     const containerRef = { current: container } as RefObject<HTMLDivElement | null>;
     render(
-      <SettingsOutline
-        label="目录"
-        containerRef={containerRef}
-        sections={SECTIONS.slice(0, 2)}
-      />,
+      <SettingsOutline label="目录" containerRef={containerRef} sections={SECTIONS.slice(0, 2)} />,
     );
     expect(screen.queryByRole("navigation", { name: "目录" })).toBeNull();
   });

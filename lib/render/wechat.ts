@@ -52,7 +52,8 @@ function paletteFor(style: WechatStyle): Palette {
     muted: p.mutedColor,
     border: p.borderColor,
     quoteBackground: style.quoteBackground || p.quoteBackground,
-    codeBackground: style.codeBackground || (style.codeStyle === "dark" ? "#16181d" : p.codeBackground),
+    codeBackground:
+      style.codeBackground || (style.codeStyle === "dark" ? "#16181d" : p.codeBackground),
     codeText: style.codeTextColor || (style.codeStyle === "dark" ? "#e6e6e6" : p.codeText),
     inlineCodeBackground: style.inlineCodeBackground || p.inlineCodeBackground,
     inlineCodeColor: style.inlineCodeColor || p.inlineCodeColor,
@@ -109,21 +110,49 @@ function headingSpec(template: HeadingTemplate, level: number, palette: Palette)
   switch (template) {
     case "highlight":
       return h1
-        ? { background: palette.titleBg, color: palette.titleText, padding: "10px 16px", radius: "6px", letterSpacing: "2px" }
+        ? {
+            background: palette.titleBg,
+            color: palette.titleText,
+            padding: "10px 16px",
+            radius: "6px",
+            letterSpacing: "2px",
+          }
         : h2
-          ? { background: palette.sectionBg, color: palette.heading, padding: "8px 14px", radius: "4px" }
+          ? {
+              background: palette.sectionBg,
+              color: palette.heading,
+              padding: "8px 14px",
+              radius: "4px",
+            }
           : {};
     case "underline":
-      return { borderBottom: level <= 2 ? `2px solid ${palette.accent}` : `1px dashed ${palette.accent}`, padding: "0 0 6px" };
+      return {
+        borderBottom: level <= 2 ? `2px solid ${palette.accent}` : `1px dashed ${palette.accent}`,
+        padding: "0 0 6px",
+      };
     case "accent":
       return h1
         ? {}
-        : { borderLeft: `${h2 ? 4 : 2}px solid ${palette.accent}`, padding: `0 0 0 ${h2 ? 12 : 10}px` };
+        : {
+            borderLeft: `${h2 ? 4 : 2}px solid ${palette.accent}`,
+            padding: `0 0 0 ${h2 ? 12 : 10}px`,
+          };
     case "block":
       return h1
-        ? { background: palette.titleBg, color: palette.titleText, padding: "10px 16px", radius: "6px", letterSpacing: "2px" }
+        ? {
+            background: palette.titleBg,
+            color: palette.titleText,
+            padding: "10px 16px",
+            radius: "6px",
+            letterSpacing: "2px",
+          }
         : h2
-          ? { background: palette.sectionBg, borderLeft: `4px solid ${palette.accent}`, padding: "8px 14px", radius: "4px" }
+          ? {
+              background: palette.sectionBg,
+              borderLeft: `4px solid ${palette.accent}`,
+              padding: "8px 14px",
+              radius: "4px",
+            }
           : {};
     case "elegant":
       return h1
@@ -133,12 +162,22 @@ function headingSpec(template: HeadingTemplate, level: number, palette: Palette)
           : { borderLeft: `2px solid ${palette.accent}`, padding: "0 0 0 10px" };
     case "modern":
       return h1
-        ? { background: palette.titleBg, color: palette.titleText, padding: "10px 16px", radius: "6px", letterSpacing: "2px" }
+        ? {
+            background: palette.titleBg,
+            color: palette.titleText,
+            padding: "10px 16px",
+            radius: "6px",
+            letterSpacing: "2px",
+          }
         : h2
           ? { borderBottom: `2px solid ${palette.accent}`, padding: "0 0 6px" }
           : { borderLeft: `2px solid ${palette.accent}`, padding: "0 0 0 10px" };
     case "minimal":
-      return h1 ? { letterSpacing: "2px" } : h2 ? { borderLeft: `2px solid ${palette.accent}`, padding: "0 0 0 10px" } : {};
+      return h1
+        ? { letterSpacing: "2px" }
+        : h2
+          ? { borderLeft: `2px solid ${palette.accent}`, padding: "0 0 0 10px" }
+          : {};
     default:
       return {};
   }
@@ -153,7 +192,14 @@ function headingLevelStyle(level: number, style: WechatStyle): WechatHeadingLeve
 
 function headingStyle(level: number, style: WechatStyle, palette: Palette): string {
   const offsets = [9, 5, 3, 1, 0, -1];
-  const baseMargins: Array<[number, number]> = [[28, 18], [24, 14], [20, 10], [18, 10], [18, 10], [18, 10]];
+  const baseMargins: Array<[number, number]> = [
+    [28, 18],
+    [24, 14],
+    [20, 10],
+    [18, 10],
+    [18, 10],
+    [18, 10],
+  ];
   const [mt, mb] = baseMargins[level - 1];
   const levelStyle = headingLevelStyle(level, style);
   const legacyTemplates = {
@@ -162,9 +208,7 @@ function headingStyle(level: number, style: WechatStyle, palette: Palette): stri
     underline: "underline",
     badge: "highlight",
   } as const;
-  const template = style.headingStyle
-    ? legacyTemplates[style.headingStyle]
-    : style.headingTemplate;
+  const template = style.headingStyle ? legacyTemplates[style.headingStyle] : style.headingTemplate;
   const spec = headingSpec(template, level, palette);
   // 用户为该层级单独设置了底色/文字色时，整体覆盖模板给出的配色，同小红书的行为保持一致。
   const background = levelStyle.background || spec.background;
@@ -194,7 +238,10 @@ export function strongHighlightBackground(
   const fill = rgba(color, opacity);
   if (height === "full") return fill;
 
-  const bands: Record<Exclude<StrongHighlightHeight, "full">, { size: number; position: "top" | "center" | "bottom" }> = {
+  const bands: Record<
+    Exclude<StrongHighlightHeight, "full">,
+    { size: number; position: "top" | "center" | "bottom" }
+  > = {
     top: { size: 12, position: "top" },
     "half-top": { size: 50, position: "top" },
     "half-center": { size: 50, position: "center" },
@@ -226,7 +273,14 @@ function styleForElement(el: Element, style: WechatStyle, palette: Palette): str
 
   switch (tag) {
     case "p":
-      return css({ margin: `${gap}px 0`, "line-height": style.lineHeight, color: palette.text, "font-weight": style.fontWeight, "letter-spacing": `${style.letterSpacing}px`, "text-indent": style.textIndent ? "2em" : undefined });
+      return css({
+        margin: `${gap}px 0`,
+        "line-height": style.lineHeight,
+        color: palette.text,
+        "font-weight": style.fontWeight,
+        "letter-spacing": `${style.letterSpacing}px`,
+        "text-indent": style.textIndent ? "2em" : undefined,
+      });
     case "strong":
     case "b":
       return css({
@@ -247,32 +301,121 @@ function styleForElement(el: Element, style: WechatStyle, palette: Palette): str
     case "s":
       return css({ "text-decoration": "line-through", color: style.deleteColor });
     case "a":
-      return css({ color: style.linkColor || palette.accent, "text-decoration": "none", "border-bottom": style.linkUnderline === "none" ? "none" : `1px ${style.linkUnderline} ${style.linkColor || palette.accent}`, "word-break": "break-all" });
+      return css({
+        color: style.linkColor || palette.accent,
+        "text-decoration": "none",
+        "border-bottom":
+          style.linkUnderline === "none"
+            ? "none"
+            : `1px ${style.linkUnderline} ${style.linkColor || palette.accent}`,
+        "word-break": "break-all",
+      });
     case "ul":
     case "ol":
-      return css({ margin: `${gap}px 0`, "padding-left": `${style.listPadding}px`, "list-style-type": tag === "ul" ? style.unorderedListStyle : style.orderedListStyle, color: palette.text });
+      return css({
+        margin: `${gap}px 0`,
+        "padding-left": `${style.listPadding}px`,
+        "list-style-type": tag === "ul" ? style.unorderedListStyle : style.orderedListStyle,
+        color: palette.text,
+      });
     case "li":
-      return css({ margin: `${style.listSpacing}px 0`, "line-height": style.lineHeight, color: palette.text, "font-weight": style.fontWeight, "letter-spacing": `${style.letterSpacing}px` });
+      return css({
+        margin: `${style.listSpacing}px 0`,
+        "line-height": style.lineHeight,
+        color: palette.text,
+        "font-weight": style.fontWeight,
+        "letter-spacing": `${style.letterSpacing}px`,
+      });
     case "blockquote":
       return style.quoteStyle === "card"
-        ? css({ margin: `${style.quoteSpacing}px 0`, padding: `${style.quotePadding}px 16px`, background: palette.quoteBackground, "border-radius": `${style.quoteRadius}px`, color: palette.muted, "font-size": `${style.fontSize - 1}px`, "line-height": style.lineHeight })
-        : css({ margin: `${style.quoteSpacing}px 0`, padding: `${style.quotePadding}px 16px`, "border-left": `${style.quoteBorderWidth}px solid ${style.quoteBorderColor || palette.accent}`, background: palette.quoteBackground, "border-radius": `${style.quoteRadius}px`, color: palette.muted, "font-size": `${style.fontSize - 1}px`, "line-height": style.lineHeight });
+        ? css({
+            margin: `${style.quoteSpacing}px 0`,
+            padding: `${style.quotePadding}px 16px`,
+            background: palette.quoteBackground,
+            "border-radius": `${style.quoteRadius}px`,
+            color: palette.muted,
+            "font-size": `${style.fontSize - 1}px`,
+            "line-height": style.lineHeight,
+          })
+        : css({
+            margin: `${style.quoteSpacing}px 0`,
+            padding: `${style.quotePadding}px 16px`,
+            "border-left": `${style.quoteBorderWidth}px solid ${style.quoteBorderColor || palette.accent}`,
+            background: palette.quoteBackground,
+            "border-radius": `${style.quoteRadius}px`,
+            color: palette.muted,
+            "font-size": `${style.fontSize - 1}px`,
+            "line-height": style.lineHeight,
+          });
     case "pre":
-      return css({ margin: `${gap}px 0`, padding: "16px", background: palette.codeBackground, color: palette.codeText, "border-radius": `${style.codeRadius}px`, "font-family": MONO, "font-size": `${style.codeFontSize}px`, "line-height": 1.6, "white-space": "pre-wrap", "word-break": "break-all", "overflow-x": "auto" });
+      return css({
+        margin: `${gap}px 0`,
+        padding: "16px",
+        background: palette.codeBackground,
+        color: palette.codeText,
+        "border-radius": `${style.codeRadius}px`,
+        "font-family": MONO,
+        "font-size": `${style.codeFontSize}px`,
+        "line-height": 1.6,
+        "white-space": "pre-wrap",
+        "word-break": "break-all",
+        "overflow-x": "auto",
+      });
     case "code":
       return el.parentElement?.tagName.toLowerCase() === "pre"
-        ? css({ "font-family": MONO, background: "transparent", color: "inherit", padding: "0", "font-size": "inherit" })
-        : css({ "font-family": MONO, background: palette.inlineCodeBackground, color: palette.inlineCodeColor, padding: "2px 6px", "border-radius": "3px", "font-size": `${style.fontSize - 2}px` });
+        ? css({
+            "font-family": MONO,
+            background: "transparent",
+            color: "inherit",
+            padding: "0",
+            "font-size": "inherit",
+          })
+        : css({
+            "font-family": MONO,
+            background: palette.inlineCodeBackground,
+            color: palette.inlineCodeColor,
+            padding: "2px 6px",
+            "border-radius": "3px",
+            "font-size": `${style.fontSize - 2}px`,
+          });
     case "hr":
-      return css({ margin: `${gap + 12}px 0`, border: "none", "border-top": `1px solid ${palette.border}`, height: "0" });
+      return css({
+        margin: `${gap + 12}px 0`,
+        border: "none",
+        "border-top": `1px solid ${palette.border}`,
+        height: "0",
+      });
     case "img":
-      return css({ "max-width": "100%", height: "auto", display: "block", margin: `${gap}px auto`, "border-radius": "4px" });
+      return css({
+        "max-width": "100%",
+        height: "auto",
+        display: "block",
+        margin: `${gap}px auto`,
+        "border-radius": "4px",
+      });
     case "table":
-      return css({ width: "100%", margin: `${gap}px 0`, "border-collapse": "collapse", "font-size": `${style.fontSize - 2}px`, background: palette.pageBackground });
+      return css({
+        width: "100%",
+        margin: `${gap}px 0`,
+        "border-collapse": "collapse",
+        "font-size": `${style.fontSize - 2}px`,
+        background: palette.pageBackground,
+      });
     case "th":
-      return css({ border: `1px solid ${palette.border}`, background: palette.tableHeaderBackground, padding: "8px 12px", "font-weight": 700, "text-align": "left" });
+      return css({
+        border: `1px solid ${palette.border}`,
+        background: palette.tableHeaderBackground,
+        padding: "8px 12px",
+        "font-weight": 700,
+        "text-align": "left",
+      });
     case "td":
-      return css({ border: `1px solid ${palette.border}`, padding: "8px 12px", "text-align": "left", color: palette.text });
+      return css({
+        border: `1px solid ${palette.border}`,
+        padding: "8px 12px",
+        "text-align": "left",
+        color: palette.text,
+      });
     default:
       return null;
   }
@@ -318,7 +461,9 @@ function identityCardPalette(config: IdentityCardStyle, palette: Palette): CardP
   const bg = config.backgroundColor.trim() || palette.titleBg;
   const light = isLightColor(bg);
   const custom = config.textColor.trim();
-  const base = custom || (config.backgroundColor.trim() ? (light ? CARD_INK_DARK : CARD_INK_LIGHT) : palette.titleText);
+  const base =
+    custom ||
+    (config.backgroundColor.trim() ? (light ? CARD_INK_DARK : CARD_INK_LIGHT) : palette.titleText);
   return {
     bg,
     title: base,
@@ -350,9 +495,29 @@ function buildAuthorSection(
   const right = config.authorAlign === "right";
 
   const divider = doc.createElement("section");
-  divider.setAttribute("style", css({ border: "none", "border-top": `1px solid ${colors.divider}`, margin: "18px 0 16px", height: "0" }));
+  divider.setAttribute(
+    "style",
+    css({
+      border: "none",
+      "border-top": `1px solid ${colors.divider}`,
+      margin: "18px 0 16px",
+      height: "0",
+    }),
+  );
 
-  const avatarBox = css({ display: "inline-block", width: "44px", height: "44px", "border-radius": "50%", "object-fit": "cover", background: colors.avatarBg, border: `2px solid ${colors.avatarBorder}`, color: colors.title, "font-size": "18px", "line-height": "44px", "text-align": "center" });
+  const avatarBox = css({
+    display: "inline-block",
+    width: "44px",
+    height: "44px",
+    "border-radius": "50%",
+    "object-fit": "cover",
+    background: colors.avatarBg,
+    border: `2px solid ${colors.avatarBorder}`,
+    color: colors.title,
+    "font-size": "18px",
+    "line-height": "44px",
+    "text-align": "center",
+  });
   const avatar = doc.createElement(config.avatarUrl ? "img" : "span");
   if (config.avatarUrl) {
     avatar.setAttribute("src", config.avatarUrl);
@@ -368,13 +533,32 @@ function buildAuthorSection(
   if (config.nickname) {
     const name = doc.createElement("span");
     name.textContent = config.nickname;
-    name.setAttribute("style", css({ display: "block", margin: "0", color: colors.title, "font-size": `${nameSize}px`, "font-weight": 700, "line-height": 1.4 }));
+    name.setAttribute(
+      "style",
+      css({
+        display: "block",
+        margin: "0",
+        color: colors.title,
+        "font-size": `${nameSize}px`,
+        "font-weight": 700,
+        "line-height": 1.4,
+      }),
+    );
     texts.push(name);
   }
   if (config.tag) {
     const tag = doc.createElement("span");
     tag.textContent = config.tag;
-    tag.setAttribute("style", css({ display: "block", margin: "2px 0 0", color: colors.subtle, "font-size": `${tagSize}px`, "line-height": 1.4 }));
+    tag.setAttribute(
+      "style",
+      css({
+        display: "block",
+        margin: "2px 0 0",
+        color: colors.subtle,
+        "font-size": `${tagSize}px`,
+        "line-height": 1.4,
+      }),
+    );
     texts.push(tag);
   }
 
@@ -395,9 +579,20 @@ function buildAuthorSection(
     return [divider, row];
   }
 
-  row.setAttribute("style", css({ margin: "0", "line-height": 0, "text-align": config.authorAlign }));
+  row.setAttribute(
+    "style",
+    css({ margin: "0", "line-height": 0, "text-align": config.authorAlign }),
+  );
   const meta = doc.createElement("span");
-  meta.setAttribute("style", css({ display: "inline-block", "vertical-align": "middle", [right ? "margin-right" : "margin-left"]: "12px", "text-align": config.authorAlign }));
+  meta.setAttribute(
+    "style",
+    css({
+      display: "inline-block",
+      "vertical-align": "middle",
+      [right ? "margin-right" : "margin-left"]: "12px",
+      "text-align": config.authorAlign,
+    }),
+  );
   texts.forEach((el) => meta.appendChild(el));
   if (right) {
     if (texts.length) row.appendChild(meta);
@@ -418,14 +613,18 @@ const DERIVED_SUBTITLE_MAX = 54;
  * 标题取第一个一级标题；副标题取它后面的第一段正文，过长时截断成摘要。
  * 必须在 hideTitle 摘掉 h1 之前调用。
  */
-export function deriveIdentityCardContent(holder: HTMLElement): { title: string; subtitle: string } {
+export function deriveIdentityCardContent(holder: HTMLElement): {
+  title: string;
+  subtitle: string;
+} {
   const heading = holder.querySelector("h1");
   // 没有一级标题就没有「标题 + 导语」这个结构，硬取首段只会把正文原样搬到卡片上重复一遍。
   if (!heading) return { title: "", subtitle: "" };
   let node = heading.nextElementSibling;
   while (node && node.tagName.toLowerCase() !== "p") node = node.nextElementSibling;
   const raw = node?.textContent?.trim() ?? "";
-  const subtitle = raw.length > DERIVED_SUBTITLE_MAX ? `${raw.slice(0, DERIVED_SUBTITLE_MAX)}…` : raw;
+  const subtitle =
+    raw.length > DERIVED_SUBTITLE_MAX ? `${raw.slice(0, DERIVED_SUBTITLE_MAX)}…` : raw;
   return { title: heading.textContent?.trim() ?? "", subtitle };
 }
 
@@ -444,31 +643,94 @@ function buildIdentityCard(
     row.setAttribute("style", css({ margin: "0 0 20px", "text-align": config.badgeAlign }));
     const badge = doc.createElement("span");
     badge.textContent = config.badge;
-    badge.setAttribute("style", css({ display: "inline-block", padding: "4px 14px", border: `1px solid ${colors.badgeBorder}`, "border-radius": "999px", color: colors.badge, "font-size": `${Math.max(Math.round(fontSize * 0.8), 11)}px`, "letter-spacing": "2px", "text-transform": "uppercase" }));
+    badge.setAttribute(
+      "style",
+      css({
+        display: "inline-block",
+        padding: "4px 14px",
+        border: `1px solid ${colors.badgeBorder}`,
+        "border-radius": "999px",
+        color: colors.badge,
+        "font-size": `${Math.max(Math.round(fontSize * 0.8), 11)}px`,
+        "letter-spacing": "2px",
+        "text-transform": "uppercase",
+      }),
+    );
     row.appendChild(badge);
     parts.push(row);
   }
   if (config.title) {
     const title = doc.createElement("p");
     title.textContent = config.title;
-    title.setAttribute("style", css({ margin: "0 0 16px", color: colors.title, "font-size": `${config.titleFontSize}px`, "font-weight": 800, "line-height": 1.35, "letter-spacing": "1px", "text-align": config.titleAlign }));
+    title.setAttribute(
+      "style",
+      css({
+        margin: "0 0 16px",
+        color: colors.title,
+        "font-size": `${config.titleFontSize}px`,
+        "font-weight": 800,
+        "line-height": 1.35,
+        "letter-spacing": "1px",
+        "text-align": config.titleAlign,
+      }),
+    );
     parts.push(title);
   }
   if (config.title && (config.subtitle || config.slogan)) {
     const line = doc.createElement("section");
-    line.setAttribute("style", css({ display: "block", width: "40px", height: "3px", "line-height": 0, "font-size": 0, overflow: "hidden", background: colors.decorator, "border-radius": "2px", border: "none", margin: config.titleAlign === "center" ? "0 auto 16px" : config.titleAlign === "right" ? "0 0 16px auto" : "0 0 16px" }));
+    line.setAttribute(
+      "style",
+      css({
+        display: "block",
+        width: "40px",
+        height: "3px",
+        "line-height": 0,
+        "font-size": 0,
+        overflow: "hidden",
+        background: colors.decorator,
+        "border-radius": "2px",
+        border: "none",
+        margin:
+          config.titleAlign === "center"
+            ? "0 auto 16px"
+            : config.titleAlign === "right"
+              ? "0 0 16px auto"
+              : "0 0 16px",
+      }),
+    );
     parts.push(line);
   }
   if (config.subtitle) {
     const subtitle = doc.createElement("p");
     subtitle.textContent = config.subtitle;
-    subtitle.setAttribute("style", css({ margin: "0 0 8px", color: colors.text, "font-size": `${config.subtitleFontSize}px`, "line-height": lineHeight, "letter-spacing": "0.5px", "text-align": config.subtitleAlign }));
+    subtitle.setAttribute(
+      "style",
+      css({
+        margin: "0 0 8px",
+        color: colors.text,
+        "font-size": `${config.subtitleFontSize}px`,
+        "line-height": lineHeight,
+        "letter-spacing": "0.5px",
+        "text-align": config.subtitleAlign,
+      }),
+    );
     parts.push(subtitle);
   }
   if (config.slogan) {
     const slogan = doc.createElement("p");
     slogan.textContent = config.slogan;
-    slogan.setAttribute("style", css({ margin: "0 0 8px", color: colors.subtle, "font-size": `${Math.max(config.subtitleFontSize - 1, 12)}px`, "font-style": "italic", "line-height": lineHeight, "letter-spacing": "0.5px", "text-align": config.sloganAlign }));
+    slogan.setAttribute(
+      "style",
+      css({
+        margin: "0 0 8px",
+        color: colors.subtle,
+        "font-size": `${Math.max(config.subtitleFontSize - 1, 12)}px`,
+        "font-style": "italic",
+        "line-height": lineHeight,
+        "letter-spacing": "0.5px",
+        "text-align": config.sloganAlign,
+      }),
+    );
     parts.push(slogan);
   }
   parts.push(...buildAuthorSection(doc, config, colors, fontSize));
@@ -477,44 +739,129 @@ function buildIdentityCard(
 
   const card = doc.createElement("section");
   card.setAttribute("data-wechat-card", "identity");
-  card.setAttribute("style", css({ padding: "24px", margin: "0 0 16px", background: colors.bg, color: colors.title, "border-radius": `${config.borderRadius}px`, "box-sizing": "border-box" }));
+  card.setAttribute(
+    "style",
+    css({
+      padding: "24px",
+      margin: "0 0 16px",
+      background: colors.bg,
+      color: colors.title,
+      "border-radius": `${config.borderRadius}px`,
+      "box-sizing": "border-box",
+    }),
+  );
   parts.forEach((el) => card.appendChild(el));
   return card;
 }
 
-function buildTailGuide(doc: Document, config: TailGuideStyle, identity: IdentityCardStyle, palette: Palette): HTMLElement | null {
+function buildTailGuide(
+  doc: Document,
+  config: TailGuideStyle,
+  identity: IdentityCardStyle,
+  palette: Palette,
+): HTMLElement | null {
   if (!config.enabled) return null;
   const colors = resolveCardColors(config.backgroundColor, config.textColor, palette);
   const card = doc.createElement("section");
   card.setAttribute("data-wechat-card", "tail-guide");
   const activeColor = colors.bg;
   const tint = rgba(activeColor, 0.12);
-  card.setAttribute("style", css({ padding: "24px", margin: "28px 0 0", background: tint, color: colors.text, "border-radius": `${identity.enabled ? identity.borderRadius : 16}px`, "text-align": "center", "box-sizing": "border-box" }));
+  card.setAttribute(
+    "style",
+    css({
+      padding: "24px",
+      margin: "28px 0 0",
+      background: tint,
+      color: colors.text,
+      "border-radius": `${identity.enabled ? identity.borderRadius : 16}px`,
+      "text-align": "center",
+      "box-sizing": "border-box",
+    }),
+  );
   const title = doc.createElement("p");
   title.textContent = config.title;
-  title.setAttribute("style", css({ margin: "0 0 14px", color: colors.text, "font-size": "15px", "font-weight": 700 }));
+  title.setAttribute(
+    "style",
+    css({ margin: "0 0 14px", color: colors.text, "font-size": "15px", "font-weight": 700 }),
+  );
   card.appendChild(title);
   const actions = doc.createElement("div");
-  actions.setAttribute("style", css({ display: "flex", "justify-content": "space-between", gap: "10px" }));
+  actions.setAttribute(
+    "style",
+    css({ display: "flex", "justify-content": "space-between", gap: "10px" }),
+  );
   [
     [config.likeEmoji, config.likeText, config.likeHighlight],
     [config.starEmoji, config.starText, config.starHighlight],
     [config.readEmoji, config.readText, config.readHighlight],
   ].forEach(([emoji, label, highlighted]) => {
     const item = doc.createElement("span");
-    item.setAttribute("style", css({ display: "inline-flex", width: "31%", "flex-direction": "column", "align-items": "center", color: colors.text, "font-size": "13px", "font-weight": highlighted ? 600 : 400 }));
+    item.setAttribute(
+      "style",
+      css({
+        display: "inline-flex",
+        width: "31%",
+        "flex-direction": "column",
+        "align-items": "center",
+        color: colors.text,
+        "font-size": "13px",
+        "font-weight": highlighted ? 600 : 400,
+      }),
+    );
     const circle = doc.createElement("span");
     circle.textContent = String(emoji);
-    circle.setAttribute("style", css({ display: "inline-flex", width: "58px", height: "58px", "align-items": "center", "justify-content": "center", margin: "0 0 10px", "border-radius": "50%", background: highlighted ? activeColor : rgba(activeColor, 0.15), color: highlighted ? colors.text : activeColor, "font-size": "24px", "line-height": 1 }));
+    circle.setAttribute(
+      "style",
+      css({
+        display: "inline-flex",
+        width: "58px",
+        height: "58px",
+        "align-items": "center",
+        "justify-content": "center",
+        margin: "0 0 10px",
+        "border-radius": "50%",
+        background: highlighted ? activeColor : rgba(activeColor, 0.15),
+        color: highlighted ? colors.text : activeColor,
+        "font-size": "24px",
+        "line-height": 1,
+      }),
+    );
     const text = doc.createElement("span");
     text.textContent = String(label);
     item.append(circle, text);
     actions.appendChild(item);
   });
   card.appendChild(actions);
-  if (identity.enabled && config.authorAlign !== "hidden" && (identity.avatarUrl || identity.nickname)) {
+  if (
+    identity.enabled &&
+    config.authorAlign !== "hidden" &&
+    (identity.avatarUrl || identity.nickname)
+  ) {
     const author = doc.createElement("div");
-    author.setAttribute("style", css({ display: "flex", "flex-direction": config.authorAlign === "center" ? "column" : config.authorAlign === "right" ? "row-reverse" : "row", "align-items": "center", "justify-content": config.authorAlign === "center" ? "center" : config.authorAlign === "right" ? "flex-start" : "flex-start", gap: "10px", margin: "18px 0 0", padding: "16px 0 0", "border-top": `1px solid ${rgba(activeColor, 0.18)}`, "text-align": config.authorAlign }));
+    author.setAttribute(
+      "style",
+      css({
+        display: "flex",
+        "flex-direction":
+          config.authorAlign === "center"
+            ? "column"
+            : config.authorAlign === "right"
+              ? "row-reverse"
+              : "row",
+        "align-items": "center",
+        "justify-content":
+          config.authorAlign === "center"
+            ? "center"
+            : config.authorAlign === "right"
+              ? "flex-start"
+              : "flex-start",
+        gap: "10px",
+        margin: "18px 0 0",
+        padding: "16px 0 0",
+        "border-top": `1px solid ${rgba(activeColor, 0.18)}`,
+        "text-align": config.authorAlign,
+      }),
+    );
     const avatar = doc.createElement(identity.avatarUrl ? "img" : "span");
     if (identity.avatarUrl) {
       avatar.setAttribute("src", identity.avatarUrl);
@@ -522,17 +869,44 @@ function buildTailGuide(doc: Document, config: TailGuideStyle, identity: Identit
     } else {
       avatar.textContent = identity.nickname.charAt(0) || "?";
     }
-    avatar.setAttribute("style", css({ display: "inline-block", width: "44px", height: "44px", "border-radius": "50%", "object-fit": "cover", background: rgba(activeColor, 0.12), border: `2px solid ${rgba(activeColor, 0.28)}`, color: activeColor, "font-size": "18px", "line-height": "40px", "text-align": "center" }));
+    avatar.setAttribute(
+      "style",
+      css({
+        display: "inline-block",
+        width: "44px",
+        height: "44px",
+        "border-radius": "50%",
+        "object-fit": "cover",
+        background: rgba(activeColor, 0.12),
+        border: `2px solid ${rgba(activeColor, 0.28)}`,
+        color: activeColor,
+        "font-size": "18px",
+        "line-height": "40px",
+        "text-align": "center",
+      }),
+    );
     const meta = doc.createElement("span");
     meta.textContent = [identity.nickname, identity.tag].filter(Boolean).join(" · ");
-    meta.setAttribute("style", css({ color: activeColor, "font-size": "13px", "font-weight": 700 }));
+    meta.setAttribute(
+      "style",
+      css({ color: activeColor, "font-size": "13px", "font-weight": 700 }),
+    );
     author.append(avatar, meta);
     card.appendChild(author);
   }
   if (config.footerText) {
     const footer = doc.createElement("p");
     footer.textContent = config.footerText;
-    footer.setAttribute("style", css({ margin: "14px 0 0", color: colors.text, "font-size": "9px", "letter-spacing": "2px", opacity: 0.5 }));
+    footer.setAttribute(
+      "style",
+      css({
+        margin: "14px 0 0",
+        color: colors.text,
+        "font-size": "9px",
+        "letter-spacing": "2px",
+        opacity: 0.5,
+      }),
+    );
     card.appendChild(footer);
   }
   return card;
@@ -545,7 +919,8 @@ export interface WechatRenderResult {
   issues: WechatCompatibilityIssue[];
 }
 
-export type WechatWarning = "wechat.compatTable" | "wechat.compatCode" | "wechat.compatLink" | "wechat.compatImage";
+export type WechatWarning =
+  "wechat.compatTable" | "wechat.compatCode" | "wechat.compatLink" | "wechat.compatImage";
 
 export interface WechatCompatibilityIssue {
   warning: WechatWarning;
@@ -562,7 +937,10 @@ const EMPTY_RESULT: WechatRenderResult = {
   issues: [],
 };
 
-function compatibilityText(el: Element, warning: WechatWarning): {
+function compatibilityText(
+  el: Element,
+  warning: WechatWarning,
+): {
   preview: string;
   searchText: string;
 } {
@@ -656,7 +1034,13 @@ export function renderWechat(
   const section = window.document.createElement("section");
   section.setAttribute("style", wechatRootStyle(style));
   section.innerHTML = holder.innerHTML;
-  const identity = buildIdentityCard(window.document, identityCard, palette, style.fontSize, style.lineHeight);
+  const identity = buildIdentityCard(
+    window.document,
+    identityCard,
+    palette,
+    style.fontSize,
+    style.lineHeight,
+  );
   if (identity) section.insertBefore(identity, section.firstChild);
   const guide = buildTailGuide(window.document, style.tailGuide, identityCard, palette);
   if (guide) section.appendChild(guide);
@@ -681,7 +1065,9 @@ function toPlainText(holder: HTMLElement): string {
 }
 
 export function buildWechatDocument(bodyHtml: string, title: string): string {
-  const safeTitle = title.replace(/[<>&]/g, (char) => char === "<" ? "&lt;" : char === ">" ? "&gt;" : "&amp;");
+  const safeTitle = title.replace(/[<>&]/g, (char) =>
+    char === "<" ? "&lt;" : char === ">" ? "&gt;" : "&amp;",
+  );
   return `<!doctype html>
 <html lang="zh-CN">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${safeTitle}</title></head>

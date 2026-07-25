@@ -71,10 +71,7 @@ interface AiQuickActionsProps {
   platform?: AiQuickActionPlatform;
 }
 
-export function AiQuickActions({
-  editorRef,
-  platform = "common",
-}: AiQuickActionsProps) {
+export function AiQuickActions({ editorRef, platform = "common" }: AiQuickActionsProps) {
   const t = useT();
   const { config, configured, openSettings } = useAi();
   const [open, setOpen] = React.useState(false);
@@ -235,7 +232,8 @@ export function AiQuickActions({
               className={cn(
                 "size-9 rounded-full border-border bg-card/90 shadow-lg backdrop-blur-sm",
                 "hover:border-brand-primary/45 hover:bg-card hover:text-brand-primary hover:shadow-xl",
-                action === item.action && running &&
+                action === item.action &&
+                  running &&
                   "border-brand-primary/45 text-brand-primary shadow-md",
               )}
               aria-label={t(item.label)}
@@ -277,12 +275,8 @@ export function AiQuickActions({
 
           {pending ? (
             <div className="flex min-h-0 flex-col items-center justify-center gap-4 py-12 text-center">
-              {actionMeta ? (
-                <actionMeta.icon className="size-10 text-muted-foreground/40" />
-              ) : null}
-              <p className="max-w-sm text-sm text-muted-foreground">
-                {t("ai.pendingDescription")}
-              </p>
+              {actionMeta ? <actionMeta.icon className="size-10 text-muted-foreground/40" /> : null}
+              <p className="max-w-sm text-sm text-muted-foreground">{t("ai.pendingDescription")}</p>
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col gap-2">

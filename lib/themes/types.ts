@@ -3,8 +3,7 @@ import type { TKey } from "@/lib/i18n";
 /** 字体方案只用系统字体，不引入远程字体（PRD 10.2）。 */
 export const FONT_STACKS = {
   sans: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif',
-  serif:
-    'Georgia, "Songti SC", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC", serif',
+  serif: 'Georgia, "Songti SC", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC", serif',
   hei: '"Heiti SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif',
   kai: '"Kaiti SC", STKaiti, KaiTi, BiauKai, "Noto Serif CJK SC", serif',
   fangsong: 'STFangsong, FangSong, "FangSong_GB2312", "Noto Serif CJK SC", serif',

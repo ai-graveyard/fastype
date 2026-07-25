@@ -18,11 +18,13 @@ export {
 
 export const WECHAT_FONT_STACKS = {
   sans: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif',
-  serif: 'Georgia, "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", SimSun, serif',
+  serif:
+    'Georgia, "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", SimSun, serif',
   hei: '"Heiti SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif',
   kai: '"Kaiti SC", STKaiti, KaiTi, BiauKai, "Noto Serif CJK SC", serif',
   fangsong: 'STFangsong, FangSong, "FangSong_GB2312", "Noto Serif CJK SC", serif',
-  rounded: 'ui-rounded, "Hiragino Maru Gothic ProN", "Yuanti SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+  rounded:
+    'ui-rounded, "Hiragino Maru Gothic ProN", "Yuanti SC", "PingFang SC", "Microsoft YaHei", sans-serif',
   mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
   xingkai: 'STXingkai, "Xingkai SC", "HanziPen SC", "Kaiti SC", STKaiti, KaiTi, cursive',
   lishu: 'STLiti, "LiSu", "Noto Serif CJK SC", SimSun, serif',
@@ -231,7 +233,17 @@ export interface WechatTheme extends ThemeMeta {
 
 const themes: Array<
   Pick<WechatTheme, "id" | "labelKey" | "palette"> & {
-    defaults: Omit<ThemeDefaults, "fontFamily" | "fontSize" | "lineHeight" | "paragraphSpacing" | "pagePadding" | "headingTemplate" | "quoteStyle" | "codeStyle"> &
+    defaults: Omit<
+      ThemeDefaults,
+      | "fontFamily"
+      | "fontSize"
+      | "lineHeight"
+      | "paragraphSpacing"
+      | "pagePadding"
+      | "headingTemplate"
+      | "quoteStyle"
+      | "codeStyle"
+    > &
       Partial<ThemeDefaults>;
   }
 > = [
@@ -239,43 +251,148 @@ const themes: Array<
     id: "classic",
     labelKey: "wechat.themeClassic",
     defaults: { pageBackground: "#ffffff", textColor: "#2f2f2f", accentColor: "#6b7280" },
-    palette: { pageBorderColor: "#e5e7eb", headingColor: "#111111", titleBg: "#1f1f1f", titleColor: "#ffffff", sectionBg: "#f3f4f6", mutedColor: "#6b7280", borderColor: "#d1d5db", quoteBackground: "#f7f7f8", codeBackground: "#f4f4f5", codeText: "#202020", inlineCodeBackground: "#f1f1f3", inlineCodeColor: "#3a3a3a", linkColor: "#374151", tableHeaderBackground: "#f3f4f6" },
+    palette: {
+      pageBorderColor: "#e5e7eb",
+      headingColor: "#111111",
+      titleBg: "#1f1f1f",
+      titleColor: "#ffffff",
+      sectionBg: "#f3f4f6",
+      mutedColor: "#6b7280",
+      borderColor: "#d1d5db",
+      quoteBackground: "#f7f7f8",
+      codeBackground: "#f4f4f5",
+      codeText: "#202020",
+      inlineCodeBackground: "#f1f1f3",
+      inlineCodeColor: "#3a3a3a",
+      linkColor: "#374151",
+      tableHeaderBackground: "#f3f4f6",
+    },
   },
   {
     id: "elegant",
     labelKey: "wechat.themeElegant",
     defaults: { pageBackground: "#fdfaf5", textColor: "#3f3f3f", accentColor: "#8b572a" },
-    palette: { pageBorderColor: "#e2d7ca", headingColor: "#8b572a", titleBg: "#8b572a", titleColor: "#fffaf2", sectionBg: "#f6ede3", mutedColor: "#8b7661", borderColor: "#d6cbbf", quoteBackground: "#faf6f1", codeBackground: "#faf6f1", codeText: "#3f3f3f", inlineCodeBackground: "#faf6f1", inlineCodeColor: "#8b572a", linkColor: "#8b572a", tableHeaderBackground: "#faf6f1" },
+    palette: {
+      pageBorderColor: "#e2d7ca",
+      headingColor: "#8b572a",
+      titleBg: "#8b572a",
+      titleColor: "#fffaf2",
+      sectionBg: "#f6ede3",
+      mutedColor: "#8b7661",
+      borderColor: "#d6cbbf",
+      quoteBackground: "#faf6f1",
+      codeBackground: "#faf6f1",
+      codeText: "#3f3f3f",
+      inlineCodeBackground: "#faf6f1",
+      inlineCodeColor: "#8b572a",
+      linkColor: "#8b572a",
+      tableHeaderBackground: "#faf6f1",
+    },
   },
   {
     id: "ocean",
     labelKey: "wechat.themeOcean",
     defaults: { pageBackground: "#f7fbff", textColor: "#2c3e50", accentColor: "#1565c0" },
-    palette: { pageBorderColor: "#cfe2f6", headingColor: "#1565c0", titleBg: "#1565c0", titleColor: "#f4f9ff", sectionBg: "#eaf4ff", mutedColor: "#607d96", borderColor: "#bbdefb", quoteBackground: "#e3f2fd", codeBackground: "#e8eaf6", codeText: "#283593", inlineCodeBackground: "#e3f2fd", inlineCodeColor: "#1565c0", linkColor: "#1565c0", tableHeaderBackground: "#e3f2fd" },
+    palette: {
+      pageBorderColor: "#cfe2f6",
+      headingColor: "#1565c0",
+      titleBg: "#1565c0",
+      titleColor: "#f4f9ff",
+      sectionBg: "#eaf4ff",
+      mutedColor: "#607d96",
+      borderColor: "#bbdefb",
+      quoteBackground: "#e3f2fd",
+      codeBackground: "#e8eaf6",
+      codeText: "#283593",
+      inlineCodeBackground: "#e3f2fd",
+      inlineCodeColor: "#1565c0",
+      linkColor: "#1565c0",
+      tableHeaderBackground: "#e3f2fd",
+    },
   },
   {
     id: "forest",
     labelKey: "wechat.themeForest",
     defaults: { pageBackground: "#f6fbf3", textColor: "#353535", accentColor: "#2e7d32" },
-    palette: { pageBorderColor: "#cfe4cc", headingColor: "#2e7d32", titleBg: "#2e7d32", titleColor: "#f5fff4", sectionBg: "#e9f5e6", mutedColor: "#647965", borderColor: "#c8e6c9", quoteBackground: "#f1f8e9", codeBackground: "#f1f8e9", codeText: "#33691e", inlineCodeBackground: "#e8f5e9", inlineCodeColor: "#2e7d32", linkColor: "#2e7d32", tableHeaderBackground: "#e8f5e9" },
+    palette: {
+      pageBorderColor: "#cfe4cc",
+      headingColor: "#2e7d32",
+      titleBg: "#2e7d32",
+      titleColor: "#f5fff4",
+      sectionBg: "#e9f5e6",
+      mutedColor: "#647965",
+      borderColor: "#c8e6c9",
+      quoteBackground: "#f1f8e9",
+      codeBackground: "#f1f8e9",
+      codeText: "#33691e",
+      inlineCodeBackground: "#e8f5e9",
+      inlineCodeColor: "#2e7d32",
+      linkColor: "#2e7d32",
+      tableHeaderBackground: "#e8f5e9",
+    },
   },
   {
     id: "rose",
     labelKey: "wechat.themeRose",
     defaults: { pageBackground: "#fff8fa", textColor: "#4a3333", accentColor: "#b5495b" },
-    palette: { pageBorderColor: "#f2d3da", headingColor: "#b5495b", titleBg: "#b5495b", titleColor: "#fff7f8", sectionBg: "#fdebef", mutedColor: "#8c7074", borderColor: "#f5c6ce", quoteBackground: "#fdf2f4", codeBackground: "#fdf2f4", codeText: "#4a3333", inlineCodeBackground: "#fce7eb", inlineCodeColor: "#b5495b", linkColor: "#b5495b", tableHeaderBackground: "#fce7eb" },
+    palette: {
+      pageBorderColor: "#f2d3da",
+      headingColor: "#b5495b",
+      titleBg: "#b5495b",
+      titleColor: "#fff7f8",
+      sectionBg: "#fdebef",
+      mutedColor: "#8c7074",
+      borderColor: "#f5c6ce",
+      quoteBackground: "#fdf2f4",
+      codeBackground: "#fdf2f4",
+      codeText: "#4a3333",
+      inlineCodeBackground: "#fce7eb",
+      inlineCodeColor: "#b5495b",
+      linkColor: "#b5495b",
+      tableHeaderBackground: "#fce7eb",
+    },
   },
   {
     id: "dark",
     labelKey: "wechat.themeDark",
     defaults: { pageBackground: "#1a1a2e", textColor: "#d4d4d8", accentColor: "#a1a1aa" },
-    palette: { pageBorderColor: "#2d2d44", headingColor: "#e4e4e7", titleBg: "#e4e4e7", titleColor: "#1a1a2e", sectionBg: "#232340", mutedColor: "#a1a1aa", borderColor: "#3f3f5c", quoteBackground: "#1f1f38", codeBackground: "#16162a", codeText: "#c8c8d0", inlineCodeBackground: "#232340", inlineCodeColor: "#c8c8d0", linkColor: "#93c5fd", tableHeaderBackground: "#232340" },
+    palette: {
+      pageBorderColor: "#2d2d44",
+      headingColor: "#e4e4e7",
+      titleBg: "#e4e4e7",
+      titleColor: "#1a1a2e",
+      sectionBg: "#232340",
+      mutedColor: "#a1a1aa",
+      borderColor: "#3f3f5c",
+      quoteBackground: "#1f1f38",
+      codeBackground: "#16162a",
+      codeText: "#c8c8d0",
+      inlineCodeBackground: "#232340",
+      inlineCodeColor: "#c8c8d0",
+      linkColor: "#93c5fd",
+      tableHeaderBackground: "#232340",
+    },
   },
   {
     id: "sunset",
     labelKey: "wechat.themeDeepSea",
     defaults: { pageBackground: "#08131d", textColor: "#d7e8f3", accentColor: "#22c3ee" },
-    palette: { pageBorderColor: "#163247", headingColor: "#8fe7ff", titleBg: "#0f3b53", titleColor: "#ecfeff", sectionBg: "#0d2231", mutedColor: "#8aa8b8", borderColor: "#1f4c63", quoteBackground: "#0b1c29", codeBackground: "#07111a", codeText: "#cce7f2", inlineCodeBackground: "#123247", inlineCodeColor: "#7dd3fc", linkColor: "#67e8f9", tableHeaderBackground: "#0d2231" },
+    palette: {
+      pageBorderColor: "#163247",
+      headingColor: "#8fe7ff",
+      titleBg: "#0f3b53",
+      titleColor: "#ecfeff",
+      sectionBg: "#0d2231",
+      mutedColor: "#8aa8b8",
+      borderColor: "#1f4c63",
+      quoteBackground: "#0b1c29",
+      codeBackground: "#07111a",
+      codeText: "#cce7f2",
+      inlineCodeBackground: "#123247",
+      inlineCodeColor: "#7dd3fc",
+      linkColor: "#67e8f9",
+      tableHeaderBackground: "#0d2231",
+    },
   },
 ];
 
@@ -428,11 +545,13 @@ const num = (value: unknown, fallback: number, min: number, max: number) =>
   typeof value === "number" && Number.isFinite(value)
     ? Math.min(max, Math.max(min, value))
     : fallback;
-const bool = (value: unknown, fallback: boolean) =>
-  typeof value === "boolean" ? value : fallback;
-const text = (value: unknown, fallback = "") => (typeof value === "string" ? value.slice(0, 500) : fallback);
+const bool = (value: unknown, fallback: boolean) => (typeof value === "boolean" ? value : fallback);
+const text = (value: unknown, fallback = "") =>
+  typeof value === "string" ? value.slice(0, 500) : fallback;
 const pick = <T extends string>(value: unknown, options: readonly T[], fallback: T): T =>
-  typeof value === "string" && (options as readonly string[]).includes(value) ? (value as T) : fallback;
+  typeof value === "string" && (options as readonly string[]).includes(value)
+    ? (value as T)
+    : fallback;
 
 function parseIdentity(raw: unknown, fallback: IdentityCardStyle): IdentityCardStyle {
   const input = raw && typeof raw === "object" ? (raw as Partial<IdentityCardStyle>) : {};
@@ -480,7 +599,11 @@ function parseTailGuide(raw: unknown, fallback: TailGuideStyle): TailGuideStyle 
   };
 }
 
-function parseHeadingNumber(raw: unknown, legacyEnabled: unknown, fallback: HeadingNumberStyle): HeadingNumberStyle {
+function parseHeadingNumber(
+  raw: unknown,
+  legacyEnabled: unknown,
+  fallback: HeadingNumberStyle,
+): HeadingNumberStyle {
   const input = raw && typeof raw === "object" ? (raw as Partial<HeadingNumberStyle>) : {};
   return {
     enabled: bool(input.enabled, bool(legacyEnabled, fallback.enabled)),
@@ -489,7 +612,11 @@ function parseHeadingNumber(raw: unknown, legacyEnabled: unknown, fallback: Head
     color: optionalColor(input.color, fallback.color),
     opacity: num(input.opacity, fallback.opacity, 0.02, 1),
     labelText: text(input.labelText, fallback.labelText),
-    labelPosition: pick(input.labelPosition, HEADING_NUMBER_LABEL_POSITIONS, fallback.labelPosition),
+    labelPosition: pick(
+      input.labelPosition,
+      HEADING_NUMBER_LABEL_POSITIONS,
+      fallback.labelPosition,
+    ),
     labelSizeMultiplier: num(input.labelSizeMultiplier, fallback.labelSizeMultiplier, 0.4, 1.5),
     labelColor: optionalColor(input.labelColor, fallback.labelColor),
     labelOpacity: num(input.labelOpacity, fallback.labelOpacity, 0.02, 1),
@@ -497,7 +624,10 @@ function parseHeadingNumber(raw: unknown, legacyEnabled: unknown, fallback: Head
 }
 
 /** 兼容旧版本每个层级共享同一组全局字段的情况，作为该层级未单独配置时的兜底值。 */
-function legacyHeadingLevel(legacy: Record<string, unknown>, fallback: WechatHeadingLevelStyle): WechatHeadingLevelStyle {
+function legacyHeadingLevel(
+  legacy: Record<string, unknown>,
+  fallback: WechatHeadingLevelStyle,
+): WechatHeadingLevelStyle {
   return {
     scale: num(legacy.headingScale, fallback.scale, 0.75, 1.5),
     spacing: num(legacy.headingSpacingScale, fallback.spacing, 0.5, 2),
@@ -509,8 +639,14 @@ function legacyHeadingLevel(legacy: Record<string, unknown>, fallback: WechatHea
   };
 }
 
-function parseHeadingLevel(raw: unknown, fallback: WechatHeadingLevelStyle): WechatHeadingLevelStyle {
-  const input = raw && typeof raw === "object" ? (raw as Partial<Record<keyof WechatHeadingLevelStyle, unknown>>) : {};
+function parseHeadingLevel(
+  raw: unknown,
+  fallback: WechatHeadingLevelStyle,
+): WechatHeadingLevelStyle {
+  const input =
+    raw && typeof raw === "object"
+      ? (raw as Partial<Record<keyof WechatHeadingLevelStyle, unknown>>)
+      : {};
   return {
     scale: num(input.scale, fallback.scale, 0.75, 1.5),
     spacing: num(input.spacing, fallback.spacing, 0.5, 2),
@@ -522,10 +658,14 @@ function parseHeadingLevel(raw: unknown, fallback: WechatHeadingLevelStyle): Wec
   };
 }
 
-function parseHeadings(raw: Record<string, unknown>, fallback: WechatHeadingLevels): WechatHeadingLevels {
-  const headingsInput = raw.headings && typeof raw.headings === "object"
-    ? (raw.headings as Partial<Record<keyof WechatHeadingLevels, unknown>>)
-    : null;
+function parseHeadings(
+  raw: Record<string, unknown>,
+  fallback: WechatHeadingLevels,
+): WechatHeadingLevels {
+  const headingsInput =
+    raw.headings && typeof raw.headings === "object"
+      ? (raw.headings as Partial<Record<keyof WechatHeadingLevels, unknown>>)
+      : null;
   return {
     h1: parseHeadingLevel(headingsInput?.h1, legacyHeadingLevel(raw, fallback.h1)),
     h2: parseHeadingLevel(headingsInput?.h2, {
@@ -544,7 +684,12 @@ export function parseWechatStyle(raw: unknown): WechatStyle | null {
   const rawFontFamily = legacyRaw.fontFamily;
   const theme = getWechatTheme(typeof input.themeId === "string" ? input.themeId : "");
   const d = wechatStyleFromTheme(theme.id);
-  const legacyHeading: Record<string, HeadingTemplate> = { plain: "minimal", bar: "accent", underline: "underline", badge: "highlight" };
+  const legacyHeading: Record<string, HeadingTemplate> = {
+    plain: "minimal",
+    bar: "accent",
+    underline: "underline",
+    badge: "highlight",
+  };
   return {
     ...d,
     themeId: theme.id,
@@ -564,11 +709,19 @@ export function parseWechatStyle(raw: unknown): WechatStyle | null {
     fontWeight: num(input.fontWeight, d.fontWeight, 200, 900),
     letterSpacing: num(input.letterSpacing, d.letterSpacing, 0, 3),
     textIndent: bool(input.textIndent, d.textIndent),
-    headingTemplate: pick(input.headingTemplate ?? legacyHeading[String(input.headingStyle)], HEADING_TEMPLATES, d.headingTemplate),
+    headingTemplate: pick(
+      input.headingTemplate ?? legacyHeading[String(input.headingStyle)],
+      HEADING_TEMPLATES,
+      d.headingTemplate,
+    ),
     headings: parseHeadings(legacyRaw, d.headings),
     strongColor: optionalColor(input.strongColor, d.strongColor),
     strongHighlight: optionalColor(input.strongHighlight, d.strongHighlight),
-    strongHighlightHeight: pick(input.strongHighlightHeight, STRONG_HIGHLIGHT_HEIGHTS, d.strongHighlightHeight),
+    strongHighlightHeight: pick(
+      input.strongHighlightHeight,
+      STRONG_HIGHLIGHT_HEIGHTS,
+      d.strongHighlightHeight,
+    ),
     strongHighlightOpacity: num(input.strongHighlightOpacity, d.strongHighlightOpacity, 0, 1),
     italicColor: optionalColor(input.italicColor, d.italicColor),
     deleteColor: color(input.deleteColor, d.deleteColor),

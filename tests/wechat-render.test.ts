@@ -117,9 +117,18 @@ describe("renderWechat", () => {
     const { html } = render("# 大标题\n\n## 第一节\n\n### 小节 A\n\n### 小节 B", {
       ...DEFAULT_WECHAT_STYLE,
       headings: {
-        h1: { ...DEFAULT_WECHAT_STYLE.headings.h1, number: { ...DEFAULT_WECHAT_STYLE.headings.h1.number, enabled: false } },
-        h2: { ...DEFAULT_WECHAT_STYLE.headings.h2, number: { ...DEFAULT_WECHAT_STYLE.headings.h2.number, enabled: false } },
-        h3: { ...DEFAULT_WECHAT_STYLE.headings.h3, number: { ...DEFAULT_WECHAT_STYLE.headings.h3.number, enabled: true } },
+        h1: {
+          ...DEFAULT_WECHAT_STYLE.headings.h1,
+          number: { ...DEFAULT_WECHAT_STYLE.headings.h1.number, enabled: false },
+        },
+        h2: {
+          ...DEFAULT_WECHAT_STYLE.headings.h2,
+          number: { ...DEFAULT_WECHAT_STYLE.headings.h2.number, enabled: false },
+        },
+        h3: {
+          ...DEFAULT_WECHAT_STYLE.headings.h3,
+          number: { ...DEFAULT_WECHAT_STYLE.headings.h3.number, enabled: true },
+        },
       },
     });
     const h1 = html.match(/<h1[^>]*>[\s\S]*?<\/h1>/)?.[0] ?? "";
@@ -412,7 +421,7 @@ describe("renderWechat", () => {
   });
 
   it("消毒后的内容不会带脚本进入公众号", () => {
-    const { html } = render('<script>alert(1)</script>\n\n正文');
+    const { html } = render("<script>alert(1)</script>\n\n正文");
     expect(html).not.toContain("<script");
     expect(html).not.toContain("alert(1)");
   });

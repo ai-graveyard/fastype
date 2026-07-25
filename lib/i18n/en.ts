@@ -69,7 +69,8 @@ export const en: Translation = {
     imageSizeError: "The avatar must be 1 MB or smaller.",
     imageReadError: "Could not read that image. Try another file.",
     cropTitle: "Crop avatar",
-    cropDescription: "Move the image or adjust the square selection before applying it as your avatar.",
+    cropDescription:
+      "Move the image or adjust the square selection before applying it as your avatar.",
     zoomOut: "Zoom out",
     zoomIn: "Zoom in",
     resetCrop: "Reset crop",
@@ -164,7 +165,8 @@ export const en: Translation = {
     downloadLongImage: "Download image",
     exportingLongImage: "Generating…",
     longImageDone: "Preview image downloaded",
-    longImageFailed: "Could not generate the image. Shorten the document or check remote images and try again.",
+    longImageFailed:
+      "Could not generate the image. Shorten the document or check remote images and try again.",
     longImageTooLarge: "The document is too long to export within this browser's canvas limit.",
     previewThemes: "Preview themes",
     themeGitHub: "GitHub",
@@ -202,10 +204,12 @@ export const en: Translation = {
     tabEnhance: "Enhance",
     imageContent: "Image body",
     autoFillFromBody: "Auto-fill",
-    autoFillFromBodyDesc: "Fills the title from the image body's first-level heading and the note body from its first 1,000 characters. This overwrites the current title and body.",
+    autoFillFromBodyDesc:
+      "Fills the title from the image body's first-level heading and the note body from its first 1,000 characters. This overwrites the current title and body.",
     textContent: "Text body",
     textTitle: "Title",
-    textTitleDesc: "The title shown above the Xiaohongshu note body. It does not change image cards.",
+    textTitleDesc:
+      "The title shown above the Xiaohongshu note body. It does not change image cards.",
     textTitlePlaceholder: "Enter the note title…",
     textContentDesc: "Plain text published in the Xiaohongshu note body.",
     textContentPlaceholder: "Enter the Xiaohongshu note body…",
@@ -220,9 +224,11 @@ export const en: Translation = {
     pagePadding: "Page padding",
     themeColors: "Theme colors",
     bodyTypography: "Body typography",
-    bodyTypographyDesc: "Control body font, size, weight, tracking, line height and paragraph spacing.",
+    bodyTypographyDesc:
+      "Control body font, size, weight, tracking, line height and paragraph spacing.",
     canvasLayout: "Canvas size",
-    canvasLayoutDesc: "Choose a common publishing ratio. Preview, pagination and export share this exact size.",
+    canvasLayoutDesc:
+      "Choose a common publishing ratio. Preview, pagination and export share this exact size.",
     canvasCustom: "Custom",
     canvasWidth: "Canvas width",
     canvasHeight: "Canvas height",
@@ -263,7 +269,8 @@ export const en: Translation = {
     codeFontSize: "Code font size",
     codeRadius: "Code radius",
     identifierTitle: "User identifier",
-    identifierDescription: "Show your avatar, name, date and slogan on body cards, with an option to include it on the cover.",
+    identifierDescription:
+      "Show your avatar, name, date and slogan on body cards, with an option to include it on the cover.",
     identifierEnabled: "Show user identifier",
     identifierEditHint: "Click to edit",
     identifierPosition: "Identifier position",
@@ -351,7 +358,8 @@ export const en: Translation = {
     accentColor: "Accent color",
     quickColors: "Quick colors",
     pageNumber: "Page number",
-    pageNumberDescription: "Set body-image page numbers and optionally include the cover in the count.",
+    pageNumberDescription:
+      "Set body-image page numbers and optionally include the cover in the count.",
     pageNumberShowOnCover: "Show page number on cover",
     pageNumberAlign: "Page number alignment",
     pageNumberSize: "Page number size",
@@ -380,7 +388,8 @@ export const en: Translation = {
     h3: "Heading 3",
     headingReset: "Reset to the current theme's default style",
     bodyTitleOverride: "Custom title",
-    bodyTitleOverrideHint: "Leave blank to use the first heading in the body; this never edits the Markdown source.",
+    bodyTitleOverrideHint:
+      "Leave blank to use the first heading in the body; this never edits the Markdown source.",
     bodyTitleOverridePlaceholder: "Type a title to replace the H1 shown on exported images…",
     headingScale: "Heading scale",
     headingSpacing: "Heading spacing",
@@ -415,7 +424,8 @@ export const en: Translation = {
     coverBackground: "Cover background",
     coverTextColor: "Cover text color",
     coverGraphics: "Decorative graphics",
-    coverGraphicsDesc: "Nothing is added by default. Pick a Lucide icon below to place it on the cover and edit it independently.",
+    coverGraphicsDesc:
+      "Nothing is added by default. Pick a Lucide icon below to place it on the cover and edit it independently.",
     coverGraphicLibrary: "Cover graphic library",
     coverGraphicAdd: "Add {name}",
     coverGraphicSelect: "Select {name}",
@@ -427,7 +437,8 @@ export const en: Translation = {
     coverGraphicOpacity: "Opacity",
     coverGraphicStroke: "Stroke width",
     coverGraphicsEmpty: "No graphics yet. Pick any icon above to start designing.",
-    coverGraphicsDragHint: "Select a graphic to edit it. Drag it in the preview or use the arrow keys to fine-tune its position.",
+    coverGraphicsDragHint:
+      "Select a graphic to edit it. Drag it in the preview or use the arrow keys to fine-tune its position.",
     coverGraphicSparkles: "sparkles",
     coverGraphicStar: "star",
     coverGraphicHeart: "heart",
@@ -528,7 +539,8 @@ export const en: Translation = {
     outline: "Article outline",
     clickToEdit: "Click an article element to open its settings",
     coverPreviewTitle: "WeChat covers",
-    coverPreviewDesc: "Finish the wide lead image and square thumbnail separately. Preview and download use the same artwork.",
+    coverPreviewDesc:
+      "Finish the wide lead image and square thumbnail separately. Preview and download use the same artwork.",
     coverWide: "Wide cover",
     coverSquare: "Square cover",
     coverImageReady: "Image ready",
@@ -536,10 +548,12 @@ export const en: Translation = {
     coverAddImage: "Add image",
     coverRecrop: "Upload and crop again",
     coverSafeArea: "Show square safe area",
-    coverSafeAreaDesc: "Marks the centered square in the wide preview only. It is never included in downloads.",
+    coverSafeAreaDesc:
+      "Marks the centered square in the wide preview only. It is never included in downloads.",
     coverDownloadBoth: "Download both covers as ZIP",
     coverContentTitle: "Cover content",
-    coverContentDesc: "The title can follow the article H1, while the byline uses your global profile.",
+    coverContentDesc:
+      "The title can follow the article H1, while the byline uses your global profile.",
     coverAutoTitle: "Use article title automatically",
     coverTitle: "Cover title",
     coverTitleFallback: "Add an H1 to the article",
@@ -559,7 +573,8 @@ export const en: Translation = {
     coverPositionBottom: "Bottom",
     coverReset: "Reset cover style",
     coverCropTitle: "Crop WeChat covers",
-    coverCropDesc: "Save the same source image separately as a 900×383 wide cover and a 500×500 square cover.",
+    coverCropDesc:
+      "Save the same source image separately as a 900×383 wide cover and a 500×500 square cover.",
     coverSaveCurrent: "Save current crop",
     coverWideSaved: "Wide cover saved",
     coverSquareSaved: "Square cover saved",
@@ -575,7 +590,8 @@ export const en: Translation = {
     pagePadding: "Page padding",
     pageBackground: "Background",
     bodyTypography: "Body typography",
-    bodyTypographyDesc: "Control body font, size, weight, tracking, line height and paragraph spacing.",
+    bodyTypographyDesc:
+      "Control body font, size, weight, tracking, line height and paragraph spacing.",
     fontSans: "Sans",
     fontSerif: "Serif",
     fontHei: "Heiti",
@@ -592,7 +608,8 @@ export const en: Translation = {
     letterSpacing: "Letter spacing",
     textIndent: "First-line indent",
     headingSystem: "Heading system",
-    headingSystemDesc: "One shared heading template; H1/H2/H3 can each set their own scale, spacing, weight, alignment and auto-numbering.",
+    headingSystemDesc:
+      "One shared heading template; H1/H2/H3 can each set their own scale, spacing, weight, alignment and auto-numbering.",
     headingTemplate: "Heading template",
     headingTemplateClassic: "Classic",
     headingTemplateHighlight: "Highlight",
@@ -726,7 +743,8 @@ export const en: Translation = {
     guideAuthorRight: "Right",
     guideAuthorHidden: "Hidden",
     guideFooter: "Footer note",
-    localFeatureNote: "FasType remains frontend-only: typography, identity and guide settings stay in this browser without accounts, credits or backend services.",
+    localFeatureNote:
+      "FasType remains frontend-only: typography, identity and guide settings stay in this browser without accounts, credits or backend services.",
     fontFamily: "Font",
     fontSize: "Body size",
     lineHeight: "Line height",
@@ -754,19 +772,14 @@ export const en: Translation = {
       "Copy failed: the browser denied clipboard access. Try downloading the HTML or copying plain text.",
     downloadHtml: "Download HTML",
     downloadHtmlDone: "HTML downloaded",
-    disclaimer:
-      "The final look is whatever the WeChat editor shows after you paste.",
+    disclaimer: "The final look is whatever the WeChat editor shows after you paste.",
     compatTitle: "Compatibility notes",
-    compatTable:
-      "Tables may be squeezed or wrapped inside WeChat. Keep the column count low.",
-    compatCode:
-      "WeChat does not scroll code blocks horizontally, so long lines wrap.",
+    compatTable: "Tables may be squeezed or wrapped inside WeChat. Keep the column count low.",
+    compatCode: "WeChat does not scroll code blocks horizontally, so long lines wrap.",
     compatLink:
       "External links in WeChat articles are usually not clickable. Consider listing them at the end.",
-    compatImage:
-      "External images must be re-uploaded in the WeChat editor to stay available.",
-    previewSummary:
-      "{images} images · {headings} subheadings · {minutes} min read",
+    compatImage: "External images must be re-uploaded in the WeChat editor to stay available.",
+    previewSummary: "{images} images · {headings} subheadings · {minutes} min read",
     previewReady: "Ready to copy",
     previewEmpty: "Waiting for content",
     previewImagesFailed: "{n} images failed to load",
@@ -798,8 +811,7 @@ export const en: Translation = {
       "The full editor document will be sent to the AI for processing. The original will not be overwritten automatically. You can preview the result and decide whether to replace it.",
     startAction: "Start processing",
     notConfigured: "No model configured",
-    configurePrompt:
-      "Enter a Base URL, API key and model name to use full-document AI actions.",
+    configurePrompt: "Enter a Base URL, API key and model name to use full-document AI actions.",
     configureNow: "Configure now",
     skip: "Not now",
     baseUrl: "Base URL",
@@ -857,7 +869,8 @@ export const en: Translation = {
       "The selected passage changed while generating. Reselect it and try again so nothing gets overwritten.",
     documentRequired: "There is no document content to process.",
     running: "Generating…",
-    documentRunning: "Processing the full document. The original will not be overwritten automatically.",
+    documentRunning:
+      "Processing the full document. The original will not be overwritten automatically.",
     stop: "Stop",
     result: "AI result",
     original: "Original",
@@ -883,8 +896,7 @@ export const en: Translation = {
     emptyResult: "The model returned nothing. Your text is unchanged.",
     contextNotice: "This will send the selected {n} characters plus a little context.",
     errAuth: "Authentication failed (401/403). Check that the API key is correct and active.",
-    errModel:
-      "Model “{model}” does not exist or this key cannot access it. Check the model name.",
+    errModel: "Model “{model}” does not exist or this key cannot access it. Check the model name.",
     errNotFound:
       "Endpoint not found (404). Check whether the Base URL needs /v1, e.g. https://api.openai.com/v1.",
     errIncompatible:

@@ -32,16 +32,18 @@ describe("公众号内容编辑器", () => {
             <AiProvider>
               <TooltipProvider>
                 <WechatWorkspace
-                activeTab="content"
-                onActiveTabChange={vi.fn()}
-                contentMode="text"
-                onContentModeChange={vi.fn()}
-                editorRef={{ current: null } as RefObject<EditorApi | null>}
-                content={Array.from({ length: 200 }, (_, index) => `第 ${index + 1} 行`).join("\n")}
-                onContentChange={vi.fn()}
-                onSelectionChange={vi.fn()}
-                resetKey="test"
-                savePending={false}
+                  activeTab="content"
+                  onActiveTabChange={vi.fn()}
+                  contentMode="text"
+                  onContentModeChange={vi.fn()}
+                  editorRef={{ current: null } as RefObject<EditorApi | null>}
+                  content={Array.from({ length: 200 }, (_, index) => `第 ${index + 1} 行`).join(
+                    "\n",
+                  )}
+                  onContentChange={vi.fn()}
+                  onSelectionChange={vi.fn()}
+                  resetKey="test"
+                  savePending={false}
                 />
               </TooltipProvider>
             </AiProvider>
@@ -57,9 +59,9 @@ describe("公众号内容编辑器", () => {
 
     expect(header.contains(modeSwitcher)).toBe(false);
     expect(toolbar.lastElementChild?.lastElementChild).toBe(modeSwitcher);
-    expect(
-      screen.getByRole("button", { name: /^Text$|^文本$/ }).getAttribute("aria-pressed"),
-    ).toBe("true");
+    expect(screen.getByRole("button", { name: /^Text$|^文本$/ }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
     expect(contentPanel?.classList.contains("flex")).toBe(true);
     expect(contentPanel?.classList.contains("min-h-0")).toBe(true);
     expect(contentPanel?.classList.contains("overflow-hidden")).toBe(true);
@@ -138,9 +140,9 @@ describe("公众号内容编辑器", () => {
     expect(screen.getAllByText(/900 × 383/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/500 × 500/).length).toBeGreaterThan(0);
     expect(
-      screen.getByLabelText(/Use article title automatically|自动使用文章标题/).getAttribute(
-        "data-state",
-      ),
+      screen
+        .getByLabelText(/Use article title automatically|自动使用文章标题/)
+        .getAttribute("data-state"),
     ).toBe("unchecked");
     expect(screen.getByRole("button", { name: /Right|右对齐/ })).toBeTruthy();
     expect(

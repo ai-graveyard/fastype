@@ -121,8 +121,7 @@ function parseAiPrompts(raw: unknown): AiPrompts {
   const prompts = {} as AiPrompts;
   for (const key of keys) {
     const value = input[key];
-    prompts[key] =
-      typeof value === "string" && value.trim() ? value : DEFAULT_AI_PROMPTS[key];
+    prompts[key] = typeof value === "string" && value.trim() ? value : DEFAULT_AI_PROMPTS[key];
   }
   return prompts;
 }

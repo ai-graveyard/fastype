@@ -9,7 +9,5 @@ interface FileSystemWritableFileStream extends WritableStream {
 }
 
 interface FileSystemFileHandle {
-  createWritable(options?: {
-    keepExistingData?: boolean;
-  }): Promise<FileSystemWritableFileStream>;
+  createWritable(options?: { keepExistingData?: boolean }): Promise<FileSystemWritableFileStream>;
 }

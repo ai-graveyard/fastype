@@ -42,9 +42,7 @@ function renderSearch(api = createEditorApi()) {
   render(
     <PrefsProvider>
       <TooltipProvider>
-        <EditorSearchReplacePopover
-          editorRef={{ current: api } as RefObject<EditorApi | null>}
-        />
+        <EditorSearchReplacePopover editorRef={{ current: api } as RefObject<EditorApi | null>} />
       </TooltipProvider>
     </PrefsProvider>,
   );

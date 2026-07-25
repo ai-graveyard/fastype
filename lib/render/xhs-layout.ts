@@ -101,7 +101,9 @@ export function splitTargetOf(block: HTMLElement): SplitTarget | null {
     const parts = Array.from(code.children).filter((child) =>
       child.classList.contains(SPLIT_CLASS),
     ) as HTMLElement[];
-    return parts.length > 1 ? { container: code, path: pathTo(block, code), parts, repeat: [] } : null;
+    return parts.length > 1
+      ? { container: code, path: pathTo(block, code), parts, repeat: [] }
+      : null;
   }
 
   if (tag === "p") {

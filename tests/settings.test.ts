@@ -12,11 +12,7 @@ import { detectLocale, interpolate, translate } from "@/lib/i18n";
 import { dictionaries } from "@/lib/i18n";
 import { DEFAULT_PREFS, parseDraft, parsePrefs } from "@/lib/prefs";
 import { DEFAULT_USER_PROFILE, parseUserProfile } from "@/lib/user-profile";
-import {
-  DEFAULT_WECHAT_COVER,
-  parseWechatCover,
-  wechatCoverFilename,
-} from "@/lib/wechat-cover";
+import { DEFAULT_WECHAT_COVER, parseWechatCover, wechatCoverFilename } from "@/lib/wechat-cover";
 import { DEFAULT_MARKDOWN_PREVIEW_THEME } from "@/lib/themes/markdown";
 import {
   getWechatTheme,
@@ -287,7 +283,12 @@ describe("主题配置", () => {
   });
 
   it("样式字段越界时被夹回合法区间", () => {
-    const style = parseXhsStyle({ themeId: "classic", fontSize: 999, lineHeight: 0.1, padding: -5 });
+    const style = parseXhsStyle({
+      themeId: "classic",
+      fontSize: 999,
+      lineHeight: 0.1,
+      padding: -5,
+    });
     expect(style?.fontSize).toBeLessThanOrEqual(60);
     expect(style?.lineHeight).toBeGreaterThanOrEqual(1.3);
     expect(style?.padding).toBeGreaterThanOrEqual(32);
@@ -355,12 +356,10 @@ describe("主题配置", () => {
       })?.identifier,
     ).toMatchObject({ badge: "crown", badgeEnabled: true, badgeColor: "#ff2442" });
     expect(
-      parseXhsStyle({ themeId: "classic", identifier: { badge: "not-a-badge" } })?.identifier
-        .badge,
+      parseXhsStyle({ themeId: "classic", identifier: { badge: "not-a-badge" } })?.identifier.badge,
     ).toBe("wand-sparkles");
     expect(
-      parseXhsStyle({ themeId: "classic", identifier: { badgeScale: 99 } })?.identifier
-        .badgeScale,
+      parseXhsStyle({ themeId: "classic", identifier: { badgeScale: 99 } })?.identifier.badgeScale,
     ).toBe(2);
     expect(
       parseXhsStyle({ themeId: "classic", identifier: { badgeScale: 0.01 } })?.identifier
@@ -401,13 +400,16 @@ describe("主题配置", () => {
 
   it("小红书正文一级标题的自定义文字默认为空，超长会被裁剪，非字符串回落为空", () => {
     expect(DEFAULT_XHS_STYLE.bodyTitleOverride).toBe("");
-    expect(parseXhsStyle({ themeId: "classic", bodyTitleOverride: "自定义标题" })?.bodyTitleOverride)
-      .toBe("自定义标题");
+    expect(
+      parseXhsStyle({ themeId: "classic", bodyTitleOverride: "自定义标题" })?.bodyTitleOverride,
+    ).toBe("自定义标题");
     expect(
       parseXhsStyle({ themeId: "classic", bodyTitleOverride: "a".repeat(200) })?.bodyTitleOverride
         .length,
     ).toBe(120);
-    expect(parseXhsStyle({ themeId: "classic", bodyTitleOverride: 123 })?.bodyTitleOverride).toBe("");
+    expect(parseXhsStyle({ themeId: "classic", bodyTitleOverride: 123 })?.bodyTitleOverride).toBe(
+      "",
+    );
   });
 
   it("小红书标题级别的背景色 / 文字色默认为空，且非法颜色会回落为空", () => {
@@ -494,19 +496,17 @@ describe("主题配置", () => {
   });
 
   it("小红书页脚序号对齐方式与大小会被安全解析", () => {
-    expect(parseXhsStyle({ themeId: "classic", pageNumberAlign: "center" })?.pageNumberAlign)
-      .toBe("center");
-    expect(parseXhsStyle({ themeId: "classic", pageNumberAlign: "diagonal" })?.pageNumberAlign)
-      .toBe("center");
-    expect(parseXhsStyle({ themeId: "classic", pageNumberScale: 3.4 })?.pageNumberScale)
-      .toBe(3.4);
-    expect(parseXhsStyle({ themeId: "classic", pageNumberScale: 99 })?.pageNumberScale)
-      .toBe(5);
-    expect(parseXhsStyle({ themeId: "classic", pageNumberScale: 0 })?.pageNumberScale)
-      .toBe(1);
+    expect(parseXhsStyle({ themeId: "classic", pageNumberAlign: "center" })?.pageNumberAlign).toBe(
+      "center",
+    );
     expect(
-      parseXhsStyle({ themeId: "classic", showPageNumberOnCover: true })
-        ?.showPageNumberOnCover,
+      parseXhsStyle({ themeId: "classic", pageNumberAlign: "diagonal" })?.pageNumberAlign,
+    ).toBe("center");
+    expect(parseXhsStyle({ themeId: "classic", pageNumberScale: 3.4 })?.pageNumberScale).toBe(3.4);
+    expect(parseXhsStyle({ themeId: "classic", pageNumberScale: 99 })?.pageNumberScale).toBe(5);
+    expect(parseXhsStyle({ themeId: "classic", pageNumberScale: 0 })?.pageNumberScale).toBe(1);
+    expect(
+      parseXhsStyle({ themeId: "classic", showPageNumberOnCover: true })?.showPageNumberOnCover,
     ).toBe(true);
   });
 

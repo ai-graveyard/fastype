@@ -50,10 +50,7 @@ import {
 } from "@codemirror/view";
 import * as React from "react";
 
-import {
-  isEditorInputChangeAllowed,
-  type EditorInputLimits,
-} from "@/lib/markdown/stats";
+import { isEditorInputChangeAllowed, type EditorInputLimits } from "@/lib/markdown/stats";
 import type { PlatformEditorMode } from "@/lib/types";
 
 export interface EditorSelectionInfo {
@@ -209,16 +206,16 @@ const hoverLineGutterPlugin = ViewPlugin.fromClass(
         const container = this.view.dom.querySelector(".cm-lineNumbers");
         if (!container) return;
 
-        const target = Array.from(container.querySelectorAll<HTMLElement>(".cm-gutterElement")).find(
-          (element) => {
-            const rect = element.getBoundingClientRect();
-            return (
-              event.clientY >= rect.top &&
-              event.clientY < rect.bottom &&
-              Boolean(element.textContent?.trim())
-            );
-          },
-        );
+        const target = Array.from(
+          container.querySelectorAll<HTMLElement>(".cm-gutterElement"),
+        ).find((element) => {
+          const rect = element.getBoundingClientRect();
+          return (
+            event.clientY >= rect.top &&
+            event.clientY < rect.bottom &&
+            Boolean(element.textContent?.trim())
+          );
+        });
 
         if (target === this.hoveredElement) return;
         this.clear();
@@ -262,8 +259,20 @@ const livePreviewTheme = EditorView.theme({
     padding: "28px 0 48px",
   },
   ".cm-line": { padding: "0 32px" },
-  ".ft-md-h1": { fontSize: "2em", fontWeight: "700", lineHeight: "1.25", paddingTop: "0.35em", paddingBottom: "0.2em" },
-  ".ft-md-h2": { fontSize: "1.5em", fontWeight: "700", lineHeight: "1.35", paddingTop: "0.5em", paddingBottom: "0.15em" },
+  ".ft-md-h1": {
+    fontSize: "2em",
+    fontWeight: "700",
+    lineHeight: "1.25",
+    paddingTop: "0.35em",
+    paddingBottom: "0.2em",
+  },
+  ".ft-md-h2": {
+    fontSize: "1.5em",
+    fontWeight: "700",
+    lineHeight: "1.35",
+    paddingTop: "0.5em",
+    paddingBottom: "0.15em",
+  },
   ".ft-md-h3": { fontSize: "1.25em", fontWeight: "650", lineHeight: "1.4", paddingTop: "0.4em" },
   ".ft-md-h4, .ft-md-h5, .ft-md-h6": { fontWeight: "650", paddingTop: "0.25em" },
   ".ft-md-quote": {
@@ -306,7 +315,11 @@ const livePreviewTheme = EditorView.theme({
     fontSize: "0.85em",
     lineHeight: "1.6",
   },
-  ".ft-md-link": { color: "var(--brand-primary)", textDecoration: "underline", textUnderlineOffset: "3px" },
+  ".ft-md-link": {
+    color: "var(--brand-primary)",
+    textDecoration: "underline",
+    textUnderlineOffset: "3px",
+  },
   ".ft-md-table": {
     display: "block",
     width: "max-content",
@@ -661,14 +674,20 @@ function buildLivePreviewDecorations(view: EditorView): DecorationSet {
 
       if (heading) {
         ranges.push(
-          Decoration.line({ attributes: { class: `ft-md-h${heading[1].length}` } }).range(line.from),
+          Decoration.line({ attributes: { class: `ft-md-h${heading[1].length}` } }).range(
+            line.from,
+          ),
         );
-        if (!active) ranges.push(Decoration.replace({}).range(line.from, line.from + heading[0].length));
+        if (!active)
+          ranges.push(Decoration.replace({}).range(line.from, line.from + heading[0].length));
       } else if (quote) {
         ranges.push(Decoration.line({ attributes: { class: "ft-md-quote" } }).range(line.from));
-        if (!active) ranges.push(Decoration.replace({}).range(line.from, line.from + quote[0].length));
+        if (!active)
+          ranges.push(Decoration.replace({}).range(line.from, line.from + quote[0].length));
       } else if (task) {
-        ranges.push(Decoration.line({ attributes: { class: "ft-md-list ft-md-task" } }).range(line.from));
+        ranges.push(
+          Decoration.line({ attributes: { class: "ft-md-list ft-md-task" } }).range(line.from),
+        );
         if (!active) {
           const bracketOpen = line.from + task[1].length + task[2].length + task[3].length;
           const statePos = bracketOpen + 1;
@@ -700,8 +719,26 @@ function buildLivePreviewDecorations(view: EditorView): DecorationSet {
       if (!active) {
         const occupied: Array<[number, number]> = [];
         addWrappedDecorations(ranges, occupied, line.from, text, /`([^`]+)`/g, 1, 1, "ft-md-code");
-        addWrappedDecorations(ranges, occupied, line.from, text, /\*\*(.+?)\*\*/g, 2, 2, "ft-md-strong");
-        addWrappedDecorations(ranges, occupied, line.from, text, /~~(.+?)~~/g, 2, 2, "ft-md-strike");
+        addWrappedDecorations(
+          ranges,
+          occupied,
+          line.from,
+          text,
+          /\*\*(.+?)\*\*/g,
+          2,
+          2,
+          "ft-md-strong",
+        );
+        addWrappedDecorations(
+          ranges,
+          occupied,
+          line.from,
+          text,
+          /~~(.+?)~~/g,
+          2,
+          2,
+          "ft-md-strike",
+        );
 
         const linkPattern = /\[([^\]]+)]\(([^)]+)\)/g;
         for (let match = linkPattern.exec(text); match; match = linkPattern.exec(text)) {
@@ -900,10 +937,7 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
 
       const extensions: Extension[] = [
         EditorState.transactionFilter.of((transaction) => {
-          if (
-            !transaction.docChanged ||
-            transaction.annotation(externalValueSync)
-          ) {
+          if (!transaction.docChanged || transaction.annotation(externalValueSync)) {
             return transaction;
           }
           const limits = inputLimitsRef.current;
@@ -1289,7 +1323,8 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
             (match) => match.from === selection.from && match.to === selection.to,
           );
           const fallbackIndex = matches.findIndex((match) => match.from >= selection.head);
-          const targetIndex = selectedIndex >= 0 ? selectedIndex : fallbackIndex >= 0 ? fallbackIndex : 0;
+          const targetIndex =
+            selectedIndex >= 0 ? selectedIndex : fallbackIndex >= 0 ? fallbackIndex : 0;
           const target = matches[targetIndex];
           view.dispatch({
             changes: { from: target.from, to: target.to, insert: query.replace },

@@ -22,14 +22,7 @@ export function UserAvatar({
       )}
       style={style}
     >
-      <Image
-        src={src}
-        alt={name}
-        fill
-        sizes="80px"
-        unoptimized
-        className="object-cover"
-      />
+      <Image src={src} alt={name} fill sizes="80px" unoptimized className="object-cover" />
     </span>
   );
 }

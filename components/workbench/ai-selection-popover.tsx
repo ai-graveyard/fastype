@@ -154,10 +154,12 @@ export function AiSelectionPopover({ editorRef }: AiSelectionPopoverProps) {
       const api = editorRef.current;
       if (!api) return;
 
-      const selection = reuse ?? (() => {
-        const { text, from, to } = api.getSelection();
-        return { text, from, to };
-      })();
+      const selection =
+        reuse ??
+        (() => {
+          const { text, from, to } = api.getSelection();
+          return { text, from, to };
+        })();
 
       if (!selection.text.trim()) {
         toast.warning(t("ai.selectionRequired"));

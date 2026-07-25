@@ -5,10 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { PrefsProvider } from "@/components/providers/prefs-provider";
 import { UserProfileProvider } from "@/components/providers/user-profile-provider";
 import { XhsPreview, type XhsPreviewHandle } from "@/components/workbench/xhs-preview";
-import {
-  XHS_QR_CODE_CONTENT_GAP,
-  xhsQrCodeHeight,
-} from "@/components/workbench/xhs-qr-code";
+import { XHS_QR_CODE_CONTENT_GAP, xhsQrCodeHeight } from "@/components/workbench/xhs-qr-code";
 import { DEFAULT_XHS_STYLE } from "@/lib/themes/xhs";
 
 beforeAll(() => {
@@ -300,9 +297,7 @@ describe("小红书内容正文预览", () => {
     expect(qrCode.compareDocumentPosition(footer!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(qrCode.classList.contains("absolute")).toBe(false);
     expect(qrCode.style.position).toBe("");
-    expect(qrCode.style.marginTop).toBe(
-      `${XHS_QR_CODE_CONTENT_GAP * style.qrCode.scale}px`,
-    );
+    expect(qrCode.style.marginTop).toBe(`${XHS_QR_CODE_CONTENT_GAP * style.qrCode.scale}px`);
     expect(qrCode.style.width).toBe(`${xhsQrCodeHeight(style.qrCode)}px`);
     expect(qrCode.style.height).toBe(`${xhsQrCodeHeight(style.qrCode)}px`);
     expect(qrCode.style.alignSelf).toBe("flex-end");
@@ -501,10 +496,11 @@ describe("小红书内容正文预览", () => {
     );
 
     const [coverQrCode, bodyQrCode] = await waitFor(() => {
-      const nodes = [cover, body].map((page) =>
-        page.querySelector(
-          '[aria-label="https://fastype.example/shared-position"]',
-        ) as HTMLElement | null,
+      const nodes = [cover, body].map(
+        (page) =>
+          page.querySelector(
+            '[aria-label="https://fastype.example/shared-position"]',
+          ) as HTMLElement | null,
       );
       expect(nodes.every(Boolean)).toBe(true);
       return nodes as [HTMLElement, HTMLElement];
@@ -562,10 +558,11 @@ describe("小红书内容正文预览", () => {
     await waitFor(() => expect(previewRef.current?.getPageNodes()).toHaveLength(2));
     const [cover, body] = previewRef.current!.getPageNodes();
     const [coverQrCode, bodyQrCode] = await waitFor(() => {
-      const nodes = [cover, body].map((page) =>
-        page.querySelector(
-          '[aria-label="https://fastype.example/shared-bottom"]',
-        ) as HTMLElement | null,
+      const nodes = [cover, body].map(
+        (page) =>
+          page.querySelector(
+            '[aria-label="https://fastype.example/shared-bottom"]',
+          ) as HTMLElement | null,
       );
       expect(nodes.every(Boolean)).toBe(true);
       return nodes as [HTMLElement, HTMLElement];
@@ -638,9 +635,7 @@ describe("小红书内容正文预览", () => {
 
     await waitFor(() => {
       [cover, body] = previewRef.current!.getPageNodes();
-      expect(
-        cover.querySelector('[aria-label="https://fastype.example/cover"]'),
-      ).not.toBeNull();
+      expect(cover.querySelector('[aria-label="https://fastype.example/cover"]')).not.toBeNull();
     });
     expect(body.querySelector('[aria-label="https://fastype.example/cover"]')).not.toBeNull();
   });

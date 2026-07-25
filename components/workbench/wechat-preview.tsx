@@ -25,11 +25,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  PhoneFrame,
-  PhoneStatusBar,
-  usePhoneFitScale,
-} from "@/components/ui/phone-frame";
+import { PhoneFrame, PhoneStatusBar, usePhoneFitScale } from "@/components/ui/phone-frame";
 import { ProfileButton } from "@/components/workbench/profile-button";
 import { useImageFallback } from "@/hooks/use-image-status";
 import type { WechatStyle } from "@/lib/themes/wechat";
@@ -210,9 +206,7 @@ export const WechatPreview = React.memo(function WechatPreview({
   }, []);
 
   const scrollToHeading = React.useCallback((targetIndex: number) => {
-    const heading = contentRef.current?.querySelectorAll<HTMLElement>("h1, h2, h3")[
-      targetIndex
-    ];
+    const heading = contentRef.current?.querySelectorAll<HTMLElement>("h1, h2, h3")[targetIndex];
     heading?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 

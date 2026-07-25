@@ -18,10 +18,7 @@ export function scrollToSection(container: HTMLElement | null | undefined, id: s
   if (!target) return;
   target.scrollIntoView({ behavior: "smooth", block: "start" });
   target.animate(
-    [
-      { boxShadow: "0 0 0 2px rgb(0 136 255 / 0.35)" },
-      { boxShadow: "0 0 0 0 rgb(0 136 255 / 0)" },
-    ],
+    [{ boxShadow: "0 0 0 2px rgb(0 136 255 / 0.35)" }, { boxShadow: "0 0 0 0 rgb(0 136 255 / 0)" }],
     { duration: 900, easing: "ease-out" },
   );
 }

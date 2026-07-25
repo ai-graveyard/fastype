@@ -42,9 +42,9 @@ describe("平台内容编辑器显示方式", () => {
     expect(screen.getByRole("button", { name: /^Text$|^文本$/ }).getAttribute("aria-pressed")).toBe(
       "true",
     );
-    expect(
-      screen.getByRole("button", { name: /Preview|预览/ }).getAttribute("aria-pressed"),
-    ).toBe("false");
+    expect(screen.getByRole("button", { name: /Preview|预览/ }).getAttribute("aria-pressed")).toBe(
+      "false",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Preview|预览/ }));
     expect(onChange).toHaveBeenCalledWith("preview");

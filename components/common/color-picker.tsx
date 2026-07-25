@@ -72,7 +72,8 @@ export function ColorPicker({
     const sanitized = themeColor.trim().replace(/^#/, "").slice(0, 6);
     return HEX_COLOR_PATTERN.test(sanitized) ? `#${sanitized.toLowerCase()}` : null;
   }, [themeColor]);
-  const matchesThemeColor = normalizedThemeColor !== null && normalizedValue === normalizedThemeColor;
+  const matchesThemeColor =
+    normalizedThemeColor !== null && normalizedValue === normalizedThemeColor;
   const [inputValue, setInputValue] = React.useState(
     normalizedValue ? normalizedValue.slice(1).toUpperCase() : "",
   );
@@ -133,7 +134,12 @@ export function ColorPicker({
           <Input
             value={inputValue}
             onChange={(event) =>
-              setInputValue(event.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6).toUpperCase())
+              setInputValue(
+                event.target.value
+                  .replace(/[^0-9a-fA-F]/g, "")
+                  .slice(0, 6)
+                  .toUpperCase(),
+              )
             }
             placeholder={placeholder}
             className="pl-7 font-mono uppercase"
@@ -150,7 +156,13 @@ export function ColorPicker({
             }}
           />
         </div>
-        <Button type="button" variant="secondary" size="sm" disabled={!hasPendingChange} onClick={() => pendingHex && onChange(pendingHex)}>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={!hasPendingChange}
+          onClick={() => pendingHex && onChange(pendingHex)}
+        >
           {confirmLabel}
         </Button>
         {normalizedThemeColor ? (
