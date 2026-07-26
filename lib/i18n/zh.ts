@@ -894,7 +894,7 @@ export const zh = {
     language: "语言",
     aiConnection: "模型连接",
     aiConnectionDesc: "连接兼容 OpenAI Chat Completions 的模型服务。",
-    aiBasic: "基础配置",
+    aiBasic: "AI 配置",
     aiPrompts: "提示词配置",
     data: "本地数据",
     dataNotice: "所有数据都保存在这台设备的浏览器里，不会上传到 FasType 服务。",

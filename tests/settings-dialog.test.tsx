@@ -33,7 +33,7 @@ describe("设置弹框", () => {
     for (const name of [
       /外观|Appearance/,
       /用户资料|Profile/,
-      /基础配置|Basic/,
+      /^(AI 配置|AI)$/,
       /提示词配置|Prompts/,
       /本地数据|Local data/,
       /关于|About/,
@@ -66,14 +66,14 @@ describe("设置弹框", () => {
     expect(screen.getByLabelText(/Slogan/)).toBeTruthy();
   });
 
-  it("未配置 AI 时，基础配置分区显示告警点", () => {
+  it("未配置 AI 时，AI 配置分区显示告警点", () => {
     render(
       <AppProviders>
         <SettingsDialog open onOpenChange={vi.fn()} />
       </AppProviders>,
     );
 
-    const aiNav = screen.getByRole("button", { name: /基础配置|Basic/ });
+    const aiNav = screen.getByRole("button", { name: /^(AI 配置|AI)$/ });
     expect(aiNav.querySelector(".bg-warning")).toBeTruthy();
 
     const otherNav = screen.getByRole("button", { name: /外观|Appearance/ });

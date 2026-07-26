@@ -141,7 +141,7 @@ pnpm desktop:build    # 打出当前平台的安装包
 
 ## AI：浏览器直连你自己的模型
 
-在「设置 → 基础配置」中填写：
+在「设置 → AI 配置」中填写：
 
 - **Base URL** —— OpenAI 兼容的 Chat Completions 端点，通常需要包含 `/v1`
 - **API Key**

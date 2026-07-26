@@ -931,7 +931,7 @@ export const en: Translation = {
     language: "Language",
     aiConnection: "Model connection",
     aiConnectionDesc: "Connect an OpenAI Chat Completions-compatible model service.",
-    aiBasic: "Basic",
+    aiBasic: "AI",
     aiPrompts: "Prompts",
     data: "Local data",
     dataNotice:
