@@ -102,12 +102,52 @@ export function renderMarkdown(source: string): RenderResult {
     }
   });
 
+  annotateSourceLines(holder, source);
+
   return {
     html: holder.innerHTML,
     title: extractTitle(holder),
     text: normalizeWhitespace(holder.textContent ?? ""),
     images,
   };
+}
+
+/** 顶层块元素上标注它在源码里的起始行，供预览与编辑器的滚动同步定位。 */
+export const SOURCE_LINE_ATTRIBUTE = "data-source-line";
+
+/**
+ * 给每个顶层块标上源码行号。
+ *
+ * marked 的顶层 token 与渲染出来的顶层元素是一一对应的，按顺序累加 `raw` 的
+ * 行数就能算出每个块从第几行开始。`space`（空行）和 `def`（链接定义）不产生
+ * 元素，只占行数。
+ *
+ * 两边数量对不上说明这个假设在当前文档不成立（例如内联 HTML 展开成了多个
+ * 兄弟节点），这时一个都不标：错位的滚动同步比没有同步更让人困惑，调用方
+ * 会自动退回按比例滚动。
+ */
+function annotateSourceLines(holder: HTMLElement, source: string): void {
+  let startLines: number[];
+  try {
+    const tokens = marked.lexer(source);
+    startLines = [];
+    let line = 1;
+    for (const token of tokens) {
+      const raw = typeof token.raw === "string" ? token.raw : "";
+      if (token.type !== "space" && token.type !== "def") startLines.push(line);
+      for (const char of raw) {
+        if (char === "\n") line += 1;
+      }
+    }
+  } catch {
+    return;
+  }
+
+  const blocks = holder.children;
+  if (blocks.length !== startLines.length) return;
+  for (let index = 0; index < blocks.length; index += 1) {
+    blocks[index].setAttribute(SOURCE_LINE_ATTRIBUTE, String(startLines[index]));
+  }
 }
 
 function extractTitle(holder: HTMLElement): string | null {

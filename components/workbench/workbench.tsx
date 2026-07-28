@@ -44,6 +44,7 @@ import { XhsPreview, type XhsPreviewHandle } from "@/components/workbench/xhs-pr
 import { XhsPageStatus } from "@/components/workbench/xhs-page-status";
 import { XhsWorkspace, type XhsWorkspaceTab } from "@/components/workbench/xhs-workspace";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useScrollSync } from "@/hooks/use-scroll-sync";
 import {
   downloadPagesAsZip,
   exportPages,
@@ -51,6 +52,7 @@ import {
   pageFilename,
   renderPageToBlob,
 } from "@/lib/export/png";
+import { printNode } from "@/lib/export/print";
 import { baseName, downloadBlob, downloadText, hasAcceptedExtension } from "@/lib/file";
 import { PLATFORM_INPUT_LIMITS } from "@/lib/constants";
 import { renderMarkdown } from "@/lib/markdown/parse";
@@ -66,6 +68,11 @@ import {
   stringifyXhsMarkdown,
   type XhsMetadata,
 } from "@/lib/markdown/xhs-frontmatter";
+import {
+  buildPortableHtml,
+  buildPortableNode,
+  buildStandaloneDocument,
+} from "@/lib/render/portable";
 import {
   buildWechatDocument,
   renderWechat,
@@ -174,6 +181,14 @@ export function Workbench() {
     [view, rendered.html, wechat, profile],
   );
 
+  // 源码与预览按块级元素的源码行号双向联动（只在 Markdown 视图，平台视图的
+  // 预览是分页画布和富文本，没有可对应的行）。
+  const getPreviewScrollNode = React.useCallback(
+    () => markdownPreviewRef.current?.getScrollNode() ?? null,
+    [],
+  );
+  useScrollSync(editorRef, getPreviewScrollNode, view === "markdown", rendered.html);
+
   const changeView = (next: ViewId) => setLastView(next);
   const locateWechatIssue = React.useCallback((issue: WechatCompatibilityIssue) => {
     setNarrowSide("editor");
@@ -206,6 +221,9 @@ export function Workbench() {
   const copyRichRef = React.useRef<() => Promise<void>>(async () => {});
   const copyPlainRef = React.useRef<() => Promise<void>>(async () => {});
   const downloadHtmlRef = React.useRef<() => void>(() => {});
+  const copyPreviewStyledRef = React.useRef<() => Promise<void>>(async () => {});
+  const exportPreviewHtmlRef = React.useRef<() => void>(() => {});
+  const printPreviewRef = React.useRef<() => void>(() => {});
 
   // 「导出全部」和「导出当前页」拆成两个回调：共用一个可选参数的函数，
   // 一旦被直接挂到 onClick 上就会把事件对象当成页码传进去。
@@ -215,6 +233,9 @@ export function Workbench() {
     [],
   );
   const stableExportLongImage = React.useCallback(() => void exportLongImageRef.current(), []);
+  const stableCopyPreviewStyled = React.useCallback(() => void copyPreviewStyledRef.current(), []);
+  const stableExportPreviewHtml = React.useCallback(() => exportPreviewHtmlRef.current(), []);
+  const stablePrintPreview = React.useCallback(() => printPreviewRef.current(), []);
   const stableCopyRich = React.useCallback(() => void copyRichRef.current(), []);
   const stableCopyPlain = React.useCallback(() => void copyPlainRef.current(), []);
   const stableDownloadHtml = React.useCallback(() => downloadHtmlRef.current(), []);
@@ -255,6 +276,66 @@ export function Workbench() {
   };
   React.useEffect(() => {
     exportLongImageRef.current = handleExportLongImage;
+  });
+
+  /**
+   * 复制带格式的正文：把预览的 computed style 内联进 HTML 后写进剪贴板，
+   * 粘到公众号、飞书文档、Word 里都保留排版（对照 FT-WX-004 的公众号复制）。
+   */
+  const handleCopyPreviewStyled = async () => {
+    const node = markdownPreviewRef.current?.getExportNode();
+    if (!node) return;
+    const { html, plainText } = buildPortableHtml(node);
+    try {
+      // 不支持 ClipboardItem 的浏览器退回纯文本，至少内容不丢。
+      if (typeof ClipboardItem === "undefined") {
+        await navigator.clipboard.writeText(plainText);
+      } else {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([plainText], { type: "text/plain" }),
+          }),
+        ]);
+      }
+      toast.success(t("editor.copyStyledDone"));
+    } catch {
+      toast.error(t("editor.copyFailed"), { duration: 8000 });
+    }
+  };
+  React.useEffect(() => {
+    copyPreviewStyledRef.current = handleCopyPreviewStyled;
+  });
+
+  /** 导出单文件 HTML：样式已内联，不依赖任何外部资源。 */
+  const handleExportPreviewHtml = () => {
+    const node = markdownPreviewRef.current?.getExportNode();
+    if (!node) return;
+    const { html } = buildPortableHtml(node);
+    downloadText(
+      buildStandaloneDocument(html, rendered.title ?? docBase),
+      `${docBase}.html`,
+      "text/html",
+    );
+    toast.success(t("editor.exportHtmlDone"));
+  };
+  React.useEffect(() => {
+    exportPreviewHtmlRef.current = handleExportPreviewHtml;
+  });
+
+  /** 打印 / 存为 PDF：打印的是内联好样式的副本，绕开工作台的分栏与滚动容器。 */
+  const handlePrintPreview = () => {
+    const node = markdownPreviewRef.current?.getExportNode();
+    if (!node) return;
+    try {
+      printNode(buildPortableNode(node), rendered.title ?? docBase);
+      toast.info(t("editor.printHint"));
+    } catch {
+      toast.error(t("editor.printFailed"), { duration: 8000 });
+    }
+  };
+  React.useEffect(() => {
+    printPreviewRef.current = handlePrintPreview;
   });
 
   /** 小红书 PNG 导出（PRD FT-XHS-005）。 */
@@ -463,6 +544,9 @@ export function Workbench() {
           html={rendered.html}
           exporting={exportingLongImage}
           onExport={stableExportLongImage}
+          onCopyStyled={stableCopyPreviewStyled}
+          onExportHtml={stableExportPreviewHtml}
+          onPrint={stablePrintPreview}
         />
       ) : null}
       {view === "xhs" ? (

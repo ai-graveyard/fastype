@@ -18,7 +18,16 @@ import type { UserProfile } from "@/lib/user-profile";
  */
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace';
-const STRIP_ATTRS = ["class", "id", "loading", "crossorigin", "referrerpolicy", "srcset"];
+const STRIP_ATTRS = [
+  "class",
+  "id",
+  "loading",
+  "crossorigin",
+  "referrerpolicy",
+  "srcset",
+  // 预览滚动同步用的标记（lib/markdown/parse.ts），不该跟着复制进公众号。
+  "data-source-line",
+];
 
 interface Palette {
   heading: string;

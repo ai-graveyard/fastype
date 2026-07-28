@@ -343,6 +343,114 @@
   box-shadow: 0 12px 30px rgb(0 0 0 / 28%);
 }
 
+.md-preview.md-theme-ink {
+  --background: #f4f4f1;
+  --foreground: #23211e;
+  --border: #cfcdc6;
+  --muted: #e7e6e0;
+  --muted-foreground: #6b6862;
+  --brand-primary: #3d3a35;
+  --brand-secondary: #8f8a80;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Kaiti SC", STKaiti, KaiTi, Georgia, "Songti SC", "Noto Serif SC", serif;
+  font-size: 16px;
+  line-height: 1.95;
+  letter-spacing: 0.02em;
+}
+.md-preview.md-theme-ink h1,
+.md-preview.md-theme-ink h2,
+.md-preview.md-theme-ink h3,
+.md-preview.md-theme-ink h4,
+.md-preview.md-theme-ink h5,
+.md-preview.md-theme-ink h6 {
+  font-family: "Kaiti SC", STKaiti, KaiTi, Georgia, "Songti SC", "Noto Serif SC", serif;
+  font-weight: 600;
+}
+.md-preview.md-theme-ink blockquote {
+  border-left-width: 2px;
+  font-style: italic;
+}
+
+.md-preview.md-theme-sakura {
+  --background: #fff6f8;
+  --foreground: #43303a;
+  --border: #f2d3dc;
+  --muted: #fdeaf0;
+  --muted-foreground: #8a6b76;
+  --brand-primary: #d9557f;
+  --brand-secondary: #f0a8bf;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+    sans-serif;
+  line-height: 1.8;
+}
+.md-preview.md-theme-sakura h2 {
+  border-bottom-color: var(--brand-secondary);
+}
+.md-preview.md-theme-sakura h1,
+.md-preview.md-theme-sakura h2,
+.md-preview.md-theme-sakura h3 {
+  color: var(--brand-primary);
+}
+
+.md-preview.md-theme-mint {
+  --background: #f4faf7;
+  --foreground: #1f302a;
+  --border: #cfe5db;
+  --muted: #e4f2eb;
+  --muted-foreground: #5d7a70;
+  --brand-primary: #14866a;
+  --brand-secondary: #6fc7ac;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+    sans-serif;
+  line-height: 1.8;
+}
+.md-preview.md-theme-mint h1,
+.md-preview.md-theme-mint h2,
+.md-preview.md-theme-mint h3 {
+  color: var(--brand-primary);
+}
+.md-preview.md-theme-mint blockquote {
+  background: var(--muted);
+  border-radius: 0 6px 6px 0;
+}
+
+.md-preview.md-theme-terminal {
+  --background: #0b1020;
+  --foreground: #cdd6e4;
+  --border: #253048;
+  --muted: #141c30;
+  --muted-foreground: #7d8aa3;
+  --brand-primary: #4ade80;
+  --brand-secondary: #38bdf8;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Noto Sans SC", monospace;
+  font-size: 14.5px;
+  line-height: 1.75;
+}
+.md-preview.md-theme-terminal h1,
+.md-preview.md-theme-terminal h2,
+.md-preview.md-theme-terminal h3,
+.md-preview.md-theme-terminal h4,
+.md-preview.md-theme-terminal h5,
+.md-preview.md-theme-terminal h6 {
+  color: var(--brand-primary);
+  font-family: inherit;
+}
+.md-preview.md-theme-terminal a {
+  color: var(--brand-secondary);
+}
+.md-preview.md-theme-terminal img {
+  box-shadow: 0 12px 30px rgb(0 0 0 / 35%);
+}
+
 /* 图片加载失败占位（FT-IMG-001） */
 .md-img-error {
   display: inline-flex;
@@ -377,4 +485,43 @@
 .ft-resizing * {
   user-select: none !important;
   cursor: col-resize !important;
+}
+
+/* ---------- 打印 / 存为 PDF ---------- */
+/*
+ * 打印的不是工作台里那棵预览 DOM：它挂在一串 flex + overflow:hidden 的容器里，
+ * 直接打印只会出第一屏。lib/export/print.ts 会把内联好样式的副本挂到 body 下，
+ * 这里把 body 的其它子节点藏掉，分页交回浏览器自己算。
+ */
+#ft-print-area {
+  display: none;
+}
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  body > *:not(#ft-print-area) {
+    display: none !important;
+  }
+  #ft-print-area {
+    display: block !important;
+  }
+  /* 标题和图片尽量不要被切在页缝里。 */
+  #ft-print-area h1,
+  #ft-print-area h2,
+  #ft-print-area h3 {
+    break-after: avoid;
+  }
+  #ft-print-area img,
+  #ft-print-area pre,
+  #ft-print-area blockquote,
+  #ft-print-area table {
+    break-inside: avoid;
+  }
+  @page {
+    margin: 16mm 14mm;
+  }
 }

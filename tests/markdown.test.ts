@@ -13,14 +13,37 @@ describe("renderMarkdown", () => {
     const { html } = renderMarkdown(
       "# 标题\n\n**粗** *斜* ~~删~~\n\n- a\n- b\n\n> 引用\n\n`code`\n\n| A | B |\n| - | - |\n| 1 | 2 |",
     );
-    expect(html).toContain("<h1>标题</h1>");
+    // 顶层块带 data-source-line（滚动同步用），所以按标签名前缀断言。
+    expect(html).toContain(">标题</h1>");
     expect(html).toContain("<strong>");
     expect(html).toContain("<em>");
     expect(html).toContain("<del>");
-    expect(html).toContain("<ul>");
-    expect(html).toContain("<blockquote>");
+    expect(html).toContain("<ul ");
+    expect(html).toContain("<blockquote ");
     expect(html).toContain("<code>");
-    expect(html).toContain("<table>");
+    expect(html).toContain("<table ");
+  });
+
+  it("给顶层块标上源码起始行（滚动同步用）", () => {
+    const { html } = renderMarkdown("# 标题\n\n第一段\n\n\n第二段\n\n- a\n- b");
+    const holder = document.createElement("div");
+    holder.innerHTML = html;
+
+    const lines = Array.from(holder.children).map((el) => el.getAttribute("data-source-line"));
+    // 标题 1 行，空行后第一段在第 3 行，多空一行后第二段在第 6 行，列表在第 8 行。
+    expect(lines).toEqual(["1", "3", "6", "8"]);
+  });
+
+  it("围栏代码块整块算一个锚点，块内的行不单独标", () => {
+    const { html } = renderMarkdown("前言\n\n```js\nconst a = 1;\nconst b = 2;\n```\n\n后记");
+    const holder = document.createElement("div");
+    holder.innerHTML = html;
+
+    expect(Array.from(holder.children).map((el) => el.getAttribute("data-source-line"))).toEqual([
+      "1",
+      "3",
+      "8",
+    ]);
   });
 
   it("把第一个一级标题作为标题", () => {

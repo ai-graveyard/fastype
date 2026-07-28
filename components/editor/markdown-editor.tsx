@@ -96,6 +96,15 @@ export interface EditorApi {
   insertBlock: (text: string) => void;
   /** 选中并滚动到正文中的指定文本，不打开搜索面板。 */
   locateText: (text: string) => boolean;
+  /**
+   * 视口顶端所在的位置，用带小数的行号表示：12.4 表示第 12 行已经滚过了 40%。
+   * 编辑器未挂载时返回 null。
+   */
+  getScrollLine: () => number | null;
+  /** 把带小数的行号滚到视口顶端，和 getScrollLine 是一对逆操作。 */
+  scrollToLine: (line: number) => void;
+  /** 滚动条位置变化时触发，供预览跟随。 */
+  subscribeScroll: (listener: () => void) => () => void;
   openSearch: () => void;
   closeSearch: () => void;
   configureSearch: (query: string, replacement: string) => EditorSearchStatus;
@@ -893,6 +902,16 @@ function getCurrentSearchStatus(view: EditorView): EditorSearchStatus {
   };
 }
 
+/**
+ * 视口顶端在「文档坐标」里的高度。
+ *
+ * CodeMirror 的 lineBlockAtHeight / block.top 都以文档顶部为原点，而
+ * documentTop 给的是文档顶部在视口里的位置，两者相减才对得上。
+ */
+function viewportTopInDocument(view: EditorView): number {
+  return view.scrollDOM.getBoundingClientRect().top - view.documentTop;
+}
+
 function selectSearchMatch(view: EditorView, match: { from: number; to: number }) {
   view.dispatch({
     selection: { anchor: match.from, head: match.to },
@@ -919,6 +938,7 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
     const searchPanelListenersRef = React.useRef(new Set<(open: boolean) => void>());
     const searchUpdateListenersRef = React.useRef(new Set<() => void>());
     const selectionListenersRef = React.useRef(new Set<() => void>());
+    const scrollListenersRef = React.useRef(new Set<() => void>());
     const modeCompartmentRef = React.useRef(new Compartment());
     const inputLimitsRef = React.useRef(inputLimits);
 
@@ -1026,7 +1046,12 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
       });
       viewRef.current = view;
 
+      // scroll 事件不冒泡，只能挂在滚动容器自己身上。
+      const onScroll = () => scrollListenersRef.current.forEach((listener) => listener());
+      view.scrollDOM.addEventListener("scroll", onScroll, { passive: true });
+
       return () => {
+        view.scrollDOM.removeEventListener("scroll", onScroll);
         view.destroy();
         viewRef.current = null;
       };
@@ -1250,6 +1275,34 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
           selectSearchMatch(view, match);
           view.focus();
           return true;
+        },
+
+        getScrollLine: () => {
+          const view = viewRef.current;
+          if (!view) return null;
+          const height = viewportTopInDocument(view);
+          const block = view.lineBlockAtHeight(height);
+          const line = view.state.doc.lineAt(block.from).number;
+          // 折行的长段落一个 block 可能有好几屏高，带上块内进度才不会一跳一跳。
+          const progress = block.height > 0 ? (height - block.top) / block.height : 0;
+          return line + Math.min(Math.max(progress, 0), 1);
+        },
+
+        scrollToLine: (line) => {
+          const view = viewRef.current;
+          if (!view) return;
+          const whole = Math.min(Math.max(Math.floor(line), 1), view.state.doc.lines);
+          const block = view.lineBlockAt(view.state.doc.line(whole).from);
+          const progress = Math.min(Math.max(line - whole, 0), 1);
+          const target = block.top + block.height * progress;
+          view.scrollDOM.scrollTop += target - viewportTopInDocument(view);
+        },
+
+        subscribeScroll: (listener) => {
+          scrollListenersRef.current.add(listener);
+          return () => {
+            scrollListenersRef.current.delete(listener);
+          };
         },
 
         openSearch: () => {

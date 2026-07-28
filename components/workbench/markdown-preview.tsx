@@ -1,42 +1,76 @@
 "use client";
 
-import { Eye, ImageDown, Loader2 } from "lucide-react";
+import {
+  ChevronDown,
+  ClipboardCheck,
+  Code2,
+  Download,
+  Eye,
+  FileDown,
+  ImageDown,
+  Loader2,
+} from "lucide-react";
 import * as React from "react";
 
 import { usePrefs } from "@/components/providers/prefs-provider";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useImageFallback } from "@/hooks/use-image-status";
-import { MARKDOWN_PREVIEW_THEMES } from "@/lib/themes/markdown";
+import {
+  MARKDOWN_PREVIEW_MORE_THEMES,
+  MARKDOWN_PREVIEW_QUICK_THEMES,
+  MARKDOWN_PREVIEW_THEME_LABEL_KEYS,
+  isMarkdownPreviewTheme,
+} from "@/lib/themes/markdown";
 import { cn } from "@/lib/utils";
-
-const THEME_LABEL_KEYS = {
-  github: "editor.themeGitHub",
-  notion: "editor.themeNotion",
-  paper: "editor.themePaper",
-  night: "editor.themeNight",
-} as const;
 
 export interface MarkdownPreviewHandle {
   getExportNode: () => HTMLDivElement | null;
+  /** 滚动容器，供与编辑器的滚动同步使用。 */
+  getScrollNode: () => HTMLDivElement | null;
 }
 
 interface MarkdownPreviewProps {
   html: string;
   exporting: boolean;
   onExport: () => void;
+  /** 复制带内联样式的正文，粘到公众号 / 飞书 / Word 都保留排版。 */
+  onCopyStyled: () => void;
+  onExportHtml: () => void;
+  onPrint: () => void;
 }
 
 /** Markdown 视图左侧的通用渲染预览（PRD FT-EDT-004）。 */
 export const MarkdownPreview = React.memo(
   React.forwardRef<MarkdownPreviewHandle, MarkdownPreviewProps>(function MarkdownPreview(
-    { html, exporting, onExport },
+    { html, exporting, onExport, onCopyStyled, onExportHtml, onPrint },
     ref,
   ) {
     const { t, markdownPreviewTheme, setMarkdownPreviewTheme } = usePrefs();
     const containerRef = React.useRef<HTMLDivElement>(null);
+    const scrollRef = React.useRef<HTMLDivElement>(null);
+    // 正文没变时必须是同一个对象：导出会切换 exporting 状态，每次重渲染都新建
+    // 一份 { __html } 会让 React 重设整段 innerHTML——预览里的图片跟着重新请求，
+    // 滚动同步缓存的块也会全部失联。
+    const previewHtml = React.useMemo(() => ({ __html: html }), [html]);
     useImageFallback(containerRef, t("image.failed"), [html]);
-    React.useImperativeHandle(ref, () => ({ getExportNode: () => containerRef.current }), []);
+    React.useImperativeHandle(
+      ref,
+      () => ({
+        getExportNode: () => containerRef.current,
+        getScrollNode: () => scrollRef.current,
+      }),
+      [],
+    );
 
     return (
       <div className="flex h-full min-h-0 flex-col">
@@ -52,27 +86,63 @@ export const MarkdownPreview = React.memo(
               role="group"
               aria-label={t("editor.previewThemes")}
             >
-              {MARKDOWN_PREVIEW_THEMES.map((theme) => (
+              {MARKDOWN_PREVIEW_QUICK_THEMES.map((theme) => (
                 <ThemeButton
                   key={theme}
                   active={markdownPreviewTheme === theme}
-                  label={t(THEME_LABEL_KEYS[theme])}
+                  label={t(MARKDOWN_PREVIEW_THEME_LABEL_KEYS[theme])}
                   onClick={() => setMarkdownPreviewTheme(theme)}
                 />
               ))}
+              <span className="mx-0.5 h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+              <MoreThemesMenu />
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 shrink-0 px-2"
-            disabled={!html || exporting}
-            onClick={onExport}
-          >
-            {exporting ? <Loader2 className="animate-spin" /> : <ImageDown />}
-            {exporting ? t("editor.exportingLongImage") : t("editor.downloadLongImage")}
-          </Button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <Tooltip label={t("editor.copyStyledLabel")}>
+              <Button
+                size="sm"
+                // 与公众号预览的「复制」保持同一套主题色描边样式和尺寸。
+                className="border border-brand-primary/30 bg-brand-primary/10 text-brand-primary shadow-none hover:bg-brand-primary/15"
+                disabled={!html}
+                onClick={onCopyStyled}
+              >
+                <ClipboardCheck />
+                {t("editor.copyStyled")}
+              </Button>
+            </Tooltip>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label={t("editor.exportMenuLabel")}
+                  disabled={!html || exporting}
+                >
+                  {exporting ? <Loader2 className="animate-spin" /> : <Download />}
+                  {exporting ? t("editor.exportingLongImage") : t("editor.exportMenu")}
+                  <ChevronDown className="size-3" aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={onExport}>
+                  <ImageDown />
+                  {t("editor.downloadLongImage")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={onExportHtml}>
+                  <Code2 />
+                  {t("editor.exportHtml")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={onPrint}>
+                  <FileDown />
+                  {t("editor.printPreview")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {!html ? (
@@ -80,7 +150,7 @@ export const MarkdownPreview = React.memo(
             {t("editor.placeholder")}
           </div>
         ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
             <div
               ref={containerRef}
               className={cn(
@@ -88,7 +158,7 @@ export const MarkdownPreview = React.memo(
                 `md-theme-${markdownPreviewTheme}`,
               )}
               // html 已在 lib/markdown/parse.ts 里经 DOMPurify 消毒（PRD 10.2）。
-              dangerouslySetInnerHTML={{ __html: html }}
+              dangerouslySetInnerHTML={previewHtml}
             />
           </div>
         )}
@@ -96,6 +166,49 @@ export const MarkdownPreview = React.memo(
     );
   }),
 );
+
+/** 常用主题之外的主题收在这里，工具栏只留三个快捷位。 */
+function MoreThemesMenu() {
+  const { t, markdownPreviewTheme, setMarkdownPreviewTheme } = usePrefs();
+  const active = (MARKDOWN_PREVIEW_MORE_THEMES as readonly string[]).includes(markdownPreviewTheme);
+  const label = active
+    ? t(MARKDOWN_PREVIEW_THEME_LABEL_KEYS[markdownPreviewTheme])
+    : t("editor.moreThemes");
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={t("editor.moreThemesLabel")}
+          className={cn(
+            "inline-flex h-7 shrink-0 items-center gap-1 rounded-sm border border-transparent px-2 text-[11px] font-medium transition-all",
+            active
+              ? "bg-card text-brand-primary shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {label}
+          <ChevronDown className="size-3" aria-hidden="true" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center">
+        <DropdownMenuRadioGroup
+          value={markdownPreviewTheme}
+          onValueChange={(value) => {
+            if (isMarkdownPreviewTheme(value)) setMarkdownPreviewTheme(value);
+          }}
+        >
+          {MARKDOWN_PREVIEW_MORE_THEMES.map((theme) => (
+            <DropdownMenuRadioItem key={theme} value={theme}>
+              {t(MARKDOWN_PREVIEW_THEME_LABEL_KEYS[theme])}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function ThemeButton({
   active,
