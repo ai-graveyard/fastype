@@ -1,5 +1,7 @@
 IMAGE = ai-graveyard/fastype
 VERSION = latest
+# 和 Dockerfile 最终阶段的 LABEL 保持一致，deploy 用它把清理限定在自己的镜像上。
+PRUNE_LABEL = com.ai-graveyard.project=fastype
 
 .DEFAULT_GOAL := help
 
@@ -26,7 +28,7 @@ deploy:
 	git pull --ff-only
 	@$(MAKE) build
 	@$(MAKE) restart
-	docker image prune -f
+	docker image prune -f --filter "label=$(PRUNE_LABEL)"
 
 help:
 	@echo "Targets:"
