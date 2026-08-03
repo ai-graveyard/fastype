@@ -1,3 +1,5 @@
+import { translate, type Locale } from "@/lib/i18n";
+
 import {
   DEFAULT_HEADING_NUMBER,
   HEADING_NUMBER_LABEL_POSITIONS,
@@ -433,47 +435,53 @@ export function getWechatTheme(id: string): WechatTheme {
   return WECHAT_THEMES.find((theme) => theme.id === normalized) ?? WECHAT_THEMES[0];
 }
 
-export const DEFAULT_IDENTITY_CARD: IdentityCardStyle = {
-  enabled: false,
-  badge: "原创",
-  badgeAlign: "left",
-  // 标题和副标题留空时由渲染层从正文的一级标题、首段兜底填充，见 deriveIdentityCardContent。
-  title: "",
-  // 卡片已经接管了标题，正文里默认不再重复一遍。
-  hideTitle: true,
-  titleAlign: "left",
-  subtitle: "",
-  subtitleAlign: "left",
-  slogan: "",
-  sloganAlign: "left",
-  avatarUrl: "",
-  nickname: "",
-  tag: "",
-  authorAlign: "left",
-  backgroundColor: "",
-  textColor: "",
-  borderRadius: 16,
-  titleFontSize: 28,
-  subtitleFontSize: 15,
-};
+export function createDefaultIdentityCard(locale: Locale = "zh"): IdentityCardStyle {
+  return {
+    enabled: false,
+    badge: translate(locale, "wechat.defaultIdentityBadge"),
+    badgeAlign: "left",
+    // 标题和副标题留空时由渲染层从正文的一级标题、首段兜底填充，见 deriveIdentityCardContent。
+    title: "",
+    // 卡片已经接管了标题，正文里默认不再重复一遍。
+    hideTitle: true,
+    titleAlign: "left",
+    subtitle: "",
+    subtitleAlign: "left",
+    slogan: "",
+    sloganAlign: "left",
+    avatarUrl: "",
+    nickname: "",
+    tag: "",
+    authorAlign: "left",
+    backgroundColor: "",
+    textColor: "",
+    borderRadius: 16,
+    titleFontSize: 28,
+    subtitleFontSize: 15,
+  };
+}
 
-const DEFAULT_TAIL_GUIDE: TailGuideStyle = {
-  enabled: false,
-  title: "觉得不错？动动手指支持一下吧~",
-  likeText: "关注",
-  likeEmoji: "🤝",
-  likeHighlight: false,
-  readText: "点赞",
-  readEmoji: "👍",
-  readHighlight: false,
-  starText: "星标",
-  starEmoji: "⭐",
-  starHighlight: true,
-  footerText: "YOUR SUPPORT MATTERS",
-  backgroundColor: "",
-  textColor: "",
-  authorAlign: "center",
-};
+export const DEFAULT_IDENTITY_CARD: IdentityCardStyle = createDefaultIdentityCard();
+
+function createDefaultTailGuide(locale: Locale = "zh"): TailGuideStyle {
+  return {
+    enabled: false,
+    title: translate(locale, "wechat.defaultTailGuideTitle"),
+    likeText: translate(locale, "wechat.defaultTailGuideLike"),
+    likeEmoji: "🤝",
+    likeHighlight: false,
+    readText: translate(locale, "wechat.defaultTailGuideRead"),
+    readEmoji: "👍",
+    readHighlight: false,
+    starText: translate(locale, "wechat.defaultTailGuideStar"),
+    starEmoji: "⭐",
+    starHighlight: true,
+    footerText: translate(locale, "wechat.defaultTailGuideFooter"),
+    backgroundColor: "",
+    textColor: "",
+    authorAlign: "center",
+  };
+}
 
 export function createDefaultHeadingLevel(): WechatHeadingLevelStyle {
   return {
@@ -495,7 +503,7 @@ function createDefaultHeadings(): WechatHeadingLevels {
   };
 }
 
-export function wechatStyleFromTheme(themeId: string): WechatStyle {
+export function wechatStyleFromTheme(themeId: string, locale: Locale = "zh"): WechatStyle {
   const theme = getWechatTheme(themeId);
   const d = theme.defaults;
   return {
@@ -530,8 +538,8 @@ export function wechatStyleFromTheme(themeId: string): WechatStyle {
     inlineCodeBackground: "",
     inlineCodeColor: "",
     showPhoneFrame: true,
-    identityCard: { ...DEFAULT_IDENTITY_CARD },
-    tailGuide: { ...DEFAULT_TAIL_GUIDE },
+    identityCard: createDefaultIdentityCard(locale),
+    tailGuide: createDefaultTailGuide(locale),
   };
 }
 

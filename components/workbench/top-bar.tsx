@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/misc";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useGlobalShortcuts, useModifierKeyLabel } from "@/hooks/use-global-shortcuts";
+import { useImeGuard } from "@/hooks/use-ime-guard";
 import { type TKey } from "@/lib/i18n";
 import { ACCEPTED_EXTENSIONS, pickFile, supportsFileSystemAccess } from "@/lib/file";
 import { VIEWS, type ViewId } from "@/lib/types";
@@ -58,6 +59,7 @@ export function TopBar({ view, onViewChange, onOpenSettings }: TopBarProps) {
   const { filename, setFilename, newDocument, openFile, downloadMarkdown } = useDocument();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [editingName, setEditingName] = React.useState(false);
+  const ime = useImeGuard();
 
   const handleOpen = React.useCallback(async () => {
     // 优先用 File System Access API，拿到 handle 之后才能写回原文件。
@@ -116,7 +118,10 @@ export function TopBar({ view, onViewChange, onOpenSettings }: TopBarProps) {
                 setEditingName(false);
                 setFilename(event.target.value);
               }}
+              {...ime.compositionProps}
               onKeyDown={(event) => {
+                // 中文文件名的候选词确认既不该提交，也不该被当成放弃编辑。
+                if (ime.isComposing(event)) return;
                 if (event.key === "Enter") event.currentTarget.blur();
                 if (event.key === "Escape") {
                   event.currentTarget.value = filename;
@@ -199,13 +204,13 @@ export function TopBar({ view, onViewChange, onOpenSettings }: TopBarProps) {
 
       <div className="ml-auto flex shrink-0 items-center gap-0.5">
         {/* GitHub 与专业版入口在窄屏隐藏，仍可在设置 › 关于中找到 GitHub 链接。 */}
-        <Tooltip label="GitHub">
+        <Tooltip label={t("settings.repo")}>
           <Button variant="ghost" size="icon-sm" className="hidden sm:inline-flex" asChild>
             <a
               href="https://github.com/ai-graveyard/fastype"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="GitHub"
+              aria-label={t("settings.repo")}
             >
               <GitHubIcon />
             </a>

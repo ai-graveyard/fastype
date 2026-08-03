@@ -953,10 +953,10 @@ export function XhsWorkspace({
                     value={xhs.elements.orderedListStyle}
                     columns={3}
                     options={[
-                      { value: "decimal", label: "1, 2, 3" },
-                      { value: "lower-alpha", label: "a, b, c" },
-                      { value: "lower-roman", label: "i, ii, iii" },
-                      { value: "cjk-ideographic", label: "一, 二, 三" },
+                      { value: "decimal", label: t("common.orderedListDecimal") },
+                      { value: "lower-alpha", label: t("common.orderedListAlpha") },
+                      { value: "lower-roman", label: t("common.orderedListRoman") },
+                      { value: "cjk-ideographic", label: t("common.orderedListCjk") },
                     ]}
                     onChange={(orderedListStyle) =>
                       setXhs({
@@ -1059,7 +1059,7 @@ export function XhsWorkspace({
                       {t("common.exampleParagraph1")} <code>{t("common.exampleInlineCode")}</code>
                     </p>
                     <pre>
-                      <code>{'const publish = () => "FasType";'}</code>
+                      <code>{t("common.exampleCode")}</code>
                     </pre>
                   </div>
                 </XhsSettingExample>

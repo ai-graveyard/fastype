@@ -1,5 +1,7 @@
+import { DIAGRAM_KIND_ATTRIBUTE } from "@/lib/markdown/diagram";
 import { sanitizeHtml } from "@/lib/markdown/parse";
 import { appendHeadingNumbers } from "@/lib/render/heading-number";
+import { highlightPalette, highlightTokenOf } from "@/lib/themes/highlight";
 import {
   getWechatTheme,
   wechatFontStack,
@@ -11,6 +13,7 @@ import {
   type WechatStyle,
 } from "@/lib/themes/wechat";
 import type { UserProfile } from "@/lib/user-profile";
+import { isDarkColor } from "@/lib/utils";
 
 /**
  * LovType 同源思路的公众号转换器：Markdown 消毒后的 HTML 只经过 DOM 后处理，
@@ -394,14 +397,19 @@ function styleForElement(el: Element, style: WechatStyle, palette: Palette): str
         "border-top": `1px solid ${palette.border}`,
         height: "0",
       });
-    case "img":
+    case "img": {
+      // 外层 <p align> 决定左中右；align 属性对 block 元素不起作用，只能落到 margin 上。
+      const align = el.parentElement?.getAttribute("align");
+      const side =
+        align === "left" ? "0 auto 0 0" : align === "right" ? "0 0 0 auto" : `${gap}px auto`;
       return css({
         "max-width": "100%",
         height: "auto",
         display: "block",
-        margin: `${gap}px auto`,
+        margin: align ? side : `${gap}px auto`,
         "border-radius": "4px",
       });
+    }
     case "table":
       return css({
         width: "100%",
@@ -425,9 +433,23 @@ function styleForElement(el: Element, style: WechatStyle, palette: Palette): str
         "text-align": "left",
         color: palette.text,
       });
+    case "span": {
+      // 代码高亮片段：class 马上要被剥掉，颜色必须在这一步写进 style。
+      const token = highlightTokenOf(el);
+      return token ? css({ color: highlightPalette(isDarkCode(style, palette))[token] }) : null;
+    }
+    case "div":
+      return el.hasAttribute(DIAGRAM_KIND_ATTRIBUTE)
+        ? css({ margin: `${gap}px 0`, "text-align": "center", "max-width": "100%" })
+        : null;
     default:
       return null;
   }
+}
+
+/** 代码块底色是深是浅，决定高亮用哪一套配色。 */
+function isDarkCode(style: WechatStyle, palette: Palette): boolean {
+  return style.codeStyle === "dark" || isDarkColor(palette.codeBackground);
 }
 
 function resolveCardColors(background: string, text: string, palette: Palette) {
@@ -929,7 +951,11 @@ export interface WechatRenderResult {
 }
 
 export type WechatWarning =
-  "wechat.compatTable" | "wechat.compatCode" | "wechat.compatLink" | "wechat.compatImage";
+  | "wechat.compatTable"
+  | "wechat.compatCode"
+  | "wechat.compatLink"
+  | "wechat.compatImage"
+  | "wechat.compatDiagram";
 
 export interface WechatCompatibilityIssue {
   warning: WechatWarning;
@@ -954,6 +980,11 @@ function compatibilityText(
   searchText: string;
 } {
   const text = (el.textContent ?? "").replace(/\s+/g, " ").trim();
+  if (warning === "wechat.compatDiagram") {
+    // 占位里没有文字，能拿来定位的只有代码块首行。
+    const kind = el.getAttribute(DIAGRAM_KIND_ATTRIBUTE) ?? "";
+    return { preview: kind, searchText: `\`\`\`${kind}` };
+  }
   if (warning === "wechat.compatLink") {
     const href = el.getAttribute("href") ?? "";
     return {
@@ -1027,15 +1058,17 @@ export function renderWechat(
     if (tag === "table") addIssue("wechat.compatTable", el);
     if (tag === "pre") addIssue("wechat.compatCode", el);
     if (tag === "img") addIssue("wechat.compatImage", el);
+    if (el.hasAttribute(DIAGRAM_KIND_ATTRIBUTE)) addIssue("wechat.compatDiagram", el);
     if (tag === "a" && /^https?:/i.test(el.getAttribute("href") ?? "")) {
       addIssue("wechat.compatLink", el);
     }
+    // 先算样式再剥属性：代码高亮的颜色是从 class 上查出来的，剥完就查不到了。
+    const inline = styleForElement(el, style, palette);
     for (const attr of STRIP_ATTRS) el.removeAttribute(attr);
     if (tag === "input") {
       el.replaceWith(window.document.createTextNode(el.hasAttribute("checked") ? "☑ " : "☐ "));
       return;
     }
-    const inline = styleForElement(el, style, palette);
     if (inline) el.setAttribute("style", inline);
   });
 

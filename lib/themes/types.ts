@@ -1,6 +1,15 @@
 import type { TKey } from "@/lib/i18n";
 
-/** 字体方案只用系统字体，不引入远程字体（PRD 10.2）。 */
+/**
+ * 字体方案以系统字体为主，不请求任何第三方字体服务（PRD 10.2）。
+ *
+ * 例外是行楷：它在 Windows 和 Linux 上没有任何近似替代，选了只会悄悄退回宋体——
+ * 同一份文档换台机器导出就不是一回事了。所以自托管了一份 OFL 的马善政楷书
+ * （app/globals.css 里按 unicode-range 分片引入，不选就不下载）。
+ *
+ * 新魏和琥珀同样只有 macOS 有，但找不到授权合适的替代品，只能在字体选择器上
+ * 标出来（FONTS_REQUIRING_MACOS），让用户自己知道换台机器会变样。
+ */
 export const FONT_STACKS = {
   sans: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif',
   serif: 'Georgia, "Songti SC", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC", serif',
@@ -10,7 +19,8 @@ export const FONT_STACKS = {
   rounded:
     '"PingFang SC", "Hiragino Maru Gothic ProN", "Yuanti SC", "Microsoft YaHei", "Segoe UI", sans-serif',
   mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
-  xingkai: 'STXingkai, "Xingkai SC", "HanziPen SC", "Kaiti SC", STKaiti, KaiTi, cursive',
+  xingkai:
+    '"Ma Shan Zheng", STXingkai, "Xingkai SC", "HanziPen SC", "Kaiti SC", STKaiti, KaiTi, cursive',
   lishu: 'STLiti, "LiSu", "Noto Serif CJK SC", SimSun, serif',
   youyuan: '"YouYuan", "Yuanti SC", "PingFang SC", "Microsoft YaHei", sans-serif',
   xinwei: 'STXinwei, "Xin Wei", "Noto Serif CJK SC", SimSun, serif',
@@ -26,6 +36,18 @@ export function isFontChoice(value: unknown): value is FontChoice {
 
 export function fontStack(choice: FontChoice): string {
   return FONT_STACKS[choice] ?? FONT_STACKS.sans;
+}
+
+/**
+ * 这几款只有 macOS 装了，别的系统上会退回默认字体。
+ *
+ * 界面上要标出来：用户选了「新魏」，导出的图在自己机器上是新魏，发给别人、
+ * 或者换台 Windows 打开同一份文档，看到的就是另一副样子。
+ */
+export const FONTS_REQUIRING_MACOS: readonly FontChoice[] = ["xinwei", "hupo"];
+
+export function isMacOnlyFont(choice: FontChoice): boolean {
+  return FONTS_REQUIRING_MACOS.includes(choice);
 }
 
 export interface ThemeMeta {

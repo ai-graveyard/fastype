@@ -6,7 +6,9 @@ import { PrefsProvider } from "@/components/providers/prefs-provider";
 import { UserProfileProvider } from "@/components/providers/user-profile-provider";
 import { XhsPreview, type XhsPreviewHandle } from "@/components/workbench/xhs-preview";
 import { XHS_QR_CODE_CONTENT_GAP, xhsQrCodeHeight } from "@/components/workbench/xhs-qr-code";
+import { detectLocale } from "@/lib/i18n";
 import { DEFAULT_XHS_STYLE } from "@/lib/themes/xhs";
+import { getDefaultUserProfile } from "@/lib/user-profile";
 
 beforeAll(() => {
   vi.stubGlobal(
@@ -223,7 +225,8 @@ describe("小红书内容正文预览", () => {
     expect(identifier?.getAttribute("data-position")).toBe("bottom-right");
     expect((identifier as HTMLElement | null)?.style.transform).toBe("");
     expect(identifier?.textContent).toContain("FasType");
-    expect(identifier?.textContent).toContain("一分钟快速多平台排版");
+    const locale = detectLocale(navigator.languages ?? [navigator.language]);
+    expect(identifier?.textContent).toContain(getDefaultUserProfile(locale).slogan);
     const avatar = identifier?.querySelector(".ft-xhs-identifier-avatar") as HTMLElement | null;
     const text = identifier?.querySelector(".ft-xhs-identifier-text") as HTMLElement | null;
     expect(avatar?.style.transform).toBe("translateY(-4px)");

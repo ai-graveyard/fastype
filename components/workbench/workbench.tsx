@@ -44,7 +44,9 @@ import { XhsPreview, type XhsPreviewHandle } from "@/components/workbench/xhs-pr
 import { XhsPageStatus } from "@/components/workbench/xhs-page-status";
 import { XhsWorkspace, type XhsWorkspaceTab } from "@/components/workbench/xhs-workspace";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useHighlightedHtml } from "@/hooks/use-rich-blocks";
 import { useScrollSync } from "@/hooks/use-scroll-sync";
+import { buildUsedFontEmbedCss } from "@/lib/export/font-embed";
 import {
   downloadPagesAsZip,
   exportPages,
@@ -155,6 +157,13 @@ export function Workbench() {
     () => (hydrated ? renderMarkdown(debounced) : { html: "", title: null, text: "", images: [] }),
     [debounced, hydrated],
   );
+  /*
+   * 代码高亮在这里一次做完，三个视图共用结果。
+   *
+   * 不放到各视图的 DOM 上做：公众号要把高亮的 class 换算成内联颜色（微信不认 class），
+   * 换算发生在 renderWechat 内部，所以高亮必须赶在喂给它之前完成。
+   */
+  const highlightedHtml = useHighlightedHtml(rendered.html);
 
   const stats = React.useMemo(() => countText(rendered.text), [rendered.text]);
   const editorInputStats = React.useMemo(() => countEditorInput(imageContent), [imageContent]);
@@ -177,8 +186,8 @@ export function Workbench() {
   const docBase = baseName(filename);
 
   const wechatResult = React.useMemo(
-    () => (view === "wechat" ? renderWechat(rendered.html, wechat, profile) : null),
-    [view, rendered.html, wechat, profile],
+    () => (view === "wechat" ? renderWechat(highlightedHtml, wechat, profile) : null),
+    [view, highlightedHtml, wechat, profile],
   );
 
   // 源码与预览按块级元素的源码行号双向联动（只在 Markdown 视图，平台视图的
@@ -264,6 +273,8 @@ export function Workbench() {
       const blob = await renderPageToBlob(node, {
         scale: LONG_IMAGE_SCALE,
         backgroundColor,
+        // 用到自托管字体（行楷）时把那几个分片内联进去，否则长图会退回默认字体。
+        fontEmbedCSS: await buildUsedFontEmbedCss(),
       });
       if (!blob) throw new Error("PNG blob is empty");
       downloadBlob(blob, `${docBase}-preview.png`);
@@ -541,7 +552,7 @@ export function Workbench() {
       {view === "markdown" ? (
         <MarkdownPreview
           ref={markdownPreviewRef}
-          html={rendered.html}
+          html={highlightedHtml}
           exporting={exportingLongImage}
           onExport={stableExportLongImage}
           onCopyStyled={stableCopyPreviewStyled}
@@ -552,7 +563,7 @@ export function Workbench() {
       {view === "xhs" ? (
         <XhsPreview
           ref={xhsRef}
-          html={rendered.html}
+          html={highlightedHtml}
           documentTitle={rendered.title ?? ""}
           hasTitle={rendered.title !== null}
           metadata={xhsMetadata}

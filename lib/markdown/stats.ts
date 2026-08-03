@@ -36,16 +36,24 @@ export function countText(text: string): DocStats {
   };
 }
 
+/** 内嵌图片的 base64 载荷。 */
+const EMBEDDED_IMAGE_PAYLOAD = /data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
+
 /**
  * 统计编辑器硬上限。
  *
  * 字数沿用状态栏口径；字符数统计完整 Markdown 源码，确保格式标记、空白和换行
  * 也不会绕过平台声明的“可输入字符”上限。
+ *
+ * 唯一的例外是内嵌图片的 base64：那是一整张图，不是用户敲进去的字。平台说的
+ * 「正文最多两万字符」也是这个意思。真把它算进来，插一张图就有几十万字符，
+ * 上限瞬间顶满，之后连一个字都打不进去。
  */
 export function countEditorInput(text: string): DocStats {
+  const body = text.replace(EMBEDDED_IMAGE_PAYLOAD, "");
   return {
-    words: countText(text).words,
-    chars: Array.from(text).length,
+    words: countText(body).words,
+    chars: Array.from(body).length,
   };
 }
 

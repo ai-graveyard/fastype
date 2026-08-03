@@ -53,7 +53,8 @@ import { testConnection } from "@/lib/ai/client";
 import { chatCompletionsUrl } from "@/lib/ai/errors";
 import {
   DEFAULT_AI_CONFIG,
-  DEFAULT_AI_PROMPTS,
+  getDefaultAiConfig,
+  getDefaultAiPrompts,
   parseAiConfig,
   type AiAction,
   type AiConfig,
@@ -66,7 +67,7 @@ import { parseWechatStyle, DEFAULT_WECHAT_STYLE } from "@/lib/themes/wechat";
 import { parseXhsStyle, DEFAULT_XHS_STYLE } from "@/lib/themes/xhs";
 import { APP_VERSION, REPO_URL } from "@/lib/constants";
 import { LOCALES, LOCALE_FULL_LABELS } from "@/lib/i18n";
-import { DEFAULT_USER_PROFILE, type UserProfile } from "@/lib/user-profile";
+import { getDefaultUserProfile, type UserProfile } from "@/lib/user-profile";
 import { DEFAULT_WECHAT_COVER, parseWechatCover } from "@/lib/wechat-cover";
 import type { ThemeMode } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -99,11 +100,19 @@ function SectionHeader({
   );
 }
 
-/** 划词浮层的四个动作，顺序与浮层工具条一致。 */
+/**
+ * 划词浮层里需要模型的动作，顺序与浮层工具条一致。
+ * 「去格式」不在这里：它在本地剥 Markdown 标记，没有提示词可改。
+ */
 const SELECTION_PROMPTS: Array<{ action: AiAction; label: TKey; hint: TKey }> = [
   { action: "polish", label: "ai.polishPrompt", hint: "ai.polishPromptHint" },
   { action: "expand", label: "ai.expandPrompt", hint: "ai.expandPromptHint" },
   { action: "condense", label: "ai.condensePrompt", hint: "ai.condensePromptHint" },
+  {
+    action: "conversational",
+    label: "ai.conversationalPrompt",
+    hint: "ai.conversationalPromptHint",
+  },
   { action: "custom", label: "ai.customPrompt", hint: "ai.customPromptHint" },
 ];
 
@@ -159,6 +168,7 @@ export function SettingsDialog({
   const { clearDraft } = useDocument();
   const { clearStyles } = useStyles();
   const { profile, setProfile, resetProfile } = useUserProfile();
+  const defaultProfile = React.useMemo(() => getDefaultUserProfile(locale), [locale]);
 
   const [draft, setDraft] = React.useState<AiConfig>(config);
   const [profileDraft, setProfileDraft] = React.useState<UserProfile>(profile);
@@ -168,7 +178,7 @@ export function SettingsDialog({
   const [showKey, setShowKey] = React.useState(false);
   const [testing, setTesting] = React.useState(false);
   const [includeKey, setIncludeKey] = React.useState(false);
-  const [promptTab, setPromptTab] = React.useState<"humanize" | "sensitive">("humanize");
+  const [promptTab, setPromptTab] = React.useState<"humanize" | "sensitive" | "titles">("humanize");
   const [selectionPromptTab, setSelectionPromptTab] = React.useState<AiAction>("polish");
   const [clearTarget, setClearTarget] = React.useState<ClearTarget | null>(null);
   const [cropSrc, setCropSrc] = React.useState<string | null>(null);
@@ -226,7 +236,7 @@ export function SettingsDialog({
   };
 
   const handleSave = () => {
-    const normalized = parseAiConfig(draft) ?? DEFAULT_AI_CONFIG;
+    const normalized = parseAiConfig(draft) ?? getDefaultAiConfig(locale);
     setDraft(normalized);
     setConfig(normalized);
     toast.success(t("ai.saved"));
@@ -250,8 +260,8 @@ export function SettingsDialog({
   const handleProfileSave = () => {
     const next = {
       avatar: profileDraft.avatar,
-      name: profileDraft.name.trim() || DEFAULT_USER_PROFILE.name,
-      slogan: profileDraft.slogan.trim() || DEFAULT_USER_PROFILE.slogan,
+      name: profileDraft.name.trim() || defaultProfile.name,
+      slogan: profileDraft.slogan.trim() || defaultProfile.slogan,
     };
     setProfile(next);
     setProfileDraft(next);
@@ -494,10 +504,10 @@ export function SettingsDialog({
                         <div className="min-w-0 flex-1 space-y-2">
                           <div>
                             <p className="truncate text-sm font-semibold">
-                              {profileDraft.name.trim() || DEFAULT_USER_PROFILE.name}
+                              {profileDraft.name.trim() || defaultProfile.name}
                             </p>
                             <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
-                              {profileDraft.slogan.trim() || DEFAULT_USER_PROFILE.slogan}
+                              {profileDraft.slogan.trim() || defaultProfile.slogan}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
@@ -510,7 +520,7 @@ export function SettingsDialog({
                               <Upload />
                               {t("profile.uploadAvatar")}
                             </Button>
-                            {profileDraft.avatar !== DEFAULT_USER_PROFILE.avatar ? (
+                            {profileDraft.avatar !== defaultProfile.avatar ? (
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -518,7 +528,7 @@ export function SettingsDialog({
                                 onClick={() =>
                                   setProfileDraft((current) => ({
                                     ...current,
-                                    avatar: DEFAULT_USER_PROFILE.avatar,
+                                    avatar: defaultProfile.avatar,
                                   }))
                                 }
                               >
@@ -716,11 +726,14 @@ export function SettingsDialog({
                     <SettingsCard title={t("ai.promptSettings")} contentClassName="space-y-4">
                       <Tabs
                         value={promptTab}
-                        onValueChange={(value) => setPromptTab(value as "humanize" | "sensitive")}
+                        onValueChange={(value) =>
+                          setPromptTab(value as "humanize" | "sensitive" | "titles")
+                        }
                       >
-                        <TabsList className="grid w-full grid-cols-2">
+                        <TabsList className="grid w-full grid-cols-3">
                           <TabsTrigger value="humanize">{t("ai.humanizePrompt")}</TabsTrigger>
                           <TabsTrigger value="sensitive">{t("ai.sensitivePrompt")}</TabsTrigger>
+                          <TabsTrigger value="titles">{t("ai.titlesPrompt")}</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="humanize" className="mt-3 space-y-2">
@@ -748,7 +761,7 @@ export function SettingsDialog({
                                 ...draft,
                                 prompts: {
                                   ...draft.prompts,
-                                  humanize: DEFAULT_AI_PROMPTS.humanize,
+                                  humanize: getDefaultAiPrompts(locale).humanize,
                                 },
                               })
                             }
@@ -783,7 +796,42 @@ export function SettingsDialog({
                                 ...draft,
                                 prompts: {
                                   ...draft.prompts,
-                                  sensitive: DEFAULT_AI_PROMPTS.sensitive,
+                                  sensitive: getDefaultAiPrompts(locale).sensitive,
+                                },
+                              })
+                            }
+                          >
+                            <RotateCcw />
+                            {t("ai.restoreDefaultPrompt")}
+                          </Button>
+                        </TabsContent>
+
+                        <TabsContent value="titles" className="mt-3 space-y-2">
+                          <p className="text-xs leading-5 text-muted-foreground">
+                            {t("ai.titlesPromptHint")}
+                          </p>
+                          <Textarea
+                            id="ai-titles-prompt"
+                            aria-label={t("ai.titlesPrompt")}
+                            value={draft.prompts.titles}
+                            className="min-h-[420px] resize-y font-mono text-xs leading-5"
+                            onChange={(event) =>
+                              setDraft({
+                                ...draft,
+                                prompts: { ...draft.prompts, titles: event.target.value },
+                              })
+                            }
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="px-2"
+                            onClick={() =>
+                              setDraft({
+                                ...draft,
+                                prompts: {
+                                  ...draft.prompts,
+                                  titles: getDefaultAiPrompts(locale).titles,
                                 },
                               })
                             }
@@ -845,7 +893,7 @@ export function SettingsDialog({
                                   ...draft,
                                   prompts: {
                                     ...draft.prompts,
-                                    [item.action]: DEFAULT_AI_PROMPTS[item.action],
+                                    [item.action]: getDefaultAiPrompts(locale)[item.action],
                                   },
                                 })
                               }

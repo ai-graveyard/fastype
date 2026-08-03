@@ -7,6 +7,7 @@ import { SettingCard } from "@/components/common/setting-card";
 import { useT } from "@/components/providers/prefs-provider";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { useImeGuard } from "@/hooks/use-ime-guard";
 import { suggestXhsMetadata, type XhsMetadata } from "@/lib/markdown/xhs-frontmatter";
 import { XHS_INPUT_LIMITS, XHS_LIMITS } from "@/lib/themes/xhs";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,7 @@ export function XhsContentEditor({
   onMetadataChange,
 }: XhsContentEditorProps) {
   const t = useT();
+  const ime = useImeGuard();
   const [tagInput, setTagInput] = React.useState("");
   const titleLength = Array.from(metadata.title).length;
   const titleOverLimit = titleLength > XHS_LIMITS.contentTitle;
@@ -175,8 +177,11 @@ export function XhsContentEditor({
             placeholder={metadata.tags.length ? "" : t("xhs.tagsPlaceholder")}
             className="min-w-32 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
             onChange={(event) => setTagInput(event.target.value)}
+            {...ime.compositionProps}
             onKeyDown={(event) => {
               if (event.key !== "Enter") return;
+              // 拼音候选词的确认回车不是「加标签」。
+              if (ime.isComposing(event)) return;
               event.preventDefault();
               addTags(tagInput);
             }}

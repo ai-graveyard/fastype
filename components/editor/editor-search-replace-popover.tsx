@@ -18,6 +18,7 @@ import { useT } from "@/components/providers/prefs-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useImeGuard } from "@/hooks/use-ime-guard";
 import { cn } from "@/lib/utils";
 
 interface EditorSearchReplacePopoverProps {
@@ -35,6 +36,7 @@ export function EditorSearchReplacePopover({ editorRef }: EditorSearchReplacePop
   const [replacement, setReplacement] = React.useState("");
   const [status, setStatus] = React.useState<EditorSearchStatus>(EMPTY_STATUS);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const ime = useImeGuard();
 
   const normalizedQuery = query.trim();
   const hasQuery = normalizedQuery.length > 0;
@@ -132,7 +134,10 @@ export function EditorSearchReplacePopover({ editorRef }: EditorSearchReplacePop
                 ref={searchInputRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                {...ime.compositionProps}
                 onKeyDown={(event) => {
+                  // 输入中文搜索词时，确认候选词的回车不该顺带跳到下一个匹配。
+                  if (ime.isComposing(event)) return;
                   if (event.key === "Enter") navigate(event.shiftKey ? "previous" : "next");
                   if (event.key === "Escape") handleOpenChange(false);
                 }}
@@ -200,7 +205,9 @@ export function EditorSearchReplacePopover({ editorRef }: EditorSearchReplacePop
               <Input
                 value={replacement}
                 onChange={(event) => setReplacement(event.target.value)}
+                {...ime.compositionProps}
                 onKeyDown={(event) => {
+                  if (ime.isComposing(event)) return;
                   if (event.key === "Enter") replaceCurrent();
                   if (event.key === "Escape") handleOpenChange(false);
                 }}

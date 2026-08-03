@@ -4,6 +4,9 @@ export const en: Translation = {
   app: {
     name: "FasType",
     tagline: "One Markdown file, ready to take away",
+    description:
+      "A lightweight, account-free Markdown tool for editing, Xiaohongshu images, WeChat publishing and optional BYOK AI.",
+    screenshotAlt: "FasType Xiaohongshu publishing preview",
     useProfessional: "Use Pro",
   },
 
@@ -28,6 +31,7 @@ export const en: Translation = {
     more: "More",
     apply: "Apply",
     back: "Back",
+    restore: "Restore",
     customTheme: "Custom",
     customThemeName: "Theme name",
     customThemeNamePlaceholder: "Name this theme",
@@ -54,6 +58,22 @@ export const en: Translation = {
     exampleListItem1: "First list item",
     exampleListItem2: "Second list item",
     exampleInlineCode: "inline code",
+    exampleCode: 'const publish = () => "FasType";',
+    fontSample: "Aa CJK",
+    headingLabelPlaceholder: "PART",
+    orderedListDecimal: "1, 2, 3",
+    orderedListAlpha: "a, b, c",
+    orderedListRoman: "i, ii, iii",
+    orderedListCjk: "一、二、三",
+    errorPageTitle: "Something went wrong",
+    errorPageBody:
+      "An error occurred while rendering the page. Your draft is still stored locally and can be copied below.",
+    errorDetails: "Error details",
+    draftContent: "Draft content",
+    draftCopied: "Copied",
+    copyDraft: "Copy draft",
+    tryRecover: "Try to recover",
+    refreshPage: "Refresh page",
   },
 
   profile: {
@@ -62,6 +82,7 @@ export const en: Translation = {
     description: "Set the avatar, name and slogan used in previews. This stays in this browser.",
     name: "Name",
     slogan: "Slogan",
+    defaultSlogan: "Fast multi-platform publishing",
     uploadAvatar: "Upload avatar",
     resetAvatar: "Use default avatar",
     saved: "Profile saved",
@@ -168,6 +189,10 @@ export const en: Translation = {
     copyFailed: "Copy failed: the browser denied clipboard access.",
     linkText: "link text",
     imageAlt: "image description",
+    imageFromFile: "Insert image from device",
+    imageMore: "More image options",
+    imageFromUrl: "Insert image link",
+    imageDropHint: "Drop to insert",
     downloadLongImage: "Download image",
     exportingLongImage: "Generating…",
     longImageDone: "Preview image downloaded",
@@ -361,6 +386,9 @@ export const en: Translation = {
     themeDark: "Dark",
     themeDeepSea: "Deep Sea",
     fontFamily: "Font",
+    fontMacOnly: "macOS",
+    fontMacOnlyHint:
+      "This font ships only with macOS. On Windows and Linux it falls back to the default font, and exports change with it.",
     fontSans: "Sans",
     fontSerif: "Serif",
     fontHei: "Heiti",
@@ -506,6 +534,7 @@ export const en: Translation = {
     mockUserName: "FasType",
     mockFollowButton: "Follow",
     mockCommentPlaceholder: "Say something…",
+    mockDateTime: "Today 14:36",
     homeFollowing: "Following",
     homeDiscover: "Discover",
     homeNearby: "Nearby",
@@ -554,6 +583,8 @@ export const en: Translation = {
     preview: "WeChat preview",
     phonePreview: "Phone Preview",
     widePreview: "Wide Mode",
+    phone: "Phone",
+    desktop: "Desktop",
     phoneFrame: "Phone frame",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
@@ -729,6 +760,7 @@ export const en: Translation = {
     cardContentGroup: "Content",
     cardStyleGroup: "Style",
     cardReset: "Reset to defaults",
+    defaultIdentityBadge: "Original",
     cardTitleAutoHint: "Falls back to the first H1",
     cardSubtitleAutoHint: "Falls back to the opening paragraph",
     cardTagPlaceholder: "e.g. AI engineer",
@@ -767,6 +799,11 @@ export const en: Translation = {
     guideAuthorRight: "Right",
     guideAuthorHidden: "Hidden",
     guideFooter: "Footer note",
+    defaultTailGuideTitle: "Enjoyed this? A little support goes a long way.",
+    defaultTailGuideLike: "Follow",
+    defaultTailGuideRead: "Like",
+    defaultTailGuideStar: "Favorite",
+    defaultTailGuideFooter: "YOUR SUPPORT MATTERS",
     localFeatureNote:
       "FasType remains frontend-only: typography, identity and guide settings stay in this browser without accounts, credits or backend services.",
     fontFamily: "Font",
@@ -803,6 +840,8 @@ export const en: Translation = {
     compatLink:
       "External links in WeChat articles are usually not clickable. Consider listing them at the end.",
     compatImage: "External images must be re-uploaded in the WeChat editor to stay available.",
+    compatDiagram:
+      "WeChat drops SVG, so diagrams will not survive the paste. Screenshot the preview and insert it as an image.",
     previewSummary: "{images} images · {headings} subheadings · {minutes} min read",
     previewReady: "Ready to copy",
     previewEmpty: "Waiting for content",
@@ -816,6 +855,7 @@ export const en: Translation = {
     compatIssueCode: "Code block {n}",
     compatIssueLink: "External link {n}",
     compatIssueImage: "Image {n}",
+    compatIssueDiagram: "Diagram {n}",
     compatLocate: "Locate in editor",
     empty: "Nothing yet — type Markdown on the right to build the preview.",
   },
@@ -827,6 +867,25 @@ export const en: Translation = {
     humanize: "Remove AI tone",
     humanizeDescription:
       "The full document has been rewritten for a more natural voice. Review it before replacing the current text.",
+    titles: "Suggest titles",
+    titlesDescription:
+      "Picking a candidate replaces the H1 in your document. Nothing else changes.",
+    titlesPendingDescription:
+      "Generate from the whole document, or from a few keywords. Candidates are never written in automatically.",
+    titlesFromDocument: "From document",
+    titlesFromKeywords: "From keywords",
+    titlesKeywordsLabel: "Keywords or outline",
+    titlesKeywordsPlaceholder: "e.g. self-hosting, cost comparison, what went wrong",
+    titlesKeywordsRequired: "Add a few keywords first.",
+    titlesGenerate: "Generate",
+    titlesRegenerate: "Try another batch",
+    titlesRunning: "Generating candidates…",
+    titlesEmpty: "No usable titles came back. Try another batch.",
+    titlesApplied: "Replaced the H1 in your document.",
+    titlesApplyHint: "Click a candidate to replace the document's H1.",
+    titlesCurrent: "Current title: {title}",
+    titlesNoCurrent: "There is no H1 yet — picking a candidate adds one.",
+    titlesCopyOne: "Copy this one",
     sensitive: "Remove sensitive terms",
     sensitiveDescription:
       "Risky wording has been reduced for the current platform. Review it before replacing the current text.",
@@ -836,6 +895,90 @@ export const en: Translation = {
     startAction: "Start processing",
     notConfigured: "No model configured",
     configurePrompt: "Enter a Base URL, API key and model name to use full-document AI actions.",
+    promptCustomInstruction: "Rewrite instruction:",
+    promptContextBefore: "Text before the selection (for reference only; do not rewrite):",
+    promptContextAfter: "Text after the selection (for reference only; do not rewrite):",
+    promptSelection: "Selected text to rewrite:",
+    promptDocument: "Complete Markdown to process:",
+    platformCommon: "general content platform",
+    platformXiaohongshu: "Xiaohongshu",
+    platformWechat: "WeChat",
+    defaultHumanizePrompt: `You are a restrained, careful editor. Rewrite the user's complete Markdown document so it loses obvious AI writing patterns and reads like it was written naturally by a real author.
+
+Editing rules:
+1. Remove padded openings, vague conclusions, catchphrases, boilerplate, business jargon and low-information adverbs.
+2. Break templated structures. Avoid “not X but Y”, repeated three-item lists, rhetorical self-questioning, forced reversals and artificially profound short sentences.
+3. Prefer active voice. Name the actor when clear, and replace vague judgments such as “highly significant” with concrete facts.
+4. Vary sentence length and paragraph rhythm. Do not end every paragraph with a slogan or use em dashes to manufacture tone.
+5. Preserve the original points, facts, numbers, proper nouns, image links and necessary Markdown semantics. Do not add unsupported information.
+6. Keep the original language and author's voice instead of flattening every expression into one style.
+
+Return only the complete Markdown that can replace the original. Do not explain, greet, score or wrap it in a code block.`,
+    defaultSensitivePrompt: `You are a content-compliance editor for social platforms. Review and rewrite the user's complete Markdown document to reduce wording that may trigger {{platform}} review, reach limits or advertising-compliance risks.
+
+Editing rules:
+1. Identify absolute claims, high-risk advertising terms, exaggerated medical or financial promises, engagement bait, platform-limiting terms and wording that may mislead.
+2. Judge each phrase in context instead of replacing mechanically. For example, “first time” in a narrative is not automatically an absolute claim.
+3. Replace risky wording with natural, restrained, semantically close alternatives. Do not use pinyin, homophones, split characters or special symbols to evade review.
+4. Preserve the original points, facts, numbers, proper nouns, image links and necessary Markdown semantics. Do not add promises or conclusions.
+5. Leave content without risks unchanged; do not rewrite for the sake of rewriting.
+
+Return only the optimized complete Markdown. Do not list risks, explain, greet or wrap it in a code block.`,
+    defaultTitlesPrompt: `You are an editor with a knack for headlines. Write {{count}} candidate titles for the content the user provides.
+
+Rules:
+1. One title per line. Write only the titles — no numbering, no quotation marks, no explanation, no opening line.
+2. Keep each title short enough to scan, and make it obvious what the piece is about.
+3. Pull the angles apart: aim them at the conclusion, the method, the situation, a comparison and a question rather than rewording one idea.
+4. Use only facts and numbers present in the content. Invent nothing and promise nothing.
+5. Follow the language of the content itself.
+
+Return exactly {{count}} lines.`,
+    defaultPolishPrompt: `You are a restrained, careful editor. Polish the text selected by the user so it reads more smoothly and naturally.
+
+Editing rules:
+1. Preserve the original language, tone, facts, numbers, proper nouns and Markdown semantics.
+2. Improve word order and phrasing. Remove filler without changing the meaning or adding information.
+3. Do not expand it; keep it about as long as the original.
+4. Use the surrounding text only to understand context; do not include it in the result.
+
+Return only this rewritten passage. Do not explain, greet or wrap it in a code block.`,
+    defaultExpandPrompt: `You are a restrained writing assistant. Add useful detail to the text selected by the user so it becomes more substantial.
+
+Editing rules:
+1. Preserve the original language, tone, point of view and Markdown semantics.
+2. Add only details that can reasonably follow from the original text and context. Do not invent facts, numbers, quotations or sources.
+3. Follow the existing structure. Do not change the subject or add headings and summary sentences.
+4. Use the surrounding text only to understand context; do not include it in the result.
+
+Return only this expanded passage. Do not explain, greet or wrap it in a code block.`,
+    defaultCondensePrompt: `You are a restrained, careful editor. Condense the text selected by the user.
+
+Editing rules:
+1. Preserve all key facts, numbers, proper nouns, image links and Markdown semantics.
+2. Remove repetition, padding and low-information modifiers without removing the evidence itself.
+3. Keep the original language and tone. Do not turn it into an outline or bullet list unless it already was one.
+4. Use the surrounding text only to understand context; do not include it in the result.
+
+Return only this condensed passage. Do not explain, greet or wrap it in a code block.`,
+    defaultConversationalPrompt: `You are an editor with a good ear for spoken language. Rewrite the text selected by the user so it sounds like something a person would say out loud.
+
+Editing rules:
+1. Preserve the facts, numbers, proper nouns, image links and Markdown semantics.
+2. Break up long sentences and stacked nouns, swap bookish wording for everyday phrasing, and start a new sentence where a speaker would pause.
+3. Keep the tone natural. No piled-up interjections or exclamation marks, no salutations, rhetorical questions or meme filler.
+4. Keep it about the same length. Do not expand or drop content along the way.
+5. Use the surrounding text only to understand context; do not include it in the result.
+
+Return only the rewritten passage. Do not explain, greet or wrap it in a code block.`,
+    defaultCustomPrompt: `You are a restrained writing assistant. Rewrite the text selected by the user according to the user's instruction.
+
+Editing rules:
+1. Unless the instruction says otherwise, preserve the original language, facts, numbers, proper nouns and Markdown semantics.
+2. Follow the instruction when it conflicts with these constraints, but do not invent facts absent from the original.
+3. Process only the selected passage. Use the surrounding text only to understand context; do not include it in the result.
+
+Return only the rewritten passage. Do not explain, greet or wrap it in a code block.`,
     configureNow: "Configure now",
     skip: "Not now",
     baseUrl: "Base URL",
@@ -859,6 +1002,8 @@ export const en: Translation = {
     sensitivePrompt: "Remove sensitive terms prompt",
     sensitivePromptHint:
       "{{platform}} is replaced at request time with General platform, Xiaohongshu or WeChat Official Account.",
+    titlesPrompt: "Suggest titles prompt",
+    titlesPromptHint: "{{count}} is replaced at request time with how many candidates to generate.",
     selectionPromptSettings: "Selection prompts",
     selectionPromptSettingsHint:
       "These power the floating toolbar that appears when you select text in the editor.",
@@ -868,6 +1013,9 @@ export const en: Translation = {
     expandPromptHint: "Adds detail on top of the original meaning without inventing facts.",
     condensePrompt: "Condense prompt",
     condensePromptHint: "Compresses the wording while keeping every key fact.",
+    conversationalPrompt: "Conversational prompt",
+    conversationalPromptHint:
+      "Turns bookish wording into everyday phrasing, keeping about the same length.",
     customPrompt: "Custom instruction prompt",
     customPromptHint:
       "The instruction you type in the popover is appended after this prompt as the user message.",
@@ -885,6 +1033,10 @@ export const en: Translation = {
     actionPolish: "Polish",
     actionExpand: "Expand",
     actionCondense: "Condense",
+    actionConversational: "Conversational",
+    actionRemoveMarkdown: "Strip formatting",
+    actionRemoveMarkdownHint: "Strips Markdown marks locally — no request, no tokens.",
+    localActionDone: "Converted locally. No request was sent.",
     actionCustom: "Custom instruction",
     customPlaceholder: "e.g. Rewrite this in a more casual voice, keep all facts.",
     selectionActions: "Selection AI",
@@ -984,7 +1136,7 @@ export const en: Translation = {
     about: "About",
     aboutDesc: "An open-source, frontend-only Markdown formatter for multiple platforms.",
     version: "Version {version}",
-    repo: "Repository",
+    repo: "GitHub",
     privacy: "Privacy",
     privacyBody:
       "FasType is a pure front-end app with no backend. Your text, styles and AI settings stay in this browser. Only when you actively use AI is the relevant selection or full document sent to the model service you configured; remote images are fetched by your browser directly from their host.",
@@ -1007,7 +1159,29 @@ export const en: Translation = {
     editorStatusBar: "Editor status bar",
   },
 
+  diagram: {
+    failed: "This diagram could not be drawn. The source is below.",
+  },
+
   image: {
+    inserted: "Inserted {n} image(s), adding {size} to the document.",
+    insertFailed: "{n} image(s) could not be read — unsupported format or a damaged file.",
+    insertRejected:
+      "Could not insert: this platform's character limit is already used up. Trim the text first.",
+    toolbar: "Image settings",
+    embeddedSize: "Embedded · {size}",
+    remote: "External image",
+    alignLeft: "Align left",
+    alignCenter: "Center",
+    alignRight: "Align right",
+    crop: "Crop",
+    remove: "Remove this image",
+    cropTitle: "Crop image",
+    cropDescription:
+      "Drag the selection to choose what to keep. Applying replaces the image in your document.",
+    cropApply: "Apply crop",
+    cropFailed:
+      "Crop failed. External images can only be cropped if the host allows cross-origin reads.",
     loading: "Loading image…",
     failed: "Image failed to load",
     failedSource: "Source: {url}",

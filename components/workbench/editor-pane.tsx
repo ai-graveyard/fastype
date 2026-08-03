@@ -2,6 +2,7 @@
 
 import {
   Bold,
+  ChevronDown,
   ClipboardType,
   Code,
   Copy,
@@ -14,6 +15,7 @@ import {
   List,
   ListChecks,
   ListOrdered,
+  Loader2,
   Minus,
   Quote,
   SquareCode,
@@ -22,6 +24,7 @@ import {
   Redo2,
   Save,
   Undo2,
+  Upload,
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
@@ -32,11 +35,22 @@ import {
   type AiQuickActionPlatform,
 } from "@/components/workbench/ai-quick-actions";
 import { AiSelectionPopover } from "@/components/workbench/ai-selection-popover";
+import { ImageCropDialog } from "@/components/workbench/image-crop-dialog";
+import { ImageToolbar } from "@/components/workbench/image-toolbar";
 import { useT } from "@/components/providers/prefs-provider";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { EditorApi } from "@/components/editor/markdown-editor";
+import { useImageInsert } from "@/hooks/use-image-insert";
 import type { TKey } from "@/lib/i18n";
+import { ACCEPTED_IMAGE_TYPES, pickImageFiles } from "@/lib/image/encode";
+import type { ImageMarkupMatch } from "@/lib/markdown/image-markup";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import { cn } from "@/lib/utils";
 
@@ -69,14 +83,6 @@ const TOOLBAR_ACTIONS: ToolbarAction[] = [
     },
   },
   { icon: Minus, labelKey: "editor.hr", run: (api) => api.insertBlock("---") },
-  {
-    icon: ImageIcon,
-    labelKey: "editor.image",
-    run: (api, t) => {
-      const { text } = api.getSelection();
-      api.replaceSelection(`![${text || t("editor.imageAlt")}](https://)`);
-    },
-  },
   { icon: Code, labelKey: "editor.inlineCode", run: (api) => api.toggleWrap("`") },
   { icon: ListChecks, labelKey: "editor.task", run: (api) => api.toggleLinePrefix("- [ ] ") },
   {
@@ -113,6 +119,50 @@ export function EditorPane({
   aiPlatform = "common",
 }: EditorPaneProps) {
   const t = useT();
+  const imageInputRef = React.useRef<HTMLInputElement>(null);
+  const { insertFiles, busy: imageBusy } = useImageInsert(editorRef);
+  const [imageDragging, setImageDragging] = React.useState(false);
+  const [imageMenuOpen, setImageMenuOpen] = React.useState(false);
+  const [cropping, setCropping] = React.useState<ImageMarkupMatch | null>(null);
+
+  /** 剪贴板里有图就插图；只有文字时交给 CodeMirror 自己粘。 */
+  const handlePaste = (event: React.ClipboardEvent) => {
+    const files = pickImageFiles(event.clipboardData?.items ?? null);
+    if (files.length === 0) return;
+    event.preventDefault();
+    void insertFiles(files);
+  };
+
+  /*
+   * 拖拽只接管图片。拖 .md 进来是「打开文档」，那件事由 Workbench 在更外层处理，
+   * 这里不能把它的 drop 事件吃掉。
+   */
+  const hasDraggedImage = (event: React.DragEvent) =>
+    Array.from(event.dataTransfer?.items ?? []).some(
+      (item) => item.kind === "file" && item.type.startsWith("image/"),
+    );
+
+  const handleDragOver = (event: React.DragEvent) => {
+    if (!hasDraggedImage(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setImageDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent) => {
+    // 拖过子元素时也会触发 dragleave，落点还在容器里就不算离开。
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+    setImageDragging(false);
+  };
+
+  const handleDrop = (event: React.DragEvent) => {
+    const files = pickImageFiles(event.dataTransfer?.files ?? null);
+    if (files.length === 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setImageDragging(false);
+    void insertFiles(files);
+  };
 
   const run = (action: ToolbarAction) => {
     const api = editorRef.current;
@@ -213,6 +263,62 @@ export function EditorPane({
           <span aria-hidden className="mx-1 h-5 w-px bg-border" />
         </div>
 
+        {/*
+          插图放在滚动区外面。格式按钮那一排在窄一点的窗口里会溢出、要横着滚，
+          排在末尾的插图按钮就整个看不见了——而这是个高频操作，不能藏。
+
+          按钮本身拆成「主按钮 + 下拉箭头」，而不是「点图标弹菜单、菜单里再选从本地插入」：
+          打开文件选择框得蹭这一次点击的用户激活，中间隔一层菜单，Radix 关菜单、
+          还焦点那串动作和 input.click() 抢同一次激活，浏览器就把对话框吞了。
+          主按钮直接开文件框，插链接那条用不着激活，留在下拉里。
+        */}
+        <div className="flex shrink-0 items-center">
+          <Tooltip label={t("editor.imageFromFile")}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="size-7 rounded-sm rounded-r-none"
+              aria-label={t("editor.imageFromFile")}
+              disabled={imageBusy}
+              onClick={() => imageInputRef.current?.click()}
+            >
+              {imageBusy ? <Loader2 className="animate-spin" /> : <ImageIcon />}
+            </Button>
+          </Tooltip>
+          <DropdownMenu open={imageMenuOpen} onOpenChange={setImageMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="size-7 w-4 rounded-sm rounded-l-none px-0"
+                aria-label={t("editor.imageMore")}
+                title={t("editor.imageMore")}
+              >
+                <ChevronDown className="size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onSelect={() => imageInputRef.current?.click()}>
+                <Upload />
+                {t("editor.imageFromFile")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  const api = editorRef.current;
+                  if (!api) return;
+                  const { text } = api.getSelection();
+                  api.replaceSelection(`![${text || t("editor.imageAlt")}](https://)`);
+                  api.focus();
+                }}
+              >
+                <LinkIcon />
+                {t("editor.imageFromUrl")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <span aria-hidden className="mx-1 h-5 w-px bg-border" />
+        </div>
+
         <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex w-max items-center gap-1">
             {TOOLBAR_ACTIONS.map((action) => (
@@ -239,10 +345,50 @@ export function EditorPane({
         ) : null}
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept={ACCEPTED_IMAGE_TYPES.join(",")}
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          void insertFiles(Array.from(event.target.files ?? []));
+          // 清空才能连续两次选同一张图。
+          event.target.value = "";
+        }}
+      />
+
+      <ImageToolbar editorRef={editorRef} onCrop={setCropping} />
+
+      {cropping ? (
+        <ImageCropDialog
+          src={cropping.src}
+          open
+          onOpenChange={(next) => !next && setCropping(null)}
+          onSave={(dataUrl) => {
+            const api = editorRef.current;
+            const current = api?.getImageAtCursor();
+            if (api && current) api.replaceImage(current, { ...current, src: dataUrl });
+            setCropping(null);
+          }}
+        />
+      ) : null}
+
+      <div
+        className="relative min-h-0 flex-1 overflow-hidden"
+        onPaste={handlePaste}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         {children}
         <AiQuickActions editorRef={editorRef} platform={aiPlatform} />
         <AiSelectionPopover editorRef={editorRef} />
+        {imageDragging ? (
+          <div className="pointer-events-none absolute inset-2 z-40 flex items-center justify-center rounded-lg border-2 border-dashed border-brand-primary/60 bg-background/80 text-sm font-medium text-brand-primary backdrop-blur-sm">
+            {t("editor.imageDropHint")}
+          </div>
+        ) : null}
       </div>
     </div>
   );

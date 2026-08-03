@@ -23,6 +23,8 @@ function createEditorApi(): EditorApi {
     toggleWrap: vi.fn(),
     toggleLinePrefix: vi.fn(),
     insertBlock: vi.fn(),
+    getImageAtCursor: vi.fn(() => null),
+    replaceImage: vi.fn(() => true),
     locateText: vi.fn(() => true),
     getScrollLine: vi.fn(() => 1),
     scrollToLine: vi.fn(),

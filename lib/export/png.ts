@@ -1,3 +1,4 @@
+import { buildUsedFontEmbedCss } from "@/lib/export/font-embed";
 import { downloadBlob } from "@/lib/file";
 
 /**
@@ -33,14 +34,20 @@ const TRANSPARENT_PIXEL =
 
 export async function renderPageToBlob(
   node: HTMLElement,
-  options: Pick<ExportOptions, "scale" | "backgroundColor">,
+  options: Pick<ExportOptions, "scale" | "backgroundColor"> & { fontEmbedCSS?: string },
 ): Promise<Blob | null> {
   const { toBlob } = await import("html-to-image");
+  const fontEmbedCSS = options.fontEmbedCSS ?? "";
   return toBlob(node, {
     pixelRatio: options.scale,
     backgroundColor: options.backgroundColor,
-    // 只用系统字体，跳过字体内联能省掉一轮必然失败的远程请求（PRD 10.2）。
-    skipFonts: true,
+    /*
+     * 正文全是系统字体时跳过字体内联，省掉一轮必然一无所获的扫描（PRD 10.2）。
+     * 用到自托管字体（行楷）时改为喂一份现成的 CSS：里面只有正文真正用到的那几个
+     * unicode-range 分片，而不是让 html-to-image 把一百多片全抓一遍。
+     */
+    skipFonts: !fontEmbedCSS,
+    fontEmbedCSS: fontEmbedCSS || undefined,
     cacheBust: false,
     imagePlaceholder: TRANSPARENT_PIXEL,
   });
@@ -50,12 +57,14 @@ export async function exportPages(
   nodes: HTMLElement[],
   options: ExportOptions,
 ): Promise<PageExportResult[]> {
+  // 字体分片对整篇文档是同一套，算一次给所有页共用。
+  const fontEmbedCSS = await buildUsedFontEmbedCss();
   const results: PageExportResult[] = [];
   for (let index = 0; index < nodes.length; index += 1) {
     if (options.signal?.aborted) break;
     options.onProgress?.(index + 1, nodes.length);
     try {
-      const blob = await renderPageToBlob(nodes[index], options);
+      const blob = await renderPageToBlob(nodes[index], { ...options, fontEmbedCSS });
       results.push(blob ? { index, ok: true, blob } : { index, ok: false });
     } catch {
       // 单页失败不影响其它页（PRD 12.1）。

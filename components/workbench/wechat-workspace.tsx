@@ -467,7 +467,7 @@ function WechatHeadingLevelCard({
               label={t("wechat.headingLabelText")}
               value={value.number.labelText}
               onChange={(labelText) => onChange({ number: { ...value.number, labelText } })}
-              placeholder="PART"
+              placeholder={t("common.headingLabelPlaceholder")}
             />
           </div>
           {value.number.labelText ? (
@@ -875,7 +875,11 @@ export function WechatWorkspace({
                     label: t(
                       `wechat.font${font[0].toUpperCase()}${font.slice(1)}` as "wechat.fontSans",
                     ),
-                    sample: <span style={{ fontFamily: wechatFontStack(font) }}>Aa 文</span>,
+                    sample: (
+                      <span style={{ fontFamily: wechatFontStack(font) }}>
+                        {t("common.fontSample")}
+                      </span>
+                    ),
                   }))}
                   onChange={(fontFamily) => setWechat({ fontFamily })}
                   columns={4}
@@ -1057,10 +1061,10 @@ export function WechatWorkspace({
                     value={wechat.orderedListStyle}
                     columns={2}
                     options={[
-                      { value: "decimal", label: "1. 2. 3." },
-                      { value: "lower-alpha", label: "a. b. c." },
-                      { value: "lower-roman", label: "i. ii. iii." },
-                      { value: "cjk-ideographic", label: "一、二、三" },
+                      { value: "decimal", label: t("common.orderedListDecimal") },
+                      { value: "lower-alpha", label: t("common.orderedListAlpha") },
+                      { value: "lower-roman", label: t("common.orderedListRoman") },
+                      { value: "cjk-ideographic", label: t("common.orderedListCjk") },
                     ]}
                     onChange={(orderedListStyle) => setWechat({ orderedListStyle })}
                   />
@@ -1154,7 +1158,7 @@ export function WechatWorkspace({
               <SettingCard id="wechat-code-settings" title={t("wechat.codeSettings")}>
                 <WechatSettingExample
                   label={t("common.examplePreview")}
-                  html={`<p>${example.paragraph1} <code>${example.inlineCode}</code></p><pre><code>const publish = () =&gt; "FasType";</code></pre>`}
+                  html={`<p>${example.paragraph1} <code>${example.inlineCode}</code></p><pre><code>${t("common.exampleCode")}</code></pre>`}
                   style={contentPreviewStyle}
                   testId="wechat-code"
                 />

@@ -53,6 +53,7 @@ import {
   xhsQrCodeHeight,
 } from "@/components/workbench/xhs-qr-code";
 import { useImageFallback, useImagesSettled } from "@/hooks/use-image-status";
+import { replayRichBlocks, useDiagrams } from "@/hooks/use-rich-blocks";
 import { paginate, type Page } from "@/lib/markdown/paginate";
 import type { XhsMetadata } from "@/lib/markdown/xhs-frontmatter";
 import {
@@ -72,7 +73,7 @@ import {
   xhsPalette,
 } from "@/lib/render/xhs";
 import { getXhsCanvasSize, type XhsStyle } from "@/lib/themes/xhs";
-import { cn } from "@/lib/utils";
+import { cn, isDarkColor } from "@/lib/utils";
 
 export interface XhsPreviewHandle {
   /** 导出用的原始尺寸节点，和手机预览中的卡片来自同一棵 DOM。 */
@@ -143,7 +144,12 @@ function XhsCardClone({
       if (!source) return;
       const clone = source.cloneNode(true) as HTMLDivElement;
       clone.removeAttribute("id");
-      clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+      clone.querySelectorAll("[id]").forEach((node) => {
+        // SVG 里的 id 留着：mermaid 把自己的配色写成 `#<svg-id> .node rect { … }`
+        // 这类选择器塞在图内部的 <style> 里，id 一摘整张图就退回默认的黑白块。
+        if (node.closest("svg")) return;
+        node.removeAttribute("id");
+      });
       clone.style.pointerEvents = "none";
       clone.style.transform = `scale(${displayWidth / sourceWidth})`;
       clone.style.transformOrigin = "top left";
@@ -528,6 +534,11 @@ export const XhsPreview = React.memo(
       onImageFailuresChange?.(failedImages);
     }, [failedImages, onImageFailuresChange]);
     const imagesTick = useImagesSettled(measureRef, contentHtml);
+    // 代码高亮和图表都在测量容器里就位，分页量到的才是图表的真实高度。
+    const richTick = useDiagrams(measureRef, contentHtml, {
+      dark: isDarkColor(style.background),
+      diagramErrorLabel: t("diagram.failed"),
+    });
 
     // 测量 + 分页。图片高度要等图片 settle 之后才准，所以 imagesTick 也是依赖。
     /*
@@ -549,6 +560,8 @@ export const XhsPreview = React.memo(
       }
 
       container.innerHTML = contentHtml;
+      // 重设 innerHTML 把上一轮渲染好的图表和高亮冲掉了，这一帧就要量高度，先同步补回来。
+      replayRichBlocks(container, isDarkColor(style.background));
       prepareForMeasure(container);
 
       const available =
@@ -575,7 +588,10 @@ export const XhsPreview = React.memo(
       css,
       innerWidth,
       style.padding,
+      // 图表要按底色选深浅配色，换了背景就得重画一遍。
+      style.background,
       imagesTick,
+      richTick,
       onPagesChange,
       coverOffset,
       identifierReservedHeight,
@@ -709,7 +725,7 @@ export const XhsPreview = React.memo(
               ))}
             </div>
           ) : null}
-          <p className="text-[11px] text-zinc-400">今天 14:36</p>
+          <p className="text-[11px] text-zinc-400">{t("xhs.mockDateTime")}</p>
         </article>
 
         <div className="flex h-[52px] shrink-0 items-center gap-3 border-t border-black/5 px-3">

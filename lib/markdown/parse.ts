@@ -1,6 +1,15 @@
 import DOMPurify from "dompurify";
 import { Marked } from "marked";
 
+import {
+  DIAGRAM_KIND_ATTRIBUTE,
+  DIAGRAM_SOURCE_ATTRIBUTE,
+  DIAGRAM_STATE_ATTRIBUTE,
+  diagramPlaceholderHtml,
+  isDiagramKind,
+} from "@/lib/markdown/diagram";
+import { HIGHLIGHT_LANGUAGE_ATTRIBUTE, normalizeCodeLanguage } from "@/lib/markdown/highlight";
+
 /**
  * 三个视图共用同一套解析规则（PRD 产品原则 3「所见接近所得」、12.3）。
  *
@@ -11,6 +20,32 @@ const marked = new Marked({
   gfm: true,
   breaks: true,
   pedantic: false,
+});
+
+/**
+ * 围栏代码块的两种去向：
+ * - ```mermaid / ```markmap 换成图表占位，挂载后异步渲染（lib/markdown/diagram.ts）；
+ * - 其余带语言标记的代码块留下语言名，交给高亮那一步（lib/markdown/highlight.ts）。
+ *
+ * 语言名单独放属性而不是沿用 marked 默认的 `class="language-x"`：公众号转换会剥掉
+ * 所有 class（内联样式那条路不认 class），属性能一直留到需要它的地方。
+ */
+marked.use({
+  renderer: {
+    code({ text, lang }) {
+      const language = (lang ?? "").trim().split(/\s+/)[0].toLowerCase();
+      if (isDiagramKind(language)) return diagramPlaceholderHtml(language, text);
+
+      const escaped = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+      const normalized = normalizeCodeLanguage(language);
+      const attribute = normalized ? ` ${HIGHLIGHT_LANGUAGE_ATTRIBUTE}="${normalized}"` : "";
+      return `<pre><code${attribute}>${escaped}\n</code></pre>\n`;
+    },
+  },
 });
 
 const FORBID_TAGS = [
@@ -61,7 +96,15 @@ export function sanitizeHtml(rawHtml: string): DocumentFragment {
     FORBID_TAGS,
     FORBID_ATTR: ["style"],
     ALLOW_DATA_ATTR: false,
-    ADD_ATTR: ["target", "rel"],
+    // 图表占位和代码语言这三个 data-* 是我们自己写进去的，得在 ALLOW_DATA_ATTR:false 下逐个放行。
+    ADD_ATTR: [
+      "target",
+      "rel",
+      DIAGRAM_KIND_ATTRIBUTE,
+      DIAGRAM_SOURCE_ATTRIBUTE,
+      DIAGRAM_STATE_ATTRIBUTE,
+      HIGHLIGHT_LANGUAGE_ATTRIBUTE,
+    ],
     RETURN_DOM_FRAGMENT: true,
   }) as unknown as DocumentFragment;
 }

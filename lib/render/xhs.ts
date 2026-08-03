@@ -1,6 +1,9 @@
+import { DIAGRAM_CLASS } from "@/lib/markdown/diagram";
 import { sanitizeHtml } from "@/lib/markdown/parse";
 import { appendHeadingNumbers } from "@/lib/render/heading-number";
+import { highlightCss } from "@/lib/themes/highlight";
 import { fontStack } from "@/lib/themes/types";
+import { isDarkColor } from "@/lib/utils";
 import {
   getXhsCanvasSize,
   getXhsTheme,
@@ -344,6 +347,12 @@ ${root} img {
   margin: 0 auto ${paragraphGap}px;
   border-radius: ${p.imageRadius}px;
 }
+/* 调过宽度或对齐的图片落成 <p align><img width>；align 管不了 block 元素的位置，靠 margin。 */
+${root} p[align] { margin: 0 0 ${paragraphGap}px; text-indent: 0; }
+${root} p[align] > img { display: block; margin-bottom: 0; }
+${root} p[align="left"] > img { margin-left: 0; margin-right: auto; }
+${root} p[align="center"] > img { margin-left: auto; margin-right: auto; }
+${root} p[align="right"] > img { margin-left: auto; margin-right: 0; }
 ${root} table {
   width: 100%;
   margin: 0 0 ${paragraphGap}px;
@@ -397,5 +406,24 @@ ${root} .ft-xhs-page-dot {
   font-weight: 400;
   white-space: nowrap;
 }
+${root} .${DIAGRAM_CLASS} {
+  margin: 0 0 ${paragraphGap}px;
+  text-align: center;
+}
+/*
+ * 卡片是 1080 宽给手机看的，图按自己那两三百像素的自然尺寸摆上去只有指甲盖大，
+ * 所以这里撑满内容宽度等比放大；和图片同一条约束，整张图不得超过一页（FT-XHS-004）。
+ */
+${root} .${DIAGRAM_CLASS} svg {
+  width: 100%;
+  height: auto;
+  max-height: ${Math.round(Math.min(canvas.width, canvas.height) * 0.9)}px;
+}
+${root} .ft-diagram-error {
+  margin: 0 0 ${Math.round(size * 0.4)}px;
+  color: ${p.muted};
+  font-size: ${Math.round(size * 0.78)}px;
+}
+${highlightCss(isDarkColor(elements.codeBackground), root)}
 `.trim();
 }

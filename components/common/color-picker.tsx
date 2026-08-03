@@ -9,6 +9,7 @@ import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/components/providers/prefs-provider";
 import { cn } from "@/lib/utils";
 
 export const DEFAULT_PRESET_COLORS = [
@@ -55,10 +56,11 @@ export function ColorPicker({
   displayValue,
   label,
   placeholder,
-  confirmLabel = "确认",
-  restoreLabel = "恢复",
+  confirmLabel,
+  restoreLabel,
   className,
 }: ColorPickerProps) {
+  const t = useT();
   const normalizedValue = React.useMemo(() => {
     const sanitized = value.trim().replace(/^#/, "").slice(0, 6);
     return HEX_COLOR_PATTERN.test(sanitized) ? `#${sanitized.toLowerCase()}` : "";
@@ -163,7 +165,7 @@ export function ColorPicker({
           disabled={!hasPendingChange}
           onClick={() => pendingHex && onChange(pendingHex)}
         >
-          {confirmLabel}
+          {confirmLabel ?? t("common.confirm")}
         </Button>
         {normalizedThemeColor ? (
           <Button
@@ -174,7 +176,7 @@ export function ColorPicker({
             onClick={() => onChange(normalizedThemeColor)}
             title={normalizedThemeColor}
           >
-            {restoreLabel}
+            {restoreLabel ?? t("common.restore")}
           </Button>
         ) : null}
       </div>

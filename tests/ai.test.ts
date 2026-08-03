@@ -184,9 +184,18 @@ describe("parseSseLine", () => {
 });
 
 describe("buildMessages", () => {
+  const labels = {
+    customInstruction: "instruction:",
+    contextBefore: "before:",
+    contextAfter: "after:",
+    selection: "selection:",
+    document: "document:",
+  };
+
   it("只发送选中文本和有限上下文，不发整篇文章", () => {
     const messages = buildMessages(DEFAULT_AI_CONFIG, {
       action: "polish",
+      labels,
       selection: "选中的句子",
       contextBefore: "前文",
       contextAfter: "后文",
@@ -201,6 +210,7 @@ describe("buildMessages", () => {
   it("自定义指令进入提示词", () => {
     const messages = buildMessages(DEFAULT_AI_CONFIG, {
       action: "custom",
+      labels,
       selection: "文本",
       customInstruction: "改成口语",
     });
@@ -210,6 +220,7 @@ describe("buildMessages", () => {
   it("没有上下文时不塞空段落", () => {
     const messages = buildMessages(DEFAULT_AI_CONFIG, {
       action: "condense",
+      labels,
       selection: "文本",
     });
     expect(messages[1].content).not.toContain("选区前文");
@@ -222,7 +233,7 @@ describe("buildMessages", () => {
         ...DEFAULT_AI_CONFIG,
         prompts: { ...DEFAULT_AI_CONFIG.prompts, polish: "只把句子改短。" },
       },
-      { action: "polish", selection: "文本" },
+      { action: "polish", labels, selection: "文本" },
     );
     expect(messages[0].content).toBe("只把句子改短。");
   });
@@ -238,7 +249,12 @@ describe("buildDocumentMessages", () => {
           sensitive: "检查 {{platform}}，只返回 Markdown。",
         },
       },
-      { action: "sensitive", content: "# 标题\n\n正文", platform: "小红书" },
+      {
+        action: "sensitive",
+        content: "# 标题\n\n正文",
+        platform: "小红书",
+        documentLabel: "待处理的完整 Markdown：",
+      },
     );
 
     expect(messages[0].content).toBe("检查 小红书，只返回 Markdown。");
@@ -250,6 +266,7 @@ describe("buildDocumentMessages", () => {
       action: "humanize",
       content: "原文",
       platform: "通用内容平台",
+      documentLabel: "待处理的完整 Markdown：",
     });
 
     expect(messages[0].content).toContain("铺垫式开场");

@@ -3,6 +3,7 @@
 import {
   Copy,
   Eraser,
+  Heading,
   Loader2,
   RefreshCw,
   Replace,
@@ -18,6 +19,7 @@ import type { EditorApi } from "@/components/editor/markdown-editor";
 import { useAi } from "@/components/providers/ai-provider";
 import { useT } from "@/components/providers/prefs-provider";
 import { AiDiffView } from "@/components/workbench/ai-diff-view";
+import { AiTitleDialog } from "@/components/workbench/ai-title-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +35,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { cleanAiOutput, runDocumentAction } from "@/lib/ai/client";
 import { computeDiffSegments, diffStats } from "@/lib/ai/diff";
 import type { AiDocumentAction } from "@/lib/ai/types";
+import { extractTitleFromSource } from "@/lib/markdown/parse";
 import type { TKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -58,13 +61,11 @@ const ACTIONS: Array<{
   },
 ];
 
-const PLATFORM_LABELS: Record<AiQuickActionPlatform, RunPlatform> = {
-  common: "通用内容平台",
-  xiaohongshu: "小红书",
-  wechat: "微信公众号",
+const PLATFORM_LABEL_KEYS: Record<AiQuickActionPlatform, TKey> = {
+  common: "ai.platformCommon",
+  xiaohongshu: "ai.platformXiaohongshu",
+  wechat: "ai.platformWechat",
 };
-
-type RunPlatform = "通用内容平台" | "小红书" | "微信公众号";
 
 interface AiQuickActionsProps {
   editorRef: React.RefObject<EditorApi | null>;
@@ -75,6 +76,10 @@ export function AiQuickActions({ editorRef, platform = "common" }: AiQuickAction
   const t = useT();
   const { config, configured, openSettings } = useAi();
   const [open, setOpen] = React.useState(false);
+  /** 起标题不改全文，用的是另一套面板，所以单独一个开关。 */
+  const [titlesOpen, setTitlesOpen] = React.useState(false);
+  /** 打开面板那一刻的正文标题；在事件处理器里读 editorRef，不留到渲染期。 */
+  const [titleSnapshot, setTitleSnapshot] = React.useState<string | null>(null);
   const [action, setAction] = React.useState<AiDocumentAction | null>(null);
   const [original, setOriginal] = React.useState("");
   const [result, setResult] = React.useState("");
@@ -152,7 +157,8 @@ export function AiQuickActions({ editorRef, platform = "common" }: AiQuickAction
         {
           action: nextAction,
           content,
-          platform: PLATFORM_LABELS[platform],
+          platform: t(PLATFORM_LABEL_KEYS[platform]),
+          documentLabel: t("ai.promptDocument"),
         },
         {
           onDelta: (delta) => setResult((current) => current + delta),
@@ -248,7 +254,34 @@ export function AiQuickActions({ editorRef, platform = "common" }: AiQuickAction
             </Button>
           </Tooltip>
         ))}
+
+        <Tooltip label={t("ai.titles")} side="left">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className={cn(
+              "size-9 rounded-full border-border bg-card/90 shadow-lg backdrop-blur-sm",
+              "hover:border-brand-primary/45 hover:bg-card hover:text-brand-primary hover:shadow-xl",
+            )}
+            aria-label={t("ai.titles")}
+            disabled={running}
+            onClick={() => {
+              setTitleSnapshot(extractTitleFromSource(editorRef.current?.getValue() ?? ""));
+              setTitlesOpen(true);
+            }}
+          >
+            <Heading />
+          </Button>
+        </Tooltip>
       </div>
+
+      <AiTitleDialog
+        open={titlesOpen}
+        onOpenChange={setTitlesOpen}
+        editorRef={editorRef}
+        currentTitle={titleSnapshot}
+      />
 
       <Dialog open={open} onOpenChange={(next) => !next && close()}>
         <DialogContent

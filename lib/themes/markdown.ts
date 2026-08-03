@@ -32,6 +32,13 @@ export const MARKDOWN_PREVIEW_THEME_LABEL_KEYS: Record<MarkdownPreviewTheme, TKe
   terminal: "editor.themeTerminal",
 };
 
+/** 深色底的预览主题；图表要跟着换成深色配色，否则线条和文字糊在背景里。 */
+const DARK_PREVIEW_THEMES: readonly MarkdownPreviewTheme[] = ["night", "terminal"];
+
+export function isDarkMarkdownPreviewTheme(theme: MarkdownPreviewTheme): boolean {
+  return DARK_PREVIEW_THEMES.includes(theme);
+}
+
 export function isMarkdownPreviewTheme(value: unknown): value is MarkdownPreviewTheme {
   return (
     typeof value === "string" && (MARKDOWN_PREVIEW_THEMES as readonly string[]).includes(value)

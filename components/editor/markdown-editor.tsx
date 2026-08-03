@@ -50,6 +50,18 @@ import {
 } from "@codemirror/view";
 import * as React from "react";
 
+import {
+  DATA_URL_FOLD_THRESHOLD,
+  dataUrlByteLength,
+  dataUrlFormat,
+  formatBytes,
+} from "@/lib/image/data-url";
+import {
+  findImageAt,
+  stringifyImageMarkup,
+  type ImageMarkup,
+  type ImageMarkupMatch,
+} from "@/lib/markdown/image-markup";
 import { isEditorInputChangeAllowed, type EditorInputLimits } from "@/lib/markdown/stats";
 import type { PlatformEditorMode } from "@/lib/types";
 
@@ -93,7 +105,12 @@ export interface EditorApi {
   insertAfterRange: (to: number, text: string, expected: string, from: number) => boolean;
   toggleWrap: (before: string, after?: string) => void;
   toggleLinePrefix: (prefix: string, ordered?: boolean) => void;
-  insertBlock: (text: string) => void;
+  /** 返回是否真的写进去了；顶到平台字数上限时会被拒，此时返回 false。 */
+  insertBlock: (text: string) => boolean;
+  /** 光标当前落在哪张图上；不在图片里时为 null。图片工具条靠它决定显示什么。 */
+  getImageAtCursor: () => ImageMarkupMatch | null;
+  /** 按位置改写一张图；范围内容对不上（正文被改过）就不动文档，返回 false。 */
+  replaceImage: (image: ImageMarkupMatch, next: ImageMarkup) => boolean;
   /** 选中并滚动到正文中的指定文本，不打开搜索面板。 */
   locateText: (text: string) => boolean;
   /**
@@ -163,6 +180,20 @@ const baseTheme = EditorView.theme({
   },
   ".cm-line": {
     padding: "0 24px 0 8px",
+  },
+  // 折叠起来的内嵌图片：做成一枚不可点的小标签，让人一眼看出这里是张图、多大。
+  ".ft-md-data-url": {
+    display: "inline-block",
+    verticalAlign: "baseline",
+    borderRadius: "4px",
+    border: "1px solid var(--border)",
+    backgroundColor: "var(--muted)",
+    color: "var(--muted-foreground)",
+    padding: "0 6px",
+    fontSize: "0.85em",
+    fontFamily: 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    whiteSpace: "nowrap",
+    userSelect: "none",
   },
   ".cm-gutters": {
     backgroundColor: "transparent",
@@ -863,6 +894,84 @@ const livePreviewPlugin = ViewPlugin.fromClass(
   { decorations: (value) => value.decorations },
 );
 
+/** 折叠后顶替一长串 base64 的短标签。 */
+class DataUrlWidget extends WidgetType {
+  constructor(readonly label: string) {
+    super();
+  }
+
+  eq(other: DataUrlWidget): boolean {
+    return this.label === other.label;
+  }
+
+  toDOM(): HTMLElement {
+    const span = document.createElement("span");
+    span.className = "ft-md-data-url";
+    span.textContent = this.label;
+    span.title = this.label;
+    return span;
+  }
+
+  ignoreEvent(): boolean {
+    return false;
+  }
+}
+
+const DATA_URL_PATTERN = /data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
+
+/**
+ * 把内嵌图片的 base64 折叠成 `WEBP 234 KB` 这样的短标签。
+ *
+ * 和其它 live preview 装饰不同，这一条在源码模式下也开着，而且光标落到这一行也不展开：
+ * 一张图就是十几万个字符，真展开出来这一行没法看，编辑器本身也会卡。折叠只影响显示，
+ * 选中复制拿到的仍是完整的 data URI。
+ */
+function buildDataUrlDecorations(view: EditorView): DecorationSet {
+  const ranges: Range<Decoration>[] = [];
+  for (const visible of view.visibleRanges) {
+    let position = visible.from;
+    while (position <= visible.to) {
+      const line = view.state.doc.lineAt(position);
+      DATA_URL_PATTERN.lastIndex = 0;
+      for (
+        let match = DATA_URL_PATTERN.exec(line.text);
+        match;
+        match = DATA_URL_PATTERN.exec(line.text)
+      ) {
+        if (match[0].length < DATA_URL_FOLD_THRESHOLD) continue;
+        const from = line.from + match.index;
+        const label = `${dataUrlFormat(match[0])} ${formatBytes(dataUrlByteLength(match[0]))}`;
+        ranges.push(
+          Decoration.replace({ widget: new DataUrlWidget(label) }).range(
+            from,
+            from + match[0].length,
+          ),
+        );
+      }
+      if (line.to >= visible.to) break;
+      position = line.to + 1;
+    }
+  }
+  return Decoration.set(ranges, true);
+}
+
+const dataUrlFoldPlugin = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+
+    constructor(view: EditorView) {
+      this.decorations = buildDataUrlDecorations(view);
+    }
+
+    update(update: ViewUpdate) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = buildDataUrlDecorations(update.view);
+      }
+    }
+  },
+  { decorations: (value) => value.decorations },
+);
+
 function editorModeExtensions(mode: PlatformEditorMode): Extension {
   return mode === "preview"
     ? [
@@ -972,6 +1081,8 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
             : [];
         }),
         drawSelection(),
+        // 两种模式下都折叠：base64 在哪种模式下都不是给人看的。
+        dataUrlFoldPlugin,
         modeCompartmentRef.current.of(editorModeExtensions(mode)),
         history(),
         closeBrackets(),
@@ -1179,6 +1290,27 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
           return true;
         },
 
+        getImageAtCursor: () => {
+          const view = viewRef.current;
+          if (!view) return null;
+          return findImageAt(view.state.doc.toString(), view.state.selection.main.head);
+        },
+
+        replaceImage: (image, next) => {
+          const view = viewRef.current;
+          if (!view) return false;
+          if (image.to > view.state.doc.length) return false;
+          const markup = stringifyImageMarkup(next);
+          view.dispatch({
+            changes: { from: image.from, to: image.to, insert: markup },
+            // 光标停在改写后的这段里，工具条不会因为「光标不在图上」而收起来。
+            selection: { anchor: image.from + markup.length },
+            userEvent: "input.image",
+          });
+          view.focus();
+          return true;
+        },
+
         insertAfterSelection: (text) => {
           const view = viewRef.current;
           if (!view) return;
@@ -1250,16 +1382,30 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
 
         insertBlock: (text) => {
           const view = viewRef.current;
-          if (!view) return;
+          if (!view) return false;
           const { from, to } = view.state.selection.main;
-          const line = view.state.doc.lineAt(from);
-          const needsLeadingBreak = line.text.trim().length > 0;
-          const insert = `${needsLeadingBreak ? "\n\n" : ""}${text}`;
+          /*
+           * 块级内容前后都要空出来。只补前面是不够的：光标停在行首时（比如文档第一行的
+           * 标题前）插进去的图片会和后面的正文挤在同一行，Markdown 解析出来就不是两个块了。
+           */
+          const startLine = view.state.doc.lineAt(from);
+          const endLine = view.state.doc.lineAt(to);
+          const leading = view.state.sliceDoc(startLine.from, from).trim() ? "\n\n" : "";
+          const trailing = view.state.sliceDoc(to, endLine.to).trim() ? "\n\n" : "";
+          const insert = `${leading}${text}${trailing}`;
+          const lengthBefore = view.state.doc.length;
           view.dispatch({
             changes: { from, to, insert },
-            selection: { anchor: from + insert.length },
+            // 光标落在插入内容的末尾，而不是补出来的空行之后。
+            selection: { anchor: from + leading.length + text.length },
           });
           view.focus();
+          /*
+           * 超出平台字数上限的改动会被 transactionFilter 整个丢掉（见上面那个
+           * isEditorInputChangeAllowed 过滤器），dispatch 不会抛错，文档也不会变。
+           * 靠长度变化判断到底写进去没有，调用方才好如实告诉用户。
+           */
+          return view.state.doc.length !== lengthBefore;
         },
 
         locateText: (text) => {

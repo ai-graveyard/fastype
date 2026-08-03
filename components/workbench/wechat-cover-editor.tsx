@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Label, SliderField, Switch } from "@/components/ui/misc";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { WechatCoverCropDialog } from "@/components/workbench/wechat-cover-crop-dialog";
+import { buildUsedFontEmbedCss } from "@/lib/export/font-embed";
 import { renderPageToBlob } from "@/lib/export/png";
 import { downloadBlob } from "@/lib/file";
 import {
@@ -343,6 +344,8 @@ export function WechatCoverEditor({
     return renderPageToBlob(node, {
       scale: 1,
       backgroundColor: wechatCover.backgroundColor,
+      // 封面标题可以设成行楷，那是自托管字体，得把用到的分片内联进去。
+      fontEmbedCSS: await buildUsedFontEmbedCss(),
     });
   };
 

@@ -2,6 +2,8 @@
 
 import * as React from "react";
 
+import { usePrefs } from "@/components/providers/prefs-provider";
+import { detectLocale } from "@/lib/i18n";
 import { StorageKey } from "@/lib/storage";
 import { createLocalStore } from "@/lib/storage/store";
 import {
@@ -32,6 +34,13 @@ const wechatStore = createLocalStore(
   StorageKey.wechatStyle,
   parseWechatStyle,
   DEFAULT_WECHAT_STYLE,
+  () =>
+    wechatStyleFromTheme(
+      DEFAULT_WECHAT_STYLE.themeId,
+      typeof navigator === "undefined"
+        ? "zh"
+        : detectLocale(navigator.languages ?? [navigator.language]),
+    ),
 );
 const wechatCoverStore = createLocalStore(
   StorageKey.wechatCover,
@@ -97,6 +106,7 @@ interface StyleContextValue {
 const StyleContext = React.createContext<StyleContextValue | null>(null);
 
 export function StyleProvider({ children }: { children: React.ReactNode }) {
+  const { locale } = usePrefs();
   const xhs = React.useSyncExternalStore(
     xhsStore.subscribe,
     xhsStore.getSnapshot,
@@ -185,7 +195,7 @@ export function StyleProvider({ children }: { children: React.ReactNode }) {
       },
       setWechatTheme: (themeId) => {
         setWechatLibrary({ selectedId: null });
-        wechatStore.set(wechatStyleFromTheme(themeId));
+        wechatStore.set(wechatStyleFromTheme(themeId, locale));
       },
       createXhsThemeDraft: () => setXhsLibrary({ selectedId: CUSTOM_THEME_DRAFT_ID }),
       createWechatThemeDraft: () => setWechatLibrary({ selectedId: CUSTOM_THEME_DRAFT_ID }),
@@ -250,7 +260,7 @@ export function StyleProvider({ children }: { children: React.ReactNode }) {
       copyWechatTheme: (themeId, name) => {
         const source =
           wechatThemeLibrary.themes.find((theme) => theme.id === themeId)?.style ??
-          wechatStyleFromTheme(themeId);
+          wechatStyleFromTheme(themeId, locale);
         const saved = createSavedCustomTheme(name, source);
         wechatStore.set(source);
         wechatThemeStore.set({
@@ -298,7 +308,7 @@ export function StyleProvider({ children }: { children: React.ReactNode }) {
         });
       },
       resetWechat: () =>
-        wechatStore.set(selectedWechatTheme?.style ?? wechatStyleFromTheme(wechat.themeId)),
+        wechatStore.set(selectedWechatTheme?.style ?? wechatStyleFromTheme(wechat.themeId, locale)),
       resetWechatCover: () => wechatCoverStore.reset(),
       clearStyles: () => {
         xhsStore.reset();
@@ -322,6 +332,7 @@ export function StyleProvider({ children }: { children: React.ReactNode }) {
       wechatJson,
       selectedXhsThemeJson,
       selectedWechatThemeJson,
+      locale,
     ],
   );
 

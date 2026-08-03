@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { useT } from "@/components/providers/prefs-provider";
 import { subscribeQuotaExhausted } from "@/lib/storage";
 
 /**
@@ -9,6 +10,7 @@ import { subscribeQuotaExhausted } from "@/lib/storage";
  * 直到配额恢复（自动重试每 30s 探测一次）。
  */
 export function QuotaWarningBanner() {
+  const t = useT();
   const [exhausted, setExhausted] = React.useState(false);
 
   React.useEffect(() => subscribeQuotaExhausted(setExhausted), []);
@@ -23,7 +25,7 @@ export function QuotaWarningBanner() {
       <svg className="size-3.5 shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
         <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm-.75 3.75a.75.75 0 0 1 1.5 0v4a.75.75 0 0 1-1.5 0v-4Zm.75 7.25a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
       </svg>
-      <span>本地存储空间已满，内容无法自动保存。请导出草稿或清除浏览器数据后重试。</span>
+      <span>{t("settings.storageQuota")}</span>
     </div>
   );
 }

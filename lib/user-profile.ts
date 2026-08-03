@@ -1,14 +1,20 @@
+import { translate, type Locale } from "@/lib/i18n";
+
 export interface UserProfile {
   avatar: string;
   name: string;
   slogan: string;
 }
 
-export const DEFAULT_USER_PROFILE: UserProfile = {
-  avatar: "/fastype-logo.png",
-  name: "FasType",
-  slogan: "一分钟快速多平台排版",
-};
+export function getDefaultUserProfile(locale: Locale): UserProfile {
+  return {
+    avatar: "/fastype-logo.png",
+    name: "FasType",
+    slogan: translate(locale, "profile.defaultSlogan"),
+  };
+}
+
+export const DEFAULT_USER_PROFILE: UserProfile = getDefaultUserProfile("zh");
 
 const MAX_NAME_LENGTH = 24;
 const MAX_SLOGAN_LENGTH = 60;

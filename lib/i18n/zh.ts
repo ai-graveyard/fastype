@@ -2,6 +2,9 @@ export const zh = {
   app: {
     name: "FasType",
     tagline: "一篇 Markdown，写完就能带走",
+    description:
+      "一个无需账号、没有后端的轻量 Markdown 写作工具：编辑、小红书图片排版、公众号排版和自带 Key 的轻量 AI。",
+    screenshotAlt: "FasType 小红书图文排版预览",
     useProfessional: "使用专业版",
   },
 
@@ -26,6 +29,7 @@ export const zh = {
     more: "更多",
     apply: "应用",
     back: "返回",
+    restore: "恢复",
     customTheme: "自定义",
     customThemeName: "主题名称",
     customThemeNamePlaceholder: "给这套主题起个名字",
@@ -52,6 +56,21 @@ export const zh = {
     exampleListItem1: "第一项内容",
     exampleListItem2: "第二项内容",
     exampleInlineCode: "行内代码",
+    exampleCode: 'const publish = () => "FasType";',
+    fontSample: "Aa 文",
+    headingLabelPlaceholder: "PART",
+    orderedListDecimal: "1, 2, 3",
+    orderedListAlpha: "a, b, c",
+    orderedListRoman: "i, ii, iii",
+    orderedListCjk: "一、二、三",
+    errorPageTitle: "页面出现异常",
+    errorPageBody: "渲染过程中发生了错误。你的草稿已保存在本地，可以从下方复制原文。",
+    errorDetails: "错误详情",
+    draftContent: "草稿内容",
+    draftCopied: "已复制",
+    copyDraft: "复制草稿",
+    tryRecover: "尝试恢复",
+    refreshPage: "刷新页面",
   },
 
   profile: {
@@ -60,6 +79,7 @@ export const zh = {
     description: "设置预览中使用的头像、用户名和 slogan，资料只保存在当前浏览器。",
     name: "用户名",
     slogan: "Slogan",
+    defaultSlogan: "一分钟快速多平台排版",
     uploadAvatar: "上传头像",
     resetAvatar: "恢复默认头像",
     saved: "用户资料已保存",
@@ -160,6 +180,10 @@ export const zh = {
     copyFailed: "复制失败：浏览器拒绝了剪贴板权限。",
     linkText: "链接文字",
     imageAlt: "图片描述",
+    imageFromFile: "从本地插入图片",
+    imageMore: "更多图片选项",
+    imageFromUrl: "插入图片链接",
+    imageDropHint: "松手插入图片",
     downloadLongImage: "下载长图",
     exportingLongImage: "生成中…",
     longImageDone: "预览长图已下载",
@@ -348,6 +372,9 @@ export const zh = {
     themeDark: "暗夜",
     themeDeepSea: "深海",
     fontFamily: "字体",
+    fontMacOnly: "macOS",
+    fontMacOnlyHint:
+      "这款字体只有 macOS 装了。Windows 和 Linux 上会退回默认字体，导出的图也会跟着变样。",
     fontSans: "无衬线",
     fontSerif: "衬线",
     fontHei: "黑体",
@@ -488,6 +515,7 @@ export const zh = {
     mockUserName: "FasType",
     mockFollowButton: "关注",
     mockCommentPlaceholder: "说点什么…",
+    mockDateTime: "今天 14:36",
     homeFollowing: "关注",
     homeDiscover: "发现",
     homeNearby: "附近",
@@ -536,6 +564,8 @@ export const zh = {
     preview: "公众号预览",
     phonePreview: "手机预览",
     widePreview: "宽屏模式",
+    phone: "手机",
+    desktop: "电脑",
     phoneFrame: "手机框",
     zoomIn: "放大预览",
     zoomOut: "缩小预览",
@@ -706,6 +736,7 @@ export const zh = {
     cardContentGroup: "内容",
     cardStyleGroup: "样式",
     cardReset: "恢复默认",
+    defaultIdentityBadge: "原创",
     cardTitleAutoHint: "留空自动取正文一级标题",
     cardSubtitleAutoHint: "留空自动取正文首段摘要",
     cardTagPlaceholder: "如：AI 工程师",
@@ -744,6 +775,11 @@ export const zh = {
     guideAuthorRight: "右侧",
     guideAuthorHidden: "隐藏",
     guideFooter: "底部补充文案",
+    defaultTailGuideTitle: "觉得不错？动动手指支持一下吧~",
+    defaultTailGuideLike: "关注",
+    defaultTailGuideRead: "点赞",
+    defaultTailGuideStar: "星标",
+    defaultTailGuideFooter: "YOUR SUPPORT MATTERS",
     localFeatureNote:
       "FasType 保持纯前端：排版设置、身份卡片和引导卡都只保存在当前浏览器，不依赖账号、积分或服务端。",
     fontFamily: "字体",
@@ -778,6 +814,7 @@ export const zh = {
     compatCode: "代码块在公众号中不支持横向滚动，过长的行会被折行。",
     compatLink: "公众号正文中的外部链接通常不可点击，建议改为文末说明。",
     compatImage: "外部图片粘贴后需要在公众号编辑器中重新上传才能长期显示。",
+    compatDiagram: "公众号不接受 SVG，图表粘过去会丢。请在预览里截图后当作图片插入。",
     previewSummary: "{images} 张图片 · {headings} 个小标题 · 预计阅读 {minutes} 分钟",
     previewReady: "可复制",
     previewEmpty: "等待内容",
@@ -790,6 +827,7 @@ export const zh = {
     compatIssueCode: "第 {n} 个代码块",
     compatIssueLink: "第 {n} 个外部链接",
     compatIssueImage: "第 {n} 张图片",
+    compatIssueDiagram: "第 {n} 张图表",
     compatLocate: "在编辑器中定位",
     empty: "还没有内容，在右侧输入 Markdown 即可生成预览。",
   },
@@ -802,12 +840,114 @@ export const zh = {
     humanizeDescription: "已按自然表达规则优化全文。确认结果后再替换当前文档。",
     sensitive: "去敏感词",
     sensitiveDescription: "已按当前平台语境降低风险表达。确认结果后再替换当前文档。",
+    titles: "起标题",
+    titlesDescription: "点一个候选就会替换正文里的一级标题，其余内容不动。",
+    titlesPendingDescription:
+      "可以基于当前全文生成，也可以只给几个关键词。生成的候选不会自动写进正文。",
+    titlesFromDocument: "基于全文",
+    titlesFromKeywords: "基于关键词",
+    titlesKeywordsLabel: "关键词或大纲",
+    titlesKeywordsPlaceholder: "例如：本地部署、成本对比、踩过的坑",
+    titlesKeywordsRequired: "先填几个关键词再生成。",
+    titlesGenerate: "生成候选",
+    titlesRegenerate: "换一批",
+    titlesRunning: "正在生成候选…",
+    titlesEmpty: "这次没解析出可用的标题，换一批试试。",
+    titlesApplied: "已替换正文的一级标题。",
+    titlesApplyHint: "点击候选即可替换正文一级标题。",
+    titlesCurrent: "当前标题：{title}",
+    titlesNoCurrent: "正文还没有一级标题，选中候选后会补一个。",
+    titlesCopyOne: "复制这条",
     pendingHint: "点击下方按钮开始处理当前文档。",
     pendingDescription:
       "将把编辑区完整正文发送给 AI 进行处理，原文不会自动被覆盖。处理完成后可预览结果并决定是否替换。",
     startAction: "开始处理",
     notConfigured: "未配置模型",
     configurePrompt: "填写 Base URL、API Key 和模型名即可使用 AI 全文优化。",
+    promptCustomInstruction: "改写指令：",
+    promptContextBefore: "选区前文（仅供参考，不要改写）：",
+    promptContextAfter: "选区后文（仅供参考，不要改写）：",
+    promptSelection: "待改写的选中文字：",
+    promptDocument: "待处理的完整 Markdown：",
+    platformCommon: "通用内容平台",
+    platformXiaohongshu: "小红书",
+    platformWechat: "微信公众号",
+    defaultHumanizePrompt: `你是一位克制、细致的中文编辑。请重写用户提供的完整 Markdown 文档，去掉明显的 AI 写作痕迹，让文字像真实作者自然写成。
+
+编辑规则：
+1. 删除铺垫式开场、空泛总结、强调口头禅、套话、商业黑话和没有信息量的副词。
+2. 打破模板化结构，避免“不是 X，而是 Y”、连续三点罗列、自问自答、刻意反转和故作深刻的短句。
+3. 优先使用主动语态，能明确人物时就写出行动者；用具体事实替代“意义重大”“影响深远”等模糊判断。
+4. 调整句子长短和段落节奏，避免每段都用金句收尾，不使用破折号制造语气。
+5. 保留原文的核心观点、事实、数字、专有名词、图片链接和必要的 Markdown 语义，不新增未经原文支持的信息。
+6. 保持原文语言和作者语气，不要把所有表达统一成同一种腔调。
+
+只返回可直接替换原文的完整 Markdown。不要解释、不要寒暄、不要评分、不要包裹代码块。`,
+    defaultSensitivePrompt: `你是一位新媒体内容合规编辑。请检查并重写用户提供的完整 Markdown 文档，降低其中可能触发 {{platform}} 审核、限流或广告合规风险的表达。
+
+编辑规则：
+1. 识别绝对化用语、广告法高风险词、医疗或金融夸大承诺、诱导互动、平台限流词和容易引发误解的敏感表达。
+2. 结合上下文判断，不要机械替换。例如叙事中的“第一次”通常不等于违规的绝对化宣称。
+3. 用语义接近、自然、克制的说法替换风险表达；优先改写句子，不使用拼音、谐音、拆字或特殊符号绕过审核。
+4. 保留原文的核心观点、事实、数字、专有名词、图片链接和必要的 Markdown 语义，不新增承诺或结论。
+5. 没有风险的内容保持不变，避免为了改写而改写。
+
+只返回优化后的完整 Markdown。不要列风险清单、不要解释、不要寒暄、不要包裹代码块。`,
+    defaultTitlesPrompt: `你是一位擅长起标题的中文编辑。请为用户给出的内容拟 {{count}} 个候选标题。
+
+规则：
+1. 一行一个标题，只写标题本身，不要编号、不要引号、不要解释，也不要写开场白。
+2. 每个标题控制在 30 个字以内，让人一眼看出这篇在讲什么。
+3. 几个标题的角度要拉开，例如分别落在结论、做法、场景、对比和疑问上，不要只换措辞。
+4. 只用内容里已有的事实和数字，不编造，也不做夸张承诺。
+5. 跟随内容本身的语言。
+
+只返回 {{count}} 行标题。`,
+    defaultPolishPrompt: `你是一位克制、细致的中文编辑。请润色用户选中的这段文字，让它读起来更顺、更自然。
+
+编辑规则：
+1. 保留原文语言、语气、事实、数字、专有名词和 Markdown 语义。
+2. 理顺语序和搭配，删掉冗词和口水话，不改变意思，也不新增信息。
+3. 不要扩写，长度与原文相当。
+4. 前后文只用来判断语境，不要把它们写进结果。
+
+只返回改写后的这一段文字。不要解释、不要寒暄、不要包裹代码块。`,
+    defaultExpandPrompt: `你是一位克制的中文写作助手。请在用户选中的这段文字基础上补充细节，让内容更充实。
+
+编辑规则：
+1. 保留原文语言、语气、观点和 Markdown 语义。
+2. 只补充能从原文和上下文合理推出的细节，不要编造事实、数字、引语或来源。
+3. 顺着原有结构展开，不要另起话题，也不要加小标题和总结句。
+4. 前后文只用来判断语境，不要把它们写进结果。
+
+只返回扩写后的这一段文字。不要解释、不要寒暄、不要包裹代码块。`,
+    defaultCondensePrompt: `你是一位克制、细致的中文编辑。请精简用户选中的这段文字。
+
+编辑规则：
+1. 保留全部关键事实、数字、专有名词、图片链接和 Markdown 语义。
+2. 删掉重复表达、铺垫和没有信息量的修饰，不要删掉论据本身。
+3. 保持原文语言和语气，不要改写成提纲或要点列表，除非原文本来就是列表。
+4. 前后文只用来判断语境，不要把它们写进结果。
+
+只返回精简后的这一段文字。不要解释、不要寒暄、不要包裹代码块。`,
+    defaultConversationalPrompt: `你是一位擅长口语表达的中文编辑。请把用户选中的这段文字改写得更像说出来的话。
+
+编辑规则：
+1. 保留原文的事实、数字、专有名词、图片链接和 Markdown 语义。
+2. 拆开长句和名词堆叠，把书面词换成日常说法，该断句就断句。
+3. 语气自然就好，不要堆语气词和感叹号，不要加称呼、互动提问和网络烂梗。
+4. 长度与原文相当，不要顺手扩写，也不要删掉内容。
+5. 前后文只用来判断语境，不要把它们写进结果。
+
+只返回改写后的这一段文字。不要解释、不要寒暄、不要包裹代码块。`,
+    defaultCustomPrompt: `你是一位克制的中文写作助手。请按用户给出的指令改写选中的这段文字。
+
+编辑规则：
+1. 指令没有特别要求时，保留原文语言、事实、数字、专有名词和 Markdown 语义。
+2. 指令与这些约束冲突时以指令为准，但不要编造原文没有的事实。
+3. 只处理选中的这段，前后文仅用来判断语境，不要把它们写进结果。
+
+只返回改写后的这一段文字。不要解释、不要寒暄、不要包裹代码块。`,
     configureNow: "现在配置",
     skip: "以后再说",
     baseUrl: "Base URL",
@@ -828,6 +968,8 @@ export const zh = {
     humanizePromptHint: "默认规则参考 Stop Slop，并保留 Markdown、事实和作者原有语气。",
     sensitivePrompt: "去敏感词提示词",
     sensitivePromptHint: "{{platform}} 会在请求时自动替换为通用内容平台、小红书或微信公众号。",
+    titlesPrompt: "起标题提示词",
+    titlesPromptHint: "{{count}} 会在请求时替换为要生成的候选条数。",
     selectionPromptSettings: "划词提示词",
     selectionPromptSettingsHint: "在编辑器里选中一段文字后，浮出的工具条用的就是这几份提示词。",
     polishPrompt: "润色提示词",
@@ -836,6 +978,8 @@ export const zh = {
     expandPromptHint: "在原意基础上补细节，约束模型不要编造事实。",
     condensePrompt: "精简提示词",
     condensePromptHint: "压缩表达但保留全部关键事实。",
+    conversationalPrompt: "口语化提示词",
+    conversationalPromptHint: "把书面语改成日常说法，长度与原文相当。",
     customPrompt: "自定义指令提示词",
     customPromptHint: "你在浮层里填的指令会作为用户消息附在这份提示词之后。",
     restoreDefaultPrompt: "恢复默认提示词",
@@ -852,6 +996,10 @@ export const zh = {
     actionPolish: "润色",
     actionExpand: "扩写",
     actionCondense: "精简",
+    actionConversational: "口语化",
+    actionRemoveMarkdown: "去格式",
+    actionRemoveMarkdownHint: "在本地剥掉 Markdown 标记，不发请求、不消耗额度。",
+    localActionDone: "已在本地转换，未发送任何请求。",
     actionCustom: "自定义指令",
     customPlaceholder: "例如：改写成更口语的表达，保留所有事实。",
     selectionActions: "划词 AI",
@@ -943,7 +1091,7 @@ export const zh = {
     about: "关于",
     aboutDesc: "开源、纯前端的多平台 Markdown 排版工具。",
     version: "版本 {version}",
-    repo: "开源仓库",
+    repo: "GitHub",
     privacy: "隐私说明",
     privacyBody:
       "FasType 是纯前端应用，没有后端。正文、样式和 AI 配置都保存在你的浏览器本地。只有在你主动使用 AI 时，相应的选区或完整正文才会发送到你自己填写的模型服务；远程图片会由浏览器直接向图片来源站点请求。",
@@ -966,7 +1114,26 @@ export const zh = {
     editorStatusBar: "编辑器状态栏",
   },
 
+  diagram: {
+    failed: "这段图表画不出来，下面是原始代码。",
+  },
+
   image: {
+    inserted: "已插入 {n} 张图片，正文增加 {size}。",
+    insertFailed: "{n} 张图片读不出来，可能是格式不支持或文件已损坏。",
+    insertRejected: "插入失败：当前平台的字数上限已经用完了，先精简一下正文再插图。",
+    toolbar: "图片设置",
+    embeddedSize: "内嵌图片 · {size}",
+    remote: "外链图片",
+    alignLeft: "左对齐",
+    alignCenter: "居中",
+    alignRight: "右对齐",
+    crop: "裁剪",
+    remove: "删除这张图",
+    cropTitle: "裁剪图片",
+    cropDescription: "拖动选区决定保留哪一部分，确认后会替换正文里的这张图。",
+    cropApply: "确认裁剪",
+    cropFailed: "裁剪失败。外链图片需要图源允许跨域读取才能裁剪。",
     loading: "图片加载中…",
     failed: "图片加载失败",
     failedSource: "来源：{url}",

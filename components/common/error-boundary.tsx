@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { detectLocale, translate, type Locale } from "@/lib/i18n";
 import { StorageKey } from "@/lib/storage";
 
 /**
@@ -67,6 +68,11 @@ function ErrorFallback({
   onReset: () => void;
   onCopy: () => void;
 }) {
+  const locale: Locale =
+    typeof navigator === "undefined"
+      ? "zh"
+      : detectLocale(navigator.languages ?? [navigator.language]);
+  const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
   const [content] = React.useState(readDraftContent);
   const [copied, setCopied] = React.useState(false);
 
@@ -79,13 +85,11 @@ function ErrorFallback({
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
       <div className="max-w-lg space-y-3 text-center">
-        <h1 className="text-lg font-semibold text-destructive">页面出现异常</h1>
-        <p className="text-sm text-muted-foreground">
-          渲染过程中发生了错误。你的草稿已保存在本地，可以从下方复制原文。
-        </p>
+        <h1 className="text-lg font-semibold text-destructive">{t("common.errorPageTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t("common.errorPageBody")}</p>
         <details className="rounded bg-muted px-3 py-2 text-left">
           <summary className="cursor-pointer select-none text-xs text-muted-foreground">
-            错误详情
+            {t("common.errorDetails")}
           </summary>
           <p className="mt-2 break-all font-mono text-xs text-muted-foreground">{error.message}</p>
         </details>
@@ -96,7 +100,7 @@ function ErrorFallback({
           readOnly
           defaultValue={content}
           className="h-48 w-full max-w-lg resize-y rounded-lg border border-border bg-card p-3 font-mono text-sm"
-          aria-label="草稿内容"
+          aria-label={t("common.draftContent")}
         />
       ) : null}
 
@@ -107,21 +111,21 @@ function ErrorFallback({
           disabled={!content}
           className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
         >
-          {copied ? "已复制" : "复制草稿"}
+          {copied ? t("common.draftCopied") : t("common.copyDraft")}
         </button>
         <button
           type="button"
           onClick={onReset}
           className="rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90"
         >
-          尝试恢复
+          {t("common.tryRecover")}
         </button>
         <button
           type="button"
           onClick={() => window.location.reload()}
           className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
         >
-          刷新页面
+          {t("common.refreshPage")}
         </button>
       </div>
     </div>

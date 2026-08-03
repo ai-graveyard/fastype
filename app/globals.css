@@ -1,5 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/*
+ * 行楷是唯一一款「只有 macOS 才有、别的系统连近似替代都找不到」的排版字体：
+ * Windows 和 Linux 上选它会悄悄退回宋体，同一份文档在两台机器上排出来不是一回事。
+ * 这里自托管一份 OFL 的马善政楷书顶上。
+ *
+ * 用分片版（每个 @font-face 带 unicode-range），浏览器只下载正文真正用到的那几片；
+ * 不选行楷就一片都不会下。导出 PNG 时需要把这几片内联进去，见 lib/export/font-embed.ts。
+ */
+@import "@fontsource/ma-shan-zheng/index.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -215,6 +224,60 @@
   font-size: 0.85em;
   line-height: 1.6;
 }
+/*
+ * 调过宽度或对齐的图片会落成 `<p align><img width></p>`。
+ *
+ * `align` 属性等价于 text-align，对 block 元素的水平位置不起作用，所以真正决定
+ * 左中右的是这几条 margin 规则。三个视图各有一份同样口径的规则。
+ */
+.md-preview p[align] > img {
+  display: block;
+}
+.md-preview p[align="left"] > img {
+  margin-left: 0;
+  margin-right: auto;
+}
+.md-preview p[align="center"] > img {
+  margin-left: auto;
+  margin-right: auto;
+}
+.md-preview p[align="right"] > img {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* 图表占位：渲染前是空的，渲染后装一张 SVG。颜色由 mermaid / markmap 自己出。 */
+.md-preview .ft-diagram {
+  margin: 1.1em 0;
+  text-align: center;
+}
+/* 编辑器预览按图的自然尺寸摆，容器更窄时再缩。 */
+.md-preview .ft-diagram svg {
+  width: var(--ft-diagram-width, 100%);
+  max-width: 100%;
+  height: auto;
+}
+/* 没有更具体规则时（公众号那条路 class 全被剥了）撑满容器宽度。 */
+[data-diagram] svg {
+  max-width: 100%;
+  height: auto;
+}
+/*
+ * markmap 的画布比例定在占位 div 上，svg 撑满它。
+ *
+ * 这条必须是 !important，而且不能限定在 .md-preview 下：markmap 会把自己量到的
+ * 尺寸回写进 svg 的内联 style，非 important 的规则压不过；公众号那条路又会把所有
+ * class 剥掉，只剩 data-diagram 这个属性可选。三个视图共用这一条。
+ */
+[data-diagram="markmap"] svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+.md-preview .ft-diagram-error {
+  margin: 0 0 0.5em;
+  color: var(--muted-foreground);
+  font-size: 0.85em;
+}
 .md-preview table {
   display: block;
   width: max-content;
@@ -238,6 +301,10 @@
   max-width: 100%;
   height: auto;
   border-radius: 6px;
+  /* 默认居中，和小红书卡片、公众号那两条渲染路径保持一致。 */
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 .md-preview del {
   opacity: 0.7;

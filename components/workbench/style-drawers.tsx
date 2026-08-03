@@ -49,6 +49,7 @@ import {
   fontStack,
   HEADING_NUMBER_LABEL_POSITIONS,
   HEADING_NUMBER_POSITIONS,
+  isMacOnlyFont,
   type FontChoice,
   type HeadingNumberLabelPosition,
   type HeadingNumberPosition,
@@ -380,7 +381,7 @@ export function HeadingLevelEditor({
           <Field label={t("xhs.headingLabelText")}>
             <input
               value={value.number.labelText}
-              placeholder="PART"
+              placeholder={t("common.headingLabelPlaceholder")}
               onChange={(event) =>
                 onChange({ number: { ...value.number, labelText: event.target.value } })
               }
@@ -809,49 +810,42 @@ export function FontPicker({
     <div className="space-y-2.5">
       <p className="text-sm font-medium">{t("xhs.fontFamily")}</p>
       <div className="grid grid-cols-4 gap-1.5">
-        {FONT_CHOICES.map((font) => (
-          <button
-            key={font}
-            type="button"
-            onClick={() => onChange(font)}
-            className={cn(
-              "relative cursor-pointer rounded-lg border-2 p-2 text-center transition-all",
-              value === font
-                ? "border-brand-primary ring-2 ring-brand-primary/20"
-                : "border-border hover:border-muted-foreground/40",
-            )}
-          >
-            <span className="block text-base leading-none" style={{ fontFamily: fontStack(font) }}>
-              Aa{" "}
-              {font === "sans"
-                ? "现"
-                : font === "serif"
-                  ? "宋"
-                  : font === "hei"
-                    ? "黑"
-                    : font === "kai"
-                      ? "楷"
-                      : font === "fangsong"
-                        ? "仿"
-                        : font === "rounded"
-                          ? "圆"
-                          : font === "mono"
-                            ? "等"
-                            : font === "xingkai"
-                              ? "行"
-                              : font === "lishu"
-                                ? "隶"
-                                : font === "youyuan"
-                                  ? "幼"
-                                  : font === "xinwei"
-                                    ? "魏"
-                                    : "琥"}
-            </span>
-            <span className="mt-1 block text-[11px] text-muted-foreground">
-              {t(FONT_LABEL_KEYS[font])}
-            </span>
-          </button>
-        ))}
+        {FONT_CHOICES.map((font) => {
+          const macOnly = isMacOnlyFont(font);
+          return (
+            <button
+              key={font}
+              type="button"
+              onClick={() => onChange(font)}
+              // 只有 macOS 装了这款字体，别处会退回默认字体——选之前先让人知道。
+              title={macOnly ? t("xhs.fontMacOnlyHint") : undefined}
+              className={cn(
+                "relative cursor-pointer rounded-lg border-2 p-2 text-center transition-all",
+                value === font
+                  ? "border-brand-primary ring-2 ring-brand-primary/20"
+                  : "border-border hover:border-muted-foreground/40",
+              )}
+            >
+              {macOnly ? (
+                <span
+                  aria-label={t("xhs.fontMacOnly")}
+                  className="absolute right-1 top-1 rounded-sm bg-muted px-1 text-[9px] font-medium leading-4 text-muted-foreground"
+                >
+                  {t("xhs.fontMacOnly")}
+                </span>
+              ) : null}
+              <span
+                className="block text-base leading-none"
+                style={{ fontFamily: fontStack(font) }}
+              >
+                {t("common.fontSample")}
+              </span>
+              <span className="mt-1 block text-[11px] text-muted-foreground">
+                {t(FONT_LABEL_KEYS[font])}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

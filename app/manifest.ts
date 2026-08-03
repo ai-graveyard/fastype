@@ -1,13 +1,14 @@
 import type { MetadataRoute } from "next";
 
+import { translate } from "@/lib/i18n";
+
 export const dynamic = "force-static";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "FasType",
     short_name: "FasType",
-    description:
-      "一个无需账号、没有后端的轻量 Markdown 写作工具：编辑、小红书图片排版、公众号排版和自带 Key 的轻量 AI。",
+    description: translate("zh", "app.description"),
     start_url: "./",
     display: "standalone",
     background_color: "#ffffff",

@@ -224,6 +224,20 @@ export function parseSseLine(line: string): SseEvent | null {
   }
 }
 
+/**
+ * 起标题：一次拿回若干候选，不走流式。
+ *
+ * 候选列表要整段解析完才能拆成几条摆给用户，边生成边显示只会让列表一直跳；
+ * 输出本身也就几十个字，等一下比闪一屏更好。
+ */
+export async function runTitleAction(
+  config: AiConfig,
+  messages: ChatMessage[],
+  signal?: AbortSignal,
+): Promise<AiResult> {
+  return request(config, { messages, stream: false, signal });
+}
+
 /** 连接测试：发一个极短的请求，验证鉴权、模型名和响应格式（PRD FT-AI-002）。 */
 export async function testConnection(config: AiConfig, signal?: AbortSignal): Promise<AiResult> {
   return request(config, {
@@ -236,6 +250,7 @@ export async function testConnection(config: AiConfig, signal?: AbortSignal): Pr
 
 export interface RunActionInput {
   action: AiAction;
+  labels: AiMessageLabels;
   /** 选中的文本，这是唯一必然被发送的正文内容。 */
   selection: string;
   /** 选区前后的少量上下文，避免整篇文章被送出去（PRD FT-AI-003）。 */
@@ -244,19 +259,27 @@ export interface RunActionInput {
   customInstruction?: string;
 }
 
+export interface AiMessageLabels {
+  customInstruction: string;
+  contextBefore: string;
+  contextAfter: string;
+  selection: string;
+  document: string;
+}
+
 /** 系统提示词来自设置，用户可以逐条改写、也可以恢复默认。 */
 export function buildMessages(config: AiConfig, input: RunActionInput): ChatMessage[] {
   const parts: string[] = [];
   if (input.action === "custom" && input.customInstruction?.trim()) {
-    parts.push(`改写指令：\n${input.customInstruction.trim()}`);
+    parts.push(`${input.labels.customInstruction}\n${input.customInstruction.trim()}`);
   }
   if (input.contextBefore?.trim()) {
-    parts.push(`选区前文（仅供参考，不要改写）：\n${input.contextBefore.trim()}`);
+    parts.push(`${input.labels.contextBefore}\n${input.contextBefore.trim()}`);
   }
   if (input.contextAfter?.trim()) {
-    parts.push(`选区后文（仅供参考，不要改写）：\n${input.contextAfter.trim()}`);
+    parts.push(`${input.labels.contextAfter}\n${input.contextAfter.trim()}`);
   }
-  parts.push(`待改写的选中文字：\n${input.selection}`);
+  parts.push(`${input.labels.selection}\n${input.selection}`);
   return [
     { role: "system", content: config.prompts[input.action] },
     { role: "user", content: parts.join("\n\n") },
@@ -281,7 +304,8 @@ export interface RunDocumentActionInput {
   action: AiDocumentAction;
   content: string;
   /** 去敏感词时用于替换提示词中的 {{platform}}。 */
-  platform: "通用内容平台" | "小红书" | "微信公众号";
+  platform: string;
+  documentLabel: string;
 }
 
 export function buildDocumentMessages(
@@ -291,7 +315,7 @@ export function buildDocumentMessages(
   const prompt = config.prompts[input.action].replaceAll("{{platform}}", input.platform);
   return [
     { role: "system", content: prompt },
-    { role: "user", content: `待处理的完整 Markdown：\n\n${input.content}` },
+    { role: "user", content: `${input.documentLabel}\n\n${input.content}` },
   ];
 }
 

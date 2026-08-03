@@ -32,6 +32,7 @@ function createEditorApi(value: string): EditorApi {
     getSelection: () => ({ text: "", from: 0, to: 0 }),
     getSelectionRect: () => null,
     subscribeSelection: () => () => undefined,
+    getImageAtCursor: () => null,
     subscribeSearchPanel: () => () => undefined,
     subscribeSearchUpdate: () => () => undefined,
     getSearchStatus: () => ({ current: 0, count: 0 }),

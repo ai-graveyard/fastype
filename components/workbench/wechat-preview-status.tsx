@@ -97,11 +97,13 @@ const ISSUE_LABEL_KEYS: Record<
   | "wechat.compatIssueCode"
   | "wechat.compatIssueLink"
   | "wechat.compatIssueImage"
+  | "wechat.compatIssueDiagram"
 > = {
   "wechat.compatTable": "wechat.compatIssueTable",
   "wechat.compatCode": "wechat.compatIssueCode",
   "wechat.compatLink": "wechat.compatIssueLink",
   "wechat.compatImage": "wechat.compatIssueImage",
+  "wechat.compatDiagram": "wechat.compatIssueDiagram",
 };
 
 function CompatibilityDetails({

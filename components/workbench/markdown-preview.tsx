@@ -25,10 +25,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useImageFallback } from "@/hooks/use-image-status";
+import { useDiagrams } from "@/hooks/use-rich-blocks";
+import { highlightCss } from "@/lib/themes/highlight";
 import {
   MARKDOWN_PREVIEW_MORE_THEMES,
   MARKDOWN_PREVIEW_QUICK_THEMES,
   MARKDOWN_PREVIEW_THEME_LABEL_KEYS,
+  isDarkMarkdownPreviewTheme,
   isMarkdownPreviewTheme,
 } from "@/lib/themes/markdown";
 import { cn } from "@/lib/utils";
@@ -62,7 +65,17 @@ export const MarkdownPreview = React.memo(
     // 一份 { __html } 会让 React 重设整段 innerHTML——预览里的图片跟着重新请求，
     // 滚动同步缓存的块也会全部失联。
     const previewHtml = React.useMemo(() => ({ __html: html }), [html]);
+    const previewDark = isDarkMarkdownPreviewTheme(markdownPreviewTheme);
     useImageFallback(containerRef, t("image.failed"), [html]);
+    useDiagrams(containerRef, html, {
+      dark: previewDark,
+      diagramErrorLabel: t("diagram.failed"),
+    });
+    // 高亮配色和小红书、公众号同源，避免同一份颜色在三个地方各写一遍。
+    const highlightStyles = React.useMemo(
+      () => highlightCss(previewDark, ".md-preview"),
+      [previewDark],
+    );
     React.useImperativeHandle(
       ref,
       () => ({
@@ -74,6 +87,7 @@ export const MarkdownPreview = React.memo(
 
     return (
       <div className="flex h-full min-h-0 flex-col">
+        <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />
         <div className="flex h-[53px] shrink-0 items-center gap-3 border-b border-dashed border-border bg-background/30 px-4">
           <div className="flex shrink-0 items-center gap-2 text-sm font-medium">
             <Eye className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />

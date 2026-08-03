@@ -4,6 +4,7 @@ import {
   ArrowDownToLine,
   Copy,
   Loader2,
+  MessageCircle,
   RefreshCw,
   Replace,
   Settings2,
@@ -11,6 +12,7 @@ import {
   Sparkles,
   Square,
   Trash2,
+  Type,
   Wand2,
   X,
 } from "lucide-react";
@@ -23,25 +25,38 @@ import { useT } from "@/components/providers/prefs-provider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { cleanAiOutput, runAction } from "@/lib/ai/client";
-import { AI_ACTIONS, type AiAction } from "@/lib/ai/types";
+import {
+  isLocalAction,
+  SELECTION_ACTIONS,
+  type AiAction,
+  type SelectionAction,
+} from "@/lib/ai/types";
 import type { TKey } from "@/lib/i18n";
+import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import { cn } from "@/lib/utils";
 
 /** 只发送选区前后各这么多字符，避免整篇文章被送出去（PRD FT-AI-003）。 */
 const CONTEXT_CHARS = 400;
 /** 浮层与选区之间留的间距。 */
 const GAP = 8;
-const TOOLBAR_WIDTH = 300;
+/** 六个动作平铺后的大致宽度，只用来把浮层摆到选区中间；实际宽度由内容撑开。 */
+const TOOLBAR_WIDTH = 560;
 const PANEL_WIDTH = 420;
 const VIEWPORT_MARGIN = 12;
 
 const ACTION_META: Record<
-  AiAction,
-  { label: TKey; icon: React.ComponentType<{ className?: string }> }
+  SelectionAction,
+  { label: TKey; icon: React.ComponentType<{ className?: string }>; hint?: TKey }
 > = {
   polish: { label: "ai.actionPolish", icon: Wand2 },
   expand: { label: "ai.actionExpand", icon: Sparkles },
   condense: { label: "ai.actionCondense", icon: Shrink },
+  conversational: { label: "ai.actionConversational", icon: MessageCircle },
+  removeMarkdown: {
+    label: "ai.actionRemoveMarkdown",
+    icon: Type,
+    hint: "ai.actionRemoveMarkdownHint",
+  },
   custom: { label: "ai.actionCustom", icon: Settings2 },
 };
 
@@ -76,7 +91,7 @@ export function AiSelectionPopover({ editorRef }: AiSelectionPopoverProps) {
 
   const [rect, setRect] = React.useState<EditorSelectionRect | null>(null);
   const [dragging, setDragging] = React.useState(false);
-  const [action, setAction] = React.useState<AiAction | null>(null);
+  const [action, setAction] = React.useState<SelectionAction | null>(null);
   const [instruction, setInstruction] = React.useState("");
   const [result, setResult] = React.useState("");
   const [running, setRunning] = React.useState(false);
@@ -191,6 +206,13 @@ export function AiSelectionPopover({ editorRef }: AiSelectionPopoverProps) {
         config,
         {
           action: nextAction,
+          labels: {
+            customInstruction: t("ai.promptCustomInstruction"),
+            contextBefore: t("ai.promptContextBefore"),
+            contextAfter: t("ai.promptContextAfter"),
+            selection: t("ai.promptSelection"),
+            document: t("ai.promptDocument"),
+          },
           selection: selection.text,
           contextBefore: context.before,
           contextAfter: context.after,
@@ -223,8 +245,8 @@ export function AiSelectionPopover({ editorRef }: AiSelectionPopoverProps) {
     [config, configured, editorRef, instruction, openSettings, t],
   );
 
-  /** 点工具栏按钮：自定义先展开写指令，其余直接开跑。 */
-  const trigger = (nextAction: AiAction) => {
+  /** 点工具栏按钮：本地动作当场出结果，自定义先展开写指令，其余直接开跑。 */
+  const trigger = (nextAction: SelectionAction) => {
     const api = editorRef.current;
     if (!api) return;
     const { text, from, to } = api.getSelection();
@@ -233,6 +255,17 @@ export function AiSelectionPopover({ editorRef }: AiSelectionPopoverProps) {
       return;
     }
     setAnchor(api.getSelectionRect());
+    if (isLocalAction(nextAction)) {
+      // 本地动作不发请求，但仍然走「预览 → 确认替换」这条路，交互和 AI 动作保持一致。
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setFrozen({ text, from, to });
+      setAction(nextAction);
+      setComposing(false);
+      setRunning(false);
+      setResult(markdownToPlainText(text));
+      return;
+    }
     if (nextAction === "custom") {
       setFrozen({ text, from, to });
       setAction("custom");
@@ -278,15 +311,15 @@ export function AiSelectionPopover({ editorRef }: AiSelectionPopoverProps) {
         // 不让点击夺走编辑器焦点，选区才不会在按下按钮时消失。
         onMouseDown={(event) => event.preventDefault()}
         className={cn(
-          "fixed z-40 flex items-center gap-0.5 rounded-lg border border-border bg-popover p-1",
-          "shadow-lg backdrop-blur-sm",
+          "fixed z-40 flex max-w-[calc(100vw-1.5rem)] flex-wrap items-center gap-0.5 rounded-lg",
+          "border border-border bg-popover p-1 shadow-lg backdrop-blur-sm",
         )}
         style={{
           top: placeVertically(position, 40),
           left: clampLeft(centerX, TOOLBAR_WIDTH),
         }}
       >
-        {AI_ACTIONS.map((item) => {
+        {SELECTION_ACTIONS.map((item) => {
           const meta = ACTION_META[item];
           return (
             <Button
@@ -295,6 +328,7 @@ export function AiSelectionPopover({ editorRef }: AiSelectionPopoverProps) {
               variant="ghost"
               size="sm"
               className="h-7 gap-1.5 px-2 text-xs"
+              title={meta.hint ? t(meta.hint) : undefined}
               onClick={() => trigger(item)}
             >
               <meta.icon className="size-3.5" />
@@ -307,6 +341,7 @@ export function AiSelectionPopover({ editorRef }: AiSelectionPopoverProps) {
   }
 
   const meta = action ? ACTION_META[action] : null;
+  const localAction = action !== null && isLocalAction(action);
 
   return (
     <div
@@ -375,7 +410,9 @@ export function AiSelectionPopover({ editorRef }: AiSelectionPopoverProps) {
 
           {frozen ? (
             <p className="text-[11px] text-muted-foreground">
-              {t("ai.contextNotice", { n: frozen.text.length })}
+              {localAction
+                ? t("ai.localActionDone")
+                : t("ai.contextNotice", { n: frozen.text.length })}
             </p>
           ) : null}
 
@@ -400,15 +437,20 @@ export function AiSelectionPopover({ editorRef }: AiSelectionPopoverProps) {
                   <ArrowDownToLine />
                   {t("ai.insertAfter")}
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={!action || !frozen}
-                  onClick={() => action && frozen && void start(action, frozen)}
-                >
-                  <RefreshCw />
-                  {t("ai.regenerate")}
-                </Button>
+                {/* 本地转换是确定的，同一段文字重跑只会得到同一个结果，没必要给这个按钮。 */}
+                {localAction ? null : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!action || !frozen}
+                    onClick={() =>
+                      action && frozen && !isLocalAction(action) && void start(action, frozen)
+                    }
+                  >
+                    <RefreshCw />
+                    {t("ai.regenerate")}
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="ghost"

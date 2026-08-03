@@ -48,6 +48,8 @@ function createEditorApi(overrides: Partial<EditorApi> = {}): EditorApi {
     toggleWrap: vi.fn(),
     toggleLinePrefix: vi.fn(),
     insertBlock: vi.fn(),
+    getImageAtCursor: vi.fn(() => null),
+    replaceImage: vi.fn(() => true),
     locateText: vi.fn(() => true),
     getScrollLine: vi.fn(() => 1),
     scrollToLine: vi.fn(),
@@ -123,11 +125,18 @@ function sentMessages(fetchMock: ReturnType<typeof stubFetchOnce>) {
 }
 
 describe("划词 AI 浮层", () => {
-  it("有选区时浮出四个动作，没选区时不出现", () => {
+  it("有选区时浮出六个动作，没选区时不出现", () => {
     renderPopover(createEditorApi());
     const toolbar = screen.getByRole("toolbar", { name: /划词 AI|Selection AI/ });
     expect(toolbar).toBeTruthy();
-    for (const name of [/润色|Polish/, /扩写|Expand/, /精简|Condense/, /自定义|Custom/]) {
+    for (const name of [
+      /润色|Polish/,
+      /扩写|Expand/,
+      /精简|Condense/,
+      /口语化|Conversational/,
+      /去格式|Strip formatting/,
+      /自定义|Custom/,
+    ]) {
       expect(screen.getByRole("button", { name })).toBeTruthy();
     }
   });
@@ -239,5 +248,81 @@ describe("划词 AI 浮层", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /润色|Polish/ }));
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("口语化走模型，用的是口语化那份提示词", async () => {
+    const fetchMock = stubFetchOnce("改口语后的文字");
+    renderPopover(createEditorApi());
+
+    fireEvent.click(screen.getByRole("button", { name: /口语化|Conversational/ }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(sentMessages(fetchMock).messages[0].content).toBe(
+      DEFAULT_AI_CONFIG.prompts.conversational,
+    );
+  });
+});
+
+describe("去格式（本地动作）", () => {
+  const MARKDOWN_SELECTION = {
+    text: "## 小标题\n\n**加粗**和 `代码`，还有[链接](https://example.test)。",
+    from: 0,
+    to: 40,
+  };
+
+  function renderWithMarkdownSelection(overrides: Partial<EditorApi> = {}) {
+    const api = createEditorApi({
+      getSelection: vi.fn(() => MARKDOWN_SELECTION),
+      ...overrides,
+    });
+    renderPopover(api);
+    return api;
+  }
+
+  it("剥掉 Markdown 标记，一个请求都不发", async () => {
+    const fetchMock = stubFetchOnce("不该被调用");
+    renderWithMarkdownSelection();
+
+    fireEvent.click(screen.getByRole("button", { name: /去格式|Strip formatting/ }));
+
+    const result = await screen.findByText(/小标题/);
+    expect(result.textContent).toBe("小标题\n\n加粗和 代码，还有链接。");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("未配置模型也能用", () => {
+    const fetchMock = stubFetchOnce("不该被调用");
+    const api = createEditorApi({ getSelection: vi.fn(() => MARKDOWN_SELECTION) });
+    renderPopover(api, { configured: false });
+
+    fireEvent.click(screen.getByRole("button", { name: /去格式|Strip formatting/ }));
+
+    expect(screen.getByText(/小标题/)).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("结果同样要点替换才写回正文", async () => {
+    const api = renderWithMarkdownSelection();
+
+    fireEvent.click(screen.getByRole("button", { name: /去格式|Strip formatting/ }));
+    await screen.findByText(/小标题/);
+    expect(api.replaceRange).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /替换选中内容|Replace selection/ }));
+    expect(api.replaceRange).toHaveBeenCalledWith(
+      MARKDOWN_SELECTION.from,
+      MARKDOWN_SELECTION.to,
+      "小标题\n\n加粗和 代码，还有链接。",
+      MARKDOWN_SELECTION.text,
+    );
+  });
+
+  it("不提供重新生成，本地转换每次结果都一样", async () => {
+    renderWithMarkdownSelection();
+
+    fireEvent.click(screen.getByRole("button", { name: /去格式|Strip formatting/ }));
+    await screen.findByText(/小标题/);
+
+    expect(screen.queryByRole("button", { name: /重新生成|Regenerate/ })).toBeNull();
   });
 });

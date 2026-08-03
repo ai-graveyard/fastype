@@ -28,8 +28,9 @@ import {
 import { PhoneFrame, PhoneStatusBar, usePhoneFitScale } from "@/components/ui/phone-frame";
 import { ProfileButton } from "@/components/workbench/profile-button";
 import { useImageFallback } from "@/hooks/use-image-status";
+import { useDiagrams } from "@/hooks/use-rich-blocks";
 import type { WechatStyle } from "@/lib/themes/wechat";
-import { cn } from "@/lib/utils";
+import { cn, isDarkColor } from "@/lib/utils";
 
 const ZOOM_STEP = 0.1;
 const ZOOM_MIN = 0.5;
@@ -145,10 +146,18 @@ export const WechatPreview = React.memo(function WechatPreview({
   const [scrollPosition, setScrollPosition] = React.useState<ScrollPosition>("static");
   const [outlineItems, setOutlineItems] = React.useState<WechatOutlineItem[]>([]);
   const fittedPhoneScale = usePhoneFitScale(containerRef, previewZoom);
+  // 正文没变时必须是同一个对象：每次重渲染都新建一份 { __html } 会让 React 重设
+  // 整段 innerHTML，异步画好的图表和刚加载的图片会被一起冲掉。
+  const previewHtml = React.useMemo(() => ({ __html: html }), [html]);
   const failedImages = useImageFallback(contentRef, t("image.failed"), [
     html,
     style.showPhoneFrame,
   ]);
+  // 高亮的颜色已经在 lib/render/wechat.ts 里写成内联样式了，这里只需要把图表画出来。
+  useDiagrams(contentRef, html, {
+    dark: isDarkColor(style.codeBackground),
+    diagramErrorLabel: t("diagram.failed"),
+  });
   React.useEffect(() => {
     onImageFailuresChange?.(failedImages);
   }, [failedImages, onImageFailuresChange]);
@@ -237,7 +246,7 @@ export const WechatPreview = React.memo(function WechatPreview({
               title={t("wechat.phonePreview")}
             >
               <Smartphone className="h-3.5 w-3.5" />
-              <span>手机</span>
+              <span>{t("wechat.phone")}</span>
             </button>
             <button
               type="button"
@@ -250,7 +259,7 @@ export const WechatPreview = React.memo(function WechatPreview({
               title={t("wechat.widePreview")}
             >
               <Monitor className="h-3.5 w-3.5" />
-              <span>电脑</span>
+              <span>{t("wechat.desktop")}</span>
             </button>
           </div>
         </div>
@@ -312,7 +321,7 @@ export const WechatPreview = React.memo(function WechatPreview({
               <div
                 ref={contentRef}
                 data-wechat-preview-root
-                dangerouslySetInnerHTML={{ __html: html }}
+                dangerouslySetInnerHTML={previewHtml}
               />
             </div>
           </PhoneFrame>
@@ -343,7 +352,7 @@ export const WechatPreview = React.memo(function WechatPreview({
                 <div
                   ref={contentRef}
                   data-wechat-preview-root
-                  dangerouslySetInnerHTML={{ __html: html }}
+                  dangerouslySetInnerHTML={previewHtml}
                 />
               </div>
             </div>
