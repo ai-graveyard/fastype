@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatXhsPublishBody,
   parseXhsMarkdown,
   stringifyXhsMarkdown,
   suggestXhsMetadata,
@@ -35,6 +36,16 @@ describe("小红书 Front Matter", () => {
     const body = "# 只有图片正文";
     const result = stringifyXhsMarkdown(body, { title: "", content: "", tags: [] });
     expect(result).toBe(body);
+  });
+
+  it("复制发布正文时规范化标签，并与正文空一行", () => {
+    expect(
+      formatXhsPublishBody({
+        title: "单独复制的标题",
+        content: "  第一行\n第二行  ",
+        tags: [" AI ", "#效率工具", ""],
+      }),
+    ).toBe("第一行\n第二行\n\n#AI #效率工具");
   });
 });
 

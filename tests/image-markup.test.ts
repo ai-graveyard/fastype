@@ -39,7 +39,7 @@ describe("data URI 工具", () => {
 
   it("字节数按量级换算", () => {
     expect(formatBytes(512)).toBe("512 B");
-    expect(formatBytes(2048)).toBe("2 KB");
+    expect(formatBytes(2048)).toBe("2.0 KB");
     expect(formatBytes(3 * 1024 * 1024)).toBe("3.0 MB");
   });
 });

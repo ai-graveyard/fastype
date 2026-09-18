@@ -1072,6 +1072,15 @@ export function renderWechat(
     if (inline) el.setAttribute("style", inline);
   });
 
+  // 引用块有内边距，里面段落的外边距合并不出去，会在框里上下各撑出一段空白。
+  // 公众号不认 <style>，只能挨个把首尾子元素的外边距抹平。
+  holder.querySelectorAll("blockquote").forEach((quote) => {
+    const first = quote.firstElementChild as HTMLElement | null;
+    const last = quote.lastElementChild as HTMLElement | null;
+    if (first) first.style.marginTop = "0";
+    if (last) last.style.marginBottom = "0";
+  });
+
   appendHeadingNumbers(holder, style.headings, style.fontSize, palette.accent);
   const section = window.document.createElement("section");
   section.setAttribute("style", wechatRootStyle(style));

@@ -1,8 +1,15 @@
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
+import { IDBFactory } from "fake-indexeddb";
 import { createRef } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MarkdownEditor, type EditorApi } from "@/components/editor/markdown-editor";
+import { __resetImageDbForTests } from "@/lib/image/db";
+import { __resetImageCacheForTests, saveImageDataUrl } from "@/lib/image/library";
+
+/** 1×1 红点 PNG，比透明像素好认。 */
+const RED_PIXEL =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
 // jsdom 不做真实布局，Range 上没有 getClientRects/getBoundingClientRect；
 // CodeMirror 渲染表格、代码块这类块级 Widget 时会用到它们计算行高，补一个空实现即可。
@@ -18,6 +25,11 @@ if (!Range.prototype.getBoundingClientRect) {
 }
 
 describe("Markdown Live Preview 编辑器", () => {
+  afterEach(() => {
+    // 图片库的会话缓存是模块级的，留着会串到别的用例里。
+    __resetImageCacheForTests();
+  });
+
   it("预览方式保留直接编辑能力，同时隐藏行号并展示 Markdown 排版", async () => {
     const ref = createRef<EditorApi>();
     const onChange = vi.fn();
@@ -202,6 +214,130 @@ describe("Markdown Live Preview 编辑器", () => {
       expect(view.container.querySelectorAll(".ft-md-task-checkbox")).toHaveLength(1),
     );
     expect(view.container.textContent).toContain("- [x] 待办一");
+  });
+
+  it("预览方式把整行的图片渲染成 <img>，光标进入该行时退回源码文本", async () => {
+    const ref = createRef<EditorApi>();
+    const view = render(
+      <div style={{ height: 400 }}>
+        <MarkdownEditor
+          ref={ref}
+          value={`普通段落\n\n![封面](${RED_PIXEL})`}
+          onChange={vi.fn()}
+          resetKey="image-preview-test"
+          ariaLabel="编辑区"
+          mode="preview"
+        />
+      </div>,
+    );
+
+    await waitFor(() => expect(ref.current).toBeTruthy());
+    await waitFor(() => expect(view.container.querySelector(".ft-md-image img")).toBeTruthy());
+
+    const img = view.container.querySelector<HTMLImageElement>(".ft-md-image img")!;
+    expect(img.getAttribute("src")).toBe(RED_PIXEL);
+    expect(img.alt).toBe("封面");
+    expect(view.container.textContent).not.toContain("![封面]");
+
+    // 光标移进那一行时退回源码，保留直接编辑能力。
+    act(() => {
+      ref.current!.locateText("封面");
+    });
+    await waitFor(() => expect(view.container.querySelector(".ft-md-image")).toBeNull());
+    expect(view.container.textContent).toContain("![封面]");
+  });
+
+  it("预览方式把正文里的图片引用换成图片库里的那张图", async () => {
+    Object.defineProperty(globalThis, "indexedDB", {
+      value: new IDBFactory(),
+      configurable: true,
+      writable: true,
+    });
+    __resetImageDbForTests();
+    __resetImageCacheForTests();
+
+    const imageRef = await saveImageDataUrl(RED_PIXEL, 1, 1);
+    expect(imageRef).toBeTruthy();
+
+    const ref = createRef<EditorApi>();
+    const view = render(
+      <div style={{ height: 400 }}>
+        <MarkdownEditor
+          ref={ref}
+          value={`普通段落\n\n![插图](${imageRef})`}
+          onChange={vi.fn()}
+          resetKey="image-ref-preview-test"
+          ariaLabel="编辑区"
+          mode="preview"
+        />
+      </div>,
+    );
+
+    await waitFor(() => expect(ref.current).toBeTruthy());
+    await waitFor(() =>
+      expect(
+        view.container.querySelector<HTMLImageElement>(".ft-md-image img")?.getAttribute("src"),
+      ).toBe(RED_PIXEL),
+    );
+    // 正文里存的仍然是那条短引用，换的只是显示。
+    expect(ref.current!.getValue()).toContain(imageRef);
+  });
+
+  it("预览方式按 width / align 排版图片，点一下就把光标放进那一行", async () => {
+    const ref = createRef<EditorApi>();
+    const value = `普通段落\n\n<p align="right"><img src="${RED_PIXEL}" alt="配图" width="50%"></p>`;
+    const view = render(
+      <div style={{ height: 400 }}>
+        <MarkdownEditor
+          ref={ref}
+          value={value}
+          onChange={vi.fn()}
+          resetKey="image-layout-preview-test"
+          ariaLabel="编辑区"
+          mode="preview"
+        />
+      </div>,
+    );
+
+    await waitFor(() => expect(ref.current).toBeTruthy());
+    await waitFor(() => expect(view.container.querySelector(".ft-md-image")).toBeTruthy());
+
+    const box = view.container.querySelector<HTMLElement>(".ft-md-image")!;
+    expect(box.style.textAlign).toBe("right");
+    expect(box.querySelector("img")!.style.width).toBe("50%");
+
+    // 块级 widget 上的点击，CodeMirror 默认会把光标落到图片外面，图片工具条就够不着这张图。
+    fireEvent.mouseDown(box, { button: 0 });
+    await waitFor(() => expect(view.container.querySelector(".ft-md-image")).toBeNull());
+    expect(ref.current!.getImageAtCursor()).toMatchObject({
+      alt: "配图",
+      width: 50,
+      align: "right",
+    });
+  });
+
+  it("图片和文字挤在同一行时保持源码，不把整行换成图片", async () => {
+    const ref = createRef<EditorApi>();
+    const value = `普通段落\n\n![独占](${RED_PIXEL})\n\n夹在文字里 ![混排](${RED_PIXEL}) 的图`;
+    const view = render(
+      <div style={{ height: 400 }}>
+        <MarkdownEditor
+          ref={ref}
+          value={value}
+          onChange={vi.fn()}
+          resetKey="image-inline-preview-test"
+          ariaLabel="编辑区"
+          mode="preview"
+        />
+      </div>,
+    );
+
+    await waitFor(() => expect(ref.current).toBeTruthy());
+    // 独占一行的那张换成了图片，混排那行原样留着——整行替换会把旁边的文字一起吃掉。
+    await waitFor(() => expect(view.container.querySelectorAll(".ft-md-image")).toHaveLength(1));
+    expect(view.container.querySelector(".ft-md-image img")?.getAttribute("alt")).toBe("独占");
+    expect(view.container.textContent).toContain("夹在文字里");
+    expect(view.container.textContent).toContain("混排");
   });
 
   it("达到双重硬上限后阻止增加输入，但允许删除和缩短超限文档", async () => {

@@ -72,6 +72,9 @@ export const en: Translation = {
     draftContent: "Draft content",
     draftCopied: "Copied",
     copyDraft: "Copy draft",
+    preparingDraft: "Preparing draft…",
+    draftImagesMissing:
+      "{n} local image(s) in this draft are missing. You can still copy the text below, but its fastype-img references will not work in other apps.",
     tryRecover: "Try to recover",
     refreshPage: "Refresh page",
   },
@@ -132,6 +135,10 @@ export const en: Translation = {
     savedToFile: "Written back to file",
     downloaded: "Markdown downloaded",
     saveFailed: "Save failed: {reason}",
+    missingLocalImages:
+      "{n} local image(s) are missing, so a self-contained file cannot be created. Reinsert them and try again.",
+    externalDraftConflict:
+      "Another tab updated this draft. Autosave is paused here to avoid overwriting it. Download the current Markdown, then refresh this page.",
     unsupportedType: "Unsupported file type: {name}. FasType currently accepts .md files only.",
     decodeFailed:
       "Could not decode “{name}” as UTF-8. It may be a binary file or use another encoding.",
@@ -181,6 +188,9 @@ export const en: Translation = {
     searchNoResults: "No matches found",
     undo: "Undo",
     redo: "Redo",
+    outline: "Document outline",
+    outlineEmpty: "No level 1–3 headings in this document",
+    outlineLine: "Line {line}",
     copyAll: "Copy all (Markdown)",
     copyPlain: "Copy as plain text (no Markdown)",
     copyAllDone: "Markdown copied",
@@ -255,6 +265,12 @@ export const en: Translation = {
     autoFillFromBody: "Auto-fill",
     autoFillFromBodyDesc:
       "Fills the title from the image body's first-level heading and the note body from its first 1,000 characters. This overwrites the current title and body.",
+    copyTitle: "Copy title",
+    copyBodyTags: "Copy body and tags",
+    copyTitleDone: "Xiaohongshu title copied",
+    copyBodyTagsDone: "Xiaohongshu body and tags copied",
+    copyPublishEmpty: "There is no publishing content to copy",
+    copyPublishFailed: "Copy failed because the browser denied clipboard access.",
     textContent: "Text body",
     textTitle: "Title",
     textTitleDesc:
@@ -328,6 +344,10 @@ export const en: Translation = {
     identifierBottomLeft: "Bottom left",
     identifierBottomRight: "Bottom right",
     identifierSize: "Identifier size",
+    identifierPaddingY: "Identifier vertical padding",
+    identifierPaddingX: "Identifier horizontal padding",
+    identifierPaddingHint:
+      "Inset within the page padding: {y}px from the top/bottom edge, {x}px from the sides.",
     identifierBadge: "Name badge",
     identifierBadgeEnabled: "Show name badge",
     identifierBadgeOption: "Choose name badge",
@@ -527,6 +547,8 @@ export const en: Translation = {
     previewModeLabel: "Preview mode",
     previewModeFull: "Full",
     previewModeHome: "Home",
+    previewModeGrid: "All",
+    downloadImageAt: "Download image {page}",
     previewBackToHome: "Back to home preview",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
@@ -833,6 +855,10 @@ export const en: Translation = {
       "Copy failed: the browser denied clipboard access. Try downloading the HTML or copying plain text.",
     downloadHtml: "Download HTML",
     downloadHtmlDone: "HTML downloaded",
+    downloadPackage: "Download publishing package",
+    packageDownloadDone: "WeChat article and both covers packaged",
+    packageDownloadFailed:
+      "Could not create the publishing package. Check cover images and try again.",
     disclaimer: "The final look is whatever the WeChat editor shows after you paste.",
     compatTitle: "Compatibility notes",
     compatTable: "Tables may be squeezed or wrapped inside WeChat. Keep the column count low.",
@@ -1132,6 +1158,10 @@ Return only the rewritten passage. Do not explain, greet or wrap it in a code bl
       "localStorage is disabled in this browser, so nothing can be restored automatically. You can still edit and download Markdown.",
     storageQuota:
       "Local storage is full, so the draft is no longer auto-saved. Download your Markdown now to avoid losing it.",
+    imageStorageQuota:
+      "Browser image storage is full. New images will be embedded in the document and may quickly fill draft storage. Download a Markdown backup soon.",
+    imageStorageUnavailable:
+      "Browser image storage is temporarily unavailable. New images will be embedded in the document instead. You can keep editing, but download a Markdown backup soon.",
     storageCorrupted: "Found corrupted local data; that part was skipped and defaults were used.",
     about: "About",
     aboutDesc: "An open-source, frontend-only Markdown formatter for multiple platforms.",
@@ -1143,6 +1173,7 @@ Return only the rewritten passage. Do not explain, greet or wrap it in a code bl
   },
 
   a11y: {
+    skipToContent: "Skip to main content",
     mainToolbar: "Main toolbar",
     viewSwitcher: "View switcher",
     narrowSideSwitcher: "Preview / edit switcher",
@@ -1169,7 +1200,8 @@ Return only the rewritten passage. Do not explain, greet or wrap it in a code bl
     insertRejected:
       "Could not insert: this platform's character limit is already used up. Trim the text first.",
     toolbar: "Image settings",
-    embeddedSize: "Embedded · {size}",
+    embedded: "Local image",
+    embeddedSize: "Local image · {size}",
     remote: "External image",
     alignLeft: "Align left",
     alignCenter: "Center",

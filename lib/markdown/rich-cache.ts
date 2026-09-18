@@ -9,12 +9,23 @@
  * 当前这一帧拿到真实高度，不能再等一轮异步。
  */
 
-/** 缓存上限，超过就整体清空。图表和高亮的产物都不小，不做 LRU，够用就行。 */
+/** 图表和高亮产物都不小，分别只保留最近使用的 64 项。 */
 const MAX_ENTRIES = 64;
 
-function put(cache: Map<string, string>, key: string, value: string): void {
-  if (cache.size >= MAX_ENTRIES) cache.clear();
+function read<T>(cache: Map<string, T>, key: string): T | undefined {
+  const value = cache.get(key);
+  if (value === undefined) return undefined;
+  cache.delete(key);
   cache.set(key, value);
+  return value;
+}
+
+function put<T>(cache: Map<string, T>, key: string, value: T): void {
+  cache.delete(key);
+  cache.set(key, value);
+  if (cache.size <= MAX_ENTRIES) return;
+  const oldest = cache.keys().next();
+  if (!oldest.done) cache.delete(oldest.value);
 }
 
 export interface DiagramCacheEntry {
@@ -31,12 +42,11 @@ export function diagramCacheKey(kind: string, dark: boolean, source: string): st
 }
 
 export function readDiagramCache(key: string): DiagramCacheEntry | undefined {
-  return diagramCache.get(key);
+  return read(diagramCache, key);
 }
 
 export function writeDiagramCache(key: string, entry: DiagramCacheEntry): void {
-  if (diagramCache.size >= MAX_ENTRIES) diagramCache.clear();
-  diagramCache.set(key, entry);
+  put(diagramCache, key, entry);
 }
 
 export function highlightCacheKey(language: string, code: string): string {
@@ -44,9 +54,14 @@ export function highlightCacheKey(language: string, code: string): string {
 }
 
 export function readHighlightCache(key: string): string | undefined {
-  return highlightCache.get(key);
+  return read(highlightCache, key);
 }
 
 export function writeHighlightCache(key: string, html: string): void {
   put(highlightCache, key, html);
+}
+
+export function __resetRichCachesForTests(): void {
+  diagramCache.clear();
+  highlightCache.clear();
 }

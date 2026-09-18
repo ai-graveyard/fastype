@@ -10,7 +10,6 @@ import {
   undo as undoCommand,
 } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { languages } from "@codemirror/language-data";
 import {
   bracketMatching,
   defaultHighlightStyle,
@@ -33,8 +32,10 @@ import {
   Compartment,
   EditorState,
   type Extension,
+  Facet,
   type Range,
   StateField,
+  type Transaction,
 } from "@codemirror/state";
 import {
   Decoration,
@@ -55,15 +56,32 @@ import {
   dataUrlByteLength,
   dataUrlFormat,
   formatBytes,
+  imageDataUrlPattern,
 } from "@/lib/image/data-url";
+import { loadImages, peekImageDataUrl, peekImageInfo } from "@/lib/image/library";
+import { imageRefId } from "@/lib/image/ref";
 import {
+  DEFAULT_IMAGE_WIDTH,
   findImageAt,
+  findImageMarkups,
   stringifyImageMarkup,
+  type ImageAlign,
   type ImageMarkup,
   type ImageMarkupMatch,
 } from "@/lib/markdown/image-markup";
 import { isEditorInputChangeAllowed, type EditorInputLimits } from "@/lib/markdown/stats";
 import type { PlatformEditorMode } from "@/lib/types";
+
+let languageDataPromise: Promise<typeof import("@codemirror/language-data")> | null = null;
+
+function hasFencedCode(source: string): boolean {
+  return /^\s{0,3}(?:`{3,}|~{3,})/m.test(source);
+}
+
+async function loadCodeLanguages() {
+  languageDataPromise ??= import("@codemirror/language-data");
+  return (await languageDataPromise).languages;
+}
 
 export interface EditorSelectionInfo {
   line: number;
@@ -145,6 +163,8 @@ interface MarkdownEditorProps {
   ariaLabel: string;
   /** 文本模式显示 Markdown 源码与行号；预览是仍可直接编辑的 Live Preview。 */
   mode?: PlatformEditorMode;
+  /** 预览方式里图片加载不出来时显示的话。 */
+  imageFailedText?: string;
   /** 平台正文的字数和字符数硬上限；普通 Markdown 编辑不限制。 */
   inputLimits?: EditorInputLimits;
 }
@@ -377,6 +397,23 @@ const livePreviewTheme = EditorView.theme({
   ".ft-md-table th": {
     background: "var(--muted)",
     fontWeight: "600",
+  },
+  // 块级 widget 不在 .cm-line 里，左右缩进得自己补上，才和上下文对得齐。
+  ".ft-md-image": { margin: "0.9em 0", padding: "0 32px", lineHeight: "0" },
+  ".ft-md-image img": {
+    maxWidth: "100%",
+    height: "auto",
+    borderRadius: "6px",
+    verticalAlign: "top",
+  },
+  ".ft-md-image-error": {
+    display: "inline-block",
+    border: "1px dashed var(--border)",
+    borderRadius: "6px",
+    padding: "10px 14px",
+    color: "var(--muted-foreground)",
+    fontSize: "0.9em",
+    lineHeight: "1.6",
   },
 });
 
@@ -629,6 +666,167 @@ class CodeBlockWidget extends WidgetType {
   }
 }
 
+/**
+ * 图片加载不出来时那行提示的文案。
+ *
+ * 走 Facet 而不是模块级常量，是因为文案要跟界面语言走，而编辑器实例可能同时有好几个。
+ * 和 ariaLabel 一样只在建编辑器时注入一次：切语言不会当场重刷这行字，但切语言本身
+ * 就少见，为它把整个装饰体系接上响应式不划算。
+ */
+const imageFailedLabel = Facet.define<string, string>({
+  combine: (values) => values[0] ?? "",
+});
+
+/**
+ * 整行一张图时，预览方式里直接把这张图显示出来。
+ *
+ * 不这么做的话，写作时看到的是 `![说明](fastype-img:9f3ac2d1…)` 这么一串——正文里
+ * 存的是指向 IndexedDB 的引用（lib/image/ref.ts），比 URL 更没法看。所见即所得的
+ * 编辑器里，图片是最该「所见」的那一类。
+ *
+ * 引用换 data URI 这一步只能在这里做：renderMarkdown 那条路上有 workbench 的
+ * useResolvedImages 兜着，编辑器拿到的始终是没换过的原文。
+ */
+/** 画出来的图片 widget，按 DOM 反查。点击要用它记着的位置，见 ImageWidget.updateDOM。 */
+const imageWidgets = new WeakMap<HTMLElement, ImageWidget>();
+
+class ImageWidget extends WidgetType {
+  constructor(
+    readonly from: number,
+    readonly src: string,
+    readonly alt: string,
+    readonly width: number,
+    readonly align: ImageAlign,
+    readonly failedLabel: string,
+  ) {
+    super();
+  }
+
+  /** 同一张图，同样的排版。位置不算在内，那部分交给 eq/updateDOM 那对分工。 */
+  sameImage(other: ImageWidget): boolean {
+    return (
+      this.src === other.src &&
+      this.alt === other.alt &&
+      this.width === other.width &&
+      this.align === other.align &&
+      this.failedLabel === other.failedLabel
+    );
+  }
+
+  eq(other: ImageWidget): boolean {
+    return this.from === other.from && this.sameImage(other);
+  }
+
+  /**
+   * 图没变，只是整体挪了位置（上面的行有增删）：把新位置记上，DOM 一动不动。
+   *
+   * 不这么分工的话，位置一进 eq，在图片上方每敲一个字都会重建一次 widget——`<img>` 换成
+   * 新元素，几兆的图跟着重新解码一遍，图片肉眼可见地闪。
+   */
+  updateDOM(dom: HTMLElement): boolean {
+    const previous = imageWidgets.get(dom);
+    if (!previous?.sameImage(this)) return false;
+    imageWidgets.set(dom, this);
+    return true;
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const box = document.createElement("div");
+    box.className = "ft-md-image";
+    box.style.textAlign = this.align;
+    imageWidgets.set(box, this);
+
+    /*
+     * 点一下就把光标放进这一行。
+     *
+     * 块级 widget 上的点击，CodeMirror 默认把光标落到 widget 外面的最近位置，于是这张图
+     * 怎么点都选不中——而调宽度、对齐、裁剪、删除全靠图片工具条，工具条又只认「光标落在
+     * 哪张图上」。位置从 WeakMap 现取，别用创建时那个：DOM 复用时 widget 换了新的，闭包
+     * 里捕获的会是过期位置。
+     */
+    box.addEventListener("mousedown", (event) => {
+      if (event.button !== 0) return;
+      // 光把默认行为拦下不够：事件冒到 cm-content 上，CodeMirror 还会按坐标再算一次位置。
+      event.preventDefault();
+      event.stopPropagation();
+      view.dispatch({ selection: { anchor: imageWidgets.get(box)?.from ?? this.from } });
+      view.focus();
+    });
+
+    const img = document.createElement("img");
+    img.alt = this.alt;
+    if (this.alt) img.title = this.alt;
+    // 100% 就是不限制，交给 CSS 的 max-width，别把小图硬撑到满行。
+    if (this.width < DEFAULT_IMAGE_WIDTH) img.style.width = `${this.width}%`;
+
+    let settled = false;
+    const fail = () => {
+      if (settled) return;
+      settled = true;
+      img.remove();
+      const hint = document.createElement("span");
+      hint.className = "ft-md-image-error";
+      // 没有文案时至少还有 alt 顶着，总比一个空框强。
+      hint.textContent = this.failedLabel || this.alt || "";
+      box.appendChild(hint);
+    };
+    img.addEventListener("error", fail);
+
+    /** 顺带把原始像素尺寸写上：浏览器据此先留出位置，图片到位时不会把下文顶一下。 */
+    const show = (id: string, dataUrl: string) => {
+      const info = peekImageInfo(id);
+      if (info && info.width > 0 && info.height > 0) {
+        img.width = info.width;
+        img.height = info.height;
+      }
+      img.src = dataUrl;
+    };
+
+    const id = imageRefId(this.src);
+    if (!id) {
+      // 外链和内嵌 data URI 原样交给浏览器。
+      img.src = this.src;
+    } else {
+      const cached = peekImageDataUrl(id);
+      if (cached) {
+        show(id, cached);
+      } else {
+        // 这一帧还没读上来。空着比塞个占位图好：占位图一闪反而更晃眼。
+        void loadImages([id]).then(() => {
+          const dataUrl = peekImageDataUrl(id);
+          if (dataUrl) show(id, dataUrl);
+          else fail();
+        });
+      }
+    }
+
+    box.appendChild(img);
+    return box;
+  }
+
+  // 点击完全交给上面那个处理，别让 CodeMirror 再按坐标算一次位置、把光标挪到别处去。
+  ignoreEvent(): boolean {
+    return true;
+  }
+}
+
+/**
+ * 这一行是不是「独占一整行的一张图」。
+ *
+ * 只认整行的：块级 widget 替换的单位就是整行，行内混排的图片换不了。插图默认单独成行
+ * （hooks/use-image-insert.ts），这一条覆盖得到绝大多数正文。
+ */
+function tryParseImageLineAt(state: EditorState, lineNumber: number): ImageMarkup | null {
+  const text = state.doc.line(lineNumber).text.trim();
+  // 图片要么是 `![…]`，要么是 `<p align>`/`<img>`；先挡一道，省得每一行都去跑正则。
+  if (text[0] !== "!" && text[0] !== "<") return null;
+  const found = findImageMarkups(text);
+  if (found.length !== 1) return null;
+  const [image] = found;
+  // 前后还挂着别的字就不算，那种情况换成 widget 会把文字吃掉。
+  return image.from === 0 && image.to === text.length ? image : null;
+}
+
 /** 用于把无序列表的 `-`/`+`/`*` 标记换成统一的实心圆点。 */
 class InlineTextWidget extends WidgetType {
   constructor(
@@ -803,7 +1001,7 @@ function buildLivePreviewDecorations(view: EditorView): DecorationSet {
 }
 
 /**
- * 表格、围栏代码块都是多行拼成的块，用 Widget 整体替换成真实的 `<table>` / `<pre>`。
+ * 表格、围栏代码块、整行的图片都用 Widget 整体替换成真实的 `<table>` / `<pre>` / `<img>`。
  *
  * CodeMirror 不允许「随视图变化的」decoration 提供块级效果（无论是插件还是
  * `EditorView.decorations.of(view => ...)` 这种函数形式都不行），只有 StateField
@@ -858,6 +1056,24 @@ function buildBlockWidgetDecorations(state: EditorState): DecorationSet {
       }
       lineNumber = table.toLine + 1;
       continue;
+    }
+
+    const image = tryParseImageLineAt(state, lineNumber);
+    if (image && !isBlockActive(lineNumber, lineNumber)) {
+      const line = doc.line(lineNumber);
+      ranges.push(
+        Decoration.replace({
+          widget: new ImageWidget(
+            line.from,
+            image.src,
+            image.alt,
+            image.width,
+            image.align,
+            state.facet(imageFailedLabel),
+          ),
+          block: true,
+        }).range(line.from, line.to),
+      );
     }
 
     lineNumber += 1;
@@ -917,60 +1133,86 @@ class DataUrlWidget extends WidgetType {
   }
 }
 
-const DATA_URL_PATTERN = /data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
-
 /**
  * 把内嵌图片的 base64 折叠成 `WEBP 234 KB` 这样的短标签。
+ *
+ * 插进来的图现在只在正文里留一条短引用（lib/image/ref.ts），本来用不着折叠；但历史草稿、
+ * 外部拷进来的 Markdown 里仍会有内嵌 data URI，这条得留着。
  *
  * 和其它 live preview 装饰不同，这一条在源码模式下也开着，而且光标落到这一行也不展开：
  * 一张图就是十几万个字符，真展开出来这一行没法看，编辑器本身也会卡。折叠只影响显示，
  * 选中复制拿到的仍是完整的 data URI。
+ *
+ * 必须放 StateField 而不是 ViewPlugin，理由和上面的块级 widget 一样：CodeMirror 算行高
+ * 和视口时只认 state 里的 decoration。插件给的它看不见，于是那一行仍按二十万字符估成几万
+ * 像素高，编辑器里凭空多出一大块空白、滚动条被撑得老长，折叠标签自己反倒因为落在被裁掉的
+ * 那段里没渲染出来。同样地，扫描范围得是整篇文档，不能只扫 `visibleRanges`。
  */
-function buildDataUrlDecorations(view: EditorView): DecorationSet {
+function buildDataUrlDecorations(state: EditorState): DecorationSet {
   const ranges: Range<Decoration>[] = [];
-  for (const visible of view.visibleRanges) {
-    let position = visible.from;
-    while (position <= visible.to) {
-      const line = view.state.doc.lineAt(position);
-      DATA_URL_PATTERN.lastIndex = 0;
-      for (
-        let match = DATA_URL_PATTERN.exec(line.text);
-        match;
-        match = DATA_URL_PATTERN.exec(line.text)
-      ) {
-        if (match[0].length < DATA_URL_FOLD_THRESHOLD) continue;
-        const from = line.from + match.index;
-        const label = `${dataUrlFormat(match[0])} ${formatBytes(dataUrlByteLength(match[0]))}`;
-        ranges.push(
-          Decoration.replace({ widget: new DataUrlWidget(label) }).range(
-            from,
-            from + match[0].length,
-          ),
-        );
-      }
-      if (line.to >= visible.to) break;
-      position = line.to + 1;
+  const doc = state.doc;
+  const pattern = imageDataUrlPattern();
+  for (let lineNumber = 1; lineNumber <= doc.lines; lineNumber += 1) {
+    const line = doc.line(lineNumber);
+    // 绝大多数行连 `data:` 都不沾，先挡一道，省得正则去啃十几万字符的长行。
+    if (!line.text.includes("data:")) continue;
+    pattern.lastIndex = 0;
+    for (let match = pattern.exec(line.text); match; match = pattern.exec(line.text)) {
+      if (match[0].length < DATA_URL_FOLD_THRESHOLD) continue;
+      const from = line.from + match.index;
+      const label = `${dataUrlFormat(match[0])} ${formatBytes(dataUrlByteLength(match[0]))}`;
+      ranges.push(
+        Decoration.replace({ widget: new DataUrlWidget(label) }).range(
+          from,
+          from + match[0].length,
+        ),
+      );
     }
   }
   return Decoration.set(ranges, true);
 }
 
-const dataUrlFoldPlugin = ViewPlugin.fromClass(
-  class {
-    decorations: DecorationSet;
-
-    constructor(view: EditorView) {
-      this.decorations = buildDataUrlDecorations(view);
-    }
-
-    update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged) {
-        this.decorations = buildDataUrlDecorations(update.view);
+/**
+ * 这次改动有没有可能动到 data URI。
+ *
+ * 全文重扫要把每一行都取出来过一遍正则，而带图的文档动辄上兆，每敲一个字都扫一遍会明显
+ * 卡手。绝大多数改动都发生在离图片十万八千里的普通行上，这种情况把旧的折叠范围按变更平移
+ * 一下就够了。只有两种情况得重算：改动落进了某段已折叠的 base64 里，或者改完之后这一行冒
+ * 出了 `data:` —— 新粘进来的图就是这么进来的。
+ */
+function changeTouchesDataUrl(folded: DecorationSet, tr: Transaction): boolean {
+  let touched = false;
+  tr.changes.iterChanges((fromA, toA, fromB, toB) => {
+    if (touched) return;
+    folded.between(fromA, toA, () => {
+      touched = true;
+      return false;
+    });
+    if (touched) return;
+    // 改动可能跨好几行（粘一张图进来就是 `\n![](data:…)\n`），逐行看，别只看落点那一行。
+    const first = tr.newDoc.lineAt(fromB).number;
+    const last = tr.newDoc.lineAt(toB).number;
+    for (let number = first; number <= last; number += 1) {
+      if (tr.newDoc.line(number).text.includes("data:")) {
+        touched = true;
+        return;
       }
     }
+  });
+  return touched;
+}
+
+const dataUrlFoldField = StateField.define<DecorationSet>({
+  create(state) {
+    return buildDataUrlDecorations(state);
   },
-  { decorations: (value) => value.decorations },
-);
+  update(value, tr) {
+    if (!tr.docChanged) return value;
+    if (!changeTouchesDataUrl(value, tr)) return value.map(tr.changes);
+    return buildDataUrlDecorations(tr.state);
+  },
+  provide: (field) => EditorView.decorations.from(field),
+});
 
 function editorModeExtensions(mode: PlatformEditorMode): Extension {
   return mode === "preview"
@@ -1039,6 +1281,7 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
       ariaLabel,
       mode = "text",
       inputLimits,
+      imageFailedText = "",
     },
     ref,
   ) {
@@ -1049,6 +1292,8 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
     const selectionListenersRef = React.useRef(new Set<() => void>());
     const scrollListenersRef = React.useRef(new Set<() => void>());
     const modeCompartmentRef = React.useRef(new Compartment());
+    const languageCompartmentRef = React.useRef(new Compartment());
+    const codeLanguagesAppliedRef = React.useRef(false);
     const inputLimitsRef = React.useRef(inputLimits);
 
     // 回调放在 ref 里，避免每次父组件重渲染都重建整个编辑器。
@@ -1082,7 +1327,7 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
         }),
         drawSelection(),
         // 两种模式下都折叠：base64 在哪种模式下都不是给人看的。
-        dataUrlFoldPlugin,
+        dataUrlFoldField,
         modeCompartmentRef.current.of(editorModeExtensions(mode)),
         history(),
         closeBrackets(),
@@ -1099,9 +1344,10 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
         }),
         EditorView.lineWrapping,
         indentUnit.of("  "),
-        markdown({ base: markdownLanguage, codeLanguages: languages }),
+        languageCompartmentRef.current.of(markdown({ base: markdownLanguage })),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         baseTheme,
+        imageFailedLabel.of(imageFailedText),
         EditorView.contentAttributes.of({ "aria-label": ariaLabel }),
         keymap.of([
           ...closeBracketsKeymap,
@@ -1156,6 +1402,7 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
         parent: host,
       });
       viewRef.current = view;
+      codeLanguagesAppliedRef.current = false;
 
       // scroll 事件不冒泡，只能挂在滚动容器自己身上。
       const onScroll = () => scrollListenersRef.current.forEach((listener) => listener());
@@ -1165,10 +1412,29 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
         view.scrollDOM.removeEventListener("scroll", onScroll);
         view.destroy();
         viewRef.current = null;
+        codeLanguagesAppliedRef.current = false;
       };
       // resetKey 变化才重建：新建/打开文件时清空撤销历史。
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [resetKey, placeholder, ariaLabel]);
+
+    React.useEffect(() => {
+      const view = viewRef.current;
+      if (!view || codeLanguagesAppliedRef.current || !hasFencedCode(value)) return;
+      let alive = true;
+      void loadCodeLanguages().then((languages) => {
+        if (!alive || viewRef.current !== view || codeLanguagesAppliedRef.current) return;
+        view.dispatch({
+          effects: languageCompartmentRef.current.reconfigure(
+            markdown({ base: markdownLanguage, codeLanguages: languages }),
+          ),
+        });
+        codeLanguagesAppliedRef.current = true;
+      });
+      return () => {
+        alive = false;
+      };
+    }, [resetKey, value]);
 
     React.useEffect(() => {
       const view = viewRef.current;

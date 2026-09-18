@@ -137,7 +137,7 @@ describe("createLocalStore", () => {
   it("set 通知订阅者，setQuiet 不通知", () => {
     const store = createLocalStore("s", parseSample, FALLBACK);
     let notified = 0;
-    store.subscribe(() => {
+    const unsubscribe = store.subscribe(() => {
       notified += 1;
     });
 
@@ -150,6 +150,71 @@ describe("createLocalStore", () => {
     // 静默写入依然更新缓存和本地存储。
     expect(store.getSnapshot()).toEqual({ name: "b" });
     expect(readRecord("s", parseSample, FALLBACK).value).toEqual({ name: "b" });
+    unsubscribe();
+  });
+
+  it("只在有订阅者时监听跨标签页存储变更", () => {
+    const addEventListener = vi.spyOn(window, "addEventListener");
+    const removeEventListener = vi.spyOn(window, "removeEventListener");
+    const store = createLocalStore("s", parseSample, FALLBACK);
+
+    store.getSnapshot();
+    expect(addEventListener).not.toHaveBeenCalledWith("storage", expect.any(Function));
+
+    const unsubscribeFirst = store.subscribe(() => {});
+    const unsubscribeSecond = store.subscribe(() => {});
+    expect(addEventListener).toHaveBeenCalledTimes(1);
+    expect(addEventListener).toHaveBeenCalledWith("storage", expect.any(Function));
+
+    unsubscribeFirst();
+    expect(removeEventListener).not.toHaveBeenCalled();
+    unsubscribeSecond();
+    expect(removeEventListener).toHaveBeenCalledTimes(1);
+    expect(removeEventListener).toHaveBeenCalledWith("storage", expect.any(Function));
+  });
+
+  it("storage 事件让缓存失效并通知订阅者读取新值", () => {
+    const store = createLocalStore("s", parseSample, FALLBACK);
+    expect(store.getSnapshot()).toBe(FALLBACK);
+
+    const snapshots: Sample[] = [];
+    const unsubscribe = store.subscribe(() => snapshots.push(store.getSnapshot()));
+    writeRecord("s", { name: "other-tab" });
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "s",
+        newValue: localStorage.getItem("s"),
+        storageArea: localStorage,
+      }),
+    );
+
+    expect(snapshots).toEqual([{ name: "other-tab" }]);
+    expect(store.isFound()).toBe(true);
+    unsubscribe();
+  });
+
+  it("忽略其他 key 和 sessionStorage 的事件", () => {
+    const store = createLocalStore("s", parseSample, FALLBACK);
+    const listener = vi.fn();
+    const unsubscribe = store.subscribe(listener);
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "other",
+        newValue: "value",
+        storageArea: localStorage,
+      }),
+    );
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "s",
+        newValue: "value",
+        storageArea: sessionStorage,
+      }),
+    );
+
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
   });
 
   it("reset 回到默认值并清掉本地记录", () => {

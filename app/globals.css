@@ -138,6 +138,17 @@
   scrollbar-width: thin;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* ---------- Markdown 通用预览样式（工作台内，仅用于 Markdown 视图） ---------- */
 .md-preview {
   line-height: 1.75;
@@ -198,6 +209,13 @@
   padding: 0.2em 1em;
   border-left: 3px solid var(--brand-secondary);
   color: var(--muted-foreground);
+}
+/* 引用块有内边距，里面段落的外边距合并不出去，会在框底多撑出一段空白。 */
+.md-preview blockquote > :first-child {
+  margin-top: 0;
+}
+.md-preview blockquote > :last-child {
+  margin-bottom: 0;
 }
 .md-preview hr {
   margin: 2em 0;

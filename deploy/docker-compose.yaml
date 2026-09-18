@@ -6,6 +6,8 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BASE_PATH: "${NEXT_PUBLIC_BASE_PATH:-}"
     image: ai-graveyard/fastype:latest
     container_name: fastype
     restart: unless-stopped

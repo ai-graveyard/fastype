@@ -1,16 +1,26 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import * as React from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { PrefsProvider } from "@/components/providers/prefs-provider";
 import { XhsContentEditor } from "@/components/workbench/xhs-content-editor";
 import type { XhsMetadata } from "@/lib/markdown/xhs-frontmatter";
 
-function Harness({ title = "", sourceBody = "" }: { title?: string; sourceBody?: string }) {
+function Harness({
+  title = "",
+  content = "",
+  tags = [],
+  sourceBody = "",
+}: {
+  title?: string;
+  content?: string;
+  tags?: string[];
+  sourceBody?: string;
+}) {
   const [metadata, setMetadata] = React.useState<XhsMetadata>({
     title,
-    content: "",
-    tags: [],
+    content,
+    tags,
   });
 
   return (
@@ -87,5 +97,18 @@ describe("小红书内容编辑器", () => {
     expect(
       screen.getByRole("button", { name: /Auto-fill|自动填充/ }).hasAttribute("disabled"),
     ).toBe(true);
+  });
+
+  it("复制发布正文时自动带上规范化标签", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    render(<Harness content="发布正文" tags={["AI", "效率工具"]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Copy body and tags|复制正文与标签/ }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("发布正文\n\n#AI #效率工具"));
   });
 });

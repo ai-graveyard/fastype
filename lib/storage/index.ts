@@ -190,6 +190,27 @@ export function clearAllRecords(): void {
   for (const key of ALL_STORAGE_KEYS) removeRecord(key);
 }
 
+/**
+ * 所有本地记录的原文。
+ *
+ * 给图片库清理用：正文、头像、公众号封面都可能引用 IndexedDB 里的图，与其按各自的结构
+ * 逐字段翻，不如把原文整个交出去让它扫引用——以后多一处引用图片的设置也不会漏掉。
+ */
+export function readAllRawRecords(): string[] | null {
+  if (typeof window === "undefined") return null;
+  const raw: string[] = [];
+  for (const key of ALL_STORAGE_KEYS) {
+    try {
+      const value = window.localStorage.getItem(key);
+      if (value) raw.push(value);
+    } catch {
+      // 读不出来和「确实没存过」不是一回事：返回 null，让调用方别拿一份残缺的清单去删东西。
+      return null;
+    }
+  }
+  return raw;
+}
+
 /** 仅供测试使用：重置模块内的配额状态。 */
 export function __resetStorageStateForTests(): void {
   setQuotaExhausted(false);

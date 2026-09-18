@@ -62,6 +62,7 @@ import {
   XHS_ASPECT_RATIOS,
   XHS_IDENTIFIER_BADGE_SCALE_RANGE,
   XHS_IDENTIFIER_BADGE_STROKE_WIDTH_RANGE,
+  XHS_IDENTIFIER_PADDING_RANGE,
   XHS_PAGE_NUMBER_SCALE_RANGE,
   XHS_THEMES,
   getXhsCanvasSize,
@@ -322,6 +323,7 @@ export function XhsWorkspace({
         <EditorPane
           editorRef={editorRef}
           savePending={savePending}
+          content={content}
           extraActions={<PlatformModeSwitcher value={contentMode} onChange={onContentModeChange} />}
           aiPlatform="xiaohongshu"
         >
@@ -336,6 +338,7 @@ export function XhsWorkspace({
                 resetKey={resetKey}
                 ariaLabel={t("a11y.editorRegion")}
                 mode={contentMode}
+                imageFailedText={t("image.failed")}
                 inputLimits={PLATFORM_INPUT_LIMITS.xhs}
               />
             </div>
@@ -1236,6 +1239,42 @@ export function XhsWorkspace({
                           onChange={(scale) => setXhs({ identifier: { ...xhs.identifier, scale } })}
                         />
                       </div>
+                    </div>
+
+                    {/* 标识留白：在页面内边距之内继续往里缩，提示里给出叠加后的总距离。 */}
+                    <div className="space-y-2">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <SliderField
+                          label={t("xhs.identifierPaddingY")}
+                          value={xhs.identifier.paddingY}
+                          min={XHS_IDENTIFIER_PADDING_RANGE.min}
+                          max={XHS_IDENTIFIER_PADDING_RANGE.max}
+                          step={XHS_IDENTIFIER_PADDING_RANGE.step}
+                          suffix="px"
+                          presets={[0, 16, 32, 64]}
+                          onChange={(paddingY) =>
+                            setXhs({ identifier: { ...xhs.identifier, paddingY } })
+                          }
+                        />
+                        <SliderField
+                          label={t("xhs.identifierPaddingX")}
+                          value={xhs.identifier.paddingX}
+                          min={XHS_IDENTIFIER_PADDING_RANGE.min}
+                          max={XHS_IDENTIFIER_PADDING_RANGE.max}
+                          step={XHS_IDENTIFIER_PADDING_RANGE.step}
+                          suffix="px"
+                          presets={[0, 16, 32, 64]}
+                          onChange={(paddingX) =>
+                            setXhs({ identifier: { ...xhs.identifier, paddingX } })
+                          }
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t("xhs.identifierPaddingHint", {
+                          y: xhs.padding + xhs.identifier.paddingY,
+                          x: xhs.padding + xhs.identifier.paddingX,
+                        })}
+                      </p>
                     </div>
 
                     <TooltipProvider delayDuration={200}>

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { TKey } from "@/lib/i18n";
 import { dataUrlByteLength, formatBytes, isImageDataUrl } from "@/lib/image/data-url";
+import { peekImageInfo } from "@/lib/image/library";
+import { imageRefId } from "@/lib/image/ref";
 import {
   IMAGE_WIDTH_PRESETS,
   type ImageAlign,
@@ -84,7 +86,16 @@ export function ImageToolbar({ editorRef, onCrop }: ImageToolbarProps) {
     api.replaceRange(current.from, current.to, "", "");
   };
 
-  const embedded = isImageDataUrl(image.src);
+  /** 图片库里的图、历史内嵌的 data URI、外链，三种来源在这里都要说得清楚。 */
+  const refId = imageRefId(image.src);
+  const info = refId ? peekImageInfo(refId) : null;
+  const sourceLabel = refId
+    ? info
+      ? t("image.embeddedSize", { size: formatBytes(info.bytes) })
+      : t("image.embedded")
+    : isImageDataUrl(image.src)
+      ? t("image.embeddedSize", { size: formatBytes(dataUrlByteLength(image.src)) })
+      : t("image.remote");
 
   return (
     <div
@@ -95,9 +106,7 @@ export function ImageToolbar({ editorRef, onCrop }: ImageToolbarProps) {
       onMouseDown={(event) => event.preventDefault()}
     >
       <span className="mr-1 shrink-0 text-[11px] font-medium text-muted-foreground">
-        {embedded
-          ? t("image.embeddedSize", { size: formatBytes(dataUrlByteLength(image.src)) })
-          : t("image.remote")}
+        {sourceLabel}
       </span>
 
       <div className="flex items-center rounded-md border border-border bg-card p-0.5">

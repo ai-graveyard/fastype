@@ -156,7 +156,24 @@ export interface XhsIdentifierStyle {
   badgeScale: number;
   /** 线条粗细，对应图标的 strokeWidth。 */
   badgeStrokeWidth: number;
+  /**
+   * 标识在页面留白**之内**再往里缩的一层留白（逻辑画布像素）。
+   *
+   * 0 表示标识贴着留白线：左右与正文对齐、上下与正文同一条边界；往上加就是在
+   * 这条线之内继续往里缩。因此它只能为正、不会把标识推到页面留白之外，调整页面
+   * 留白时标识整体跟着走，这层标识留白保持不变。
+   */
+  paddingX: number;
+  paddingY: number;
 }
+
+/** 标识留白范围（逻辑画布像素），与页面留白同一坐标系。 */
+export const XHS_IDENTIFIER_PADDING_RANGE = {
+  min: 0,
+  max: 120,
+  step: 2,
+  default: 0,
+} as const;
 
 /** 徽章大小相对昵称字号的缩放范围。 */
 export const XHS_IDENTIFIER_BADGE_SCALE_RANGE = {
@@ -262,6 +279,8 @@ export const DEFAULT_XHS_IDENTIFIER: XhsIdentifierStyle = {
   badgeColor: "",
   badgeScale: XHS_IDENTIFIER_BADGE_SCALE_RANGE.default,
   badgeStrokeWidth: XHS_IDENTIFIER_BADGE_STROKE_WIDTH_RANGE.default,
+  paddingX: XHS_IDENTIFIER_PADDING_RANGE.default,
+  paddingY: XHS_IDENTIFIER_PADDING_RANGE.default,
 };
 
 export const DEFAULT_XHS_QR_CODE: XhsQrCodeStyle = {
@@ -886,6 +905,18 @@ function parseIdentifier(raw: unknown): XhsIdentifierStyle {
       DEFAULT_XHS_IDENTIFIER.badgeStrokeWidth,
       XHS_IDENTIFIER_BADGE_STROKE_WIDTH_RANGE.min,
       XHS_IDENTIFIER_BADGE_STROKE_WIDTH_RANGE.max,
+    ),
+    paddingX: num(
+      input.paddingX,
+      DEFAULT_XHS_IDENTIFIER.paddingX,
+      XHS_IDENTIFIER_PADDING_RANGE.min,
+      XHS_IDENTIFIER_PADDING_RANGE.max,
+    ),
+    paddingY: num(
+      input.paddingY,
+      DEFAULT_XHS_IDENTIFIER.paddingY,
+      XHS_IDENTIFIER_PADDING_RANGE.min,
+      XHS_IDENTIFIER_PADDING_RANGE.max,
     ),
   };
 }

@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { usePrefs } from "@/components/providers/prefs-provider";
+import { useStoredImages } from "@/hooks/use-image-library";
 import { detectLocale } from "@/lib/i18n";
 import { StorageKey } from "@/lib/storage";
 import { createLocalStore } from "@/lib/storage/store";
@@ -47,6 +48,7 @@ const wechatCoverStore = createLocalStore(
   parseWechatCover,
   DEFAULT_WECHAT_COVER,
 );
+const COVER_IMAGE_FIELDS = ["wideImage", "squareImage"] as const;
 const EMPTY_XHS_THEMES = emptyCustomThemeLibrary<XhsStyle>();
 const EMPTY_WECHAT_THEMES = emptyCustomThemeLibrary<WechatStyle>();
 const xhsThemeStore = createLocalStore(
@@ -117,10 +119,16 @@ export function StyleProvider({ children }: { children: React.ReactNode }) {
     wechatStore.getSnapshot,
     wechatStore.getServerSnapshot,
   );
-  const wechatCover = React.useSyncExternalStore(
+  const storedCover = React.useSyncExternalStore(
     wechatCoverStore.subscribe,
     wechatCoverStore.getSnapshot,
     wechatCoverStore.getServerSnapshot,
+  );
+  // 两张裁好的封面图本体在 IndexedDB 里，记录里存的是引用，对外给出可直接加载的地址。
+  const [wechatCover, storeWechatCover] = useStoredImages(
+    storedCover,
+    COVER_IMAGE_FIELDS,
+    wechatCoverStore.set,
   );
   const xhsThemeLibrary = React.useSyncExternalStore(
     xhsThemeStore.subscribe,
@@ -172,7 +180,8 @@ export function StyleProvider({ children }: { children: React.ReactNode }) {
       ),
       setXhs: (patch) => xhsStore.set({ ...xhs, ...patch }),
       setWechat: (patch) => wechatStore.set({ ...wechat, ...patch }),
-      setWechatCover: (patch) => wechatCoverStore.set({ ...wechatCover, ...patch }),
+      // 基线用存下来的那份而不是解析过的，否则等于把刚换出来的 data URI 又写回 localStorage。
+      setWechatCover: (patch) => storeWechatCover({ ...storedCover, ...patch }),
       setXhsTheme: (themeId) => {
         setXhsLibrary({ selectedId: null });
         const next = xhsStyleFromTheme(themeId, xhs.exportSizeId);
@@ -322,6 +331,8 @@ export function StyleProvider({ children }: { children: React.ReactNode }) {
       xhs,
       wechat,
       wechatCover,
+      storedCover,
+      storeWechatCover,
       xhsThemeLibrary,
       wechatThemeLibrary,
       selectedXhsTheme,

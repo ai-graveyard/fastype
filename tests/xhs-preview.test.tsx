@@ -4,7 +4,18 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { PrefsProvider } from "@/components/providers/prefs-provider";
 import { UserProfileProvider } from "@/components/providers/user-profile-provider";
-import { XhsPreview, type XhsPreviewHandle } from "@/components/workbench/xhs-preview";
+import {
+  XHS_IDENTIFIER_CONTENT_GAP,
+  xhsIdentifierBlockHeight,
+  xhsIdentifierHeight,
+} from "@/components/workbench/xhs-identifier";
+import {
+  XHS_GRID_GAP,
+  XHS_GRID_TARGET_CARD_WIDTH,
+  XhsPreview,
+  xhsGridLayout,
+  type XhsPreviewHandle,
+} from "@/components/workbench/xhs-preview";
 import { XHS_QR_CODE_CONTENT_GAP, xhsQrCodeHeight } from "@/components/workbench/xhs-qr-code";
 import { detectLocale } from "@/lib/i18n";
 import { DEFAULT_XHS_STYLE } from "@/lib/themes/xhs";
@@ -22,6 +33,9 @@ beforeAll(() => {
 });
 
 afterAll(() => vi.unstubAllGlobals());
+
+/** 预览默认进「全图」，手机外壳相关的断言要先切到「全文」。 */
+const switchToFullPreview = () => fireEvent.click(screen.getByText(/^(全文|Full)$/));
 
 describe("小红书内容正文预览", () => {
   it("在预览左下角提供缩放与重置控制", () => {
@@ -43,6 +57,8 @@ describe("小红书内容正文预览", () => {
         </UserProfileProvider>
       </PrefsProvider>,
     );
+
+    switchToFullPreview();
 
     const zoomOut = screen.getByTitle(/缩小预览|Zoom out/);
     const zoomIn = screen.getByTitle(/放大预览|Zoom in/);
@@ -90,6 +106,8 @@ describe("小红书内容正文预览", () => {
         </UserProfileProvider>
       </PrefsProvider>,
     );
+
+    switchToFullPreview();
 
     const carousel = await screen.findByTestId("xhs-swipe-carousel");
     await waitFor(() => expect(within(carousel).getByText("1/2")).toBeTruthy());
@@ -157,6 +175,8 @@ describe("小红书内容正文预览", () => {
         </UserProfileProvider>
       </PrefsProvider>,
     );
+
+    switchToFullPreview();
 
     const article = container.querySelector("article");
     expect(article).not.toBeNull();
@@ -242,6 +262,76 @@ describe("小红书内容正文预览", () => {
     expect(meta?.style.marginTop).toBe("8px");
     expect(meta?.style.marginBottom).toBe("0px");
     expect(meta?.style.textIndent).toBe("0px");
+  });
+
+  it("标识留白在页面内边距之内再往里缩", async () => {
+    const previewRef = createRef<XhsPreviewHandle>();
+    const identifier = {
+      ...DEFAULT_XHS_STYLE.identifier,
+      position: "top-left" as const,
+      paddingY: 36,
+      paddingX: 24,
+    };
+    const { rerender } = render(
+      <PrefsProvider>
+        <UserProfileProvider>
+          <XhsPreview
+            ref={previewRef}
+            html="<p>图片正文</p>"
+            documentTitle=""
+            hasTitle={false}
+            metadata={{ title: "", content: "", tags: [] }}
+            style={{ ...DEFAULT_XHS_STYLE, identifier }}
+            onPagesChange={vi.fn()}
+            onExport={vi.fn()}
+            onExportPage={vi.fn()}
+            exportDisabled={false}
+            exporting={false}
+          />
+        </UserProfileProvider>
+      </PrefsProvider>,
+    );
+
+    await waitFor(() => expect(previewRef.current?.getPageNodes()).toHaveLength(1));
+    const topNode = previewRef
+      .current!.getPageNodes()[0]
+      .querySelector(".ft-xhs-identifier") as HTMLElement;
+    // 贴边那一侧吃留白，另一侧留给「标识与正文的间距」。
+    expect(topNode.style.marginTop).toBe("36px");
+    expect(topNode.style.marginBottom).toBe(`${XHS_IDENTIFIER_CONTENT_GAP * identifier.scale}px`);
+    expect(topNode.style.paddingInline).toBe("24px");
+    // 留白占掉的高度要计入分页预留，否则正文会被标识压住。
+    expect(xhsIdentifierBlockHeight(identifier)).toBe(xhsIdentifierHeight(identifier) + 36);
+
+    rerender(
+      <PrefsProvider>
+        <UserProfileProvider>
+          <XhsPreview
+            ref={previewRef}
+            html="<p>图片正文</p>"
+            documentTitle=""
+            hasTitle={false}
+            metadata={{ title: "", content: "", tags: [] }}
+            style={{
+              ...DEFAULT_XHS_STYLE,
+              identifier: { ...identifier, position: "bottom-right" as const },
+            }}
+            onPagesChange={vi.fn()}
+            onExport={vi.fn()}
+            onExportPage={vi.fn()}
+            exportDisabled={false}
+            exporting={false}
+          />
+        </UserProfileProvider>
+      </PrefsProvider>,
+    );
+
+    const bottomNode = previewRef
+      .current!.getPageNodes()[0]
+      .querySelector(".ft-xhs-identifier") as HTMLElement;
+    expect(bottomNode.style.marginBottom).toBe("36px");
+    expect(bottomNode.style.marginTop).toBe(`${XHS_IDENTIFIER_CONTENT_GAP * identifier.scale}px`);
+    expect(bottomNode.style.paddingInline).toBe("24px");
   });
 
   it("底部用户标识、二维码和页脚分别占据独立空间", async () => {
@@ -1024,5 +1114,171 @@ describe("小红书内容正文预览", () => {
 
     expect(onExport).toHaveBeenCalledTimes(1);
     expect(onExport.mock.calls[0]).toEqual([]);
+  });
+});
+
+describe("小红书全图预览", () => {
+  it("一行最多 4 张，变窄依次退到 3、2、1 张", () => {
+    expect(xhsGridLayout(2400).columns).toBe(4);
+    expect(xhsGridLayout(1415).columns).toBe(4);
+    expect(xhsGridLayout(1140).columns).toBe(4);
+    expect(xhsGridLayout(920).columns).toBe(4);
+    expect(xhsGridLayout(890).columns).toBe(3);
+    expect(xhsGridLayout(650).columns).toBe(3);
+    expect(xhsGridLayout(620).columns).toBe(2);
+    expect(xhsGridLayout(370).columns).toBe(2);
+    expect(xhsGridLayout(350).columns).toBe(1);
+    expect(xhsGridLayout(80).columns).toBe(1);
+  });
+
+  it("卡片大小始终贴着目标宽度，退列前后落差最小", () => {
+    // 没顶到 4 列上限之前，卡片宽度都在目标值的 ±25% 内。
+    for (let width = 500; width <= 1140; width += 1) {
+      const { cardWidth } = xhsGridLayout(width);
+      expect(cardWidth).toBeGreaterThanOrEqual(XHS_GRID_TARGET_CARD_WIDTH * 0.8);
+      expect(cardWidth).toBeLessThanOrEqual(XHS_GRID_TARGET_CARD_WIDTH * 1.25);
+    }
+    // 退列分界落在几何中点：前后与目标宽度的比例偏差基本相等，
+    // 不会出现一侧还贴着目标宽度、另一侧已经小得离谱。
+    const flips: Array<{ narrower: number; wider: number }> = [];
+    for (let width = 1140; width > 300; width -= 1) {
+      const here = xhsGridLayout(width);
+      const next = xhsGridLayout(width - 1);
+      if (next.columns !== here.columns) {
+        flips.push({ narrower: here.cardWidth, wider: next.cardWidth });
+      }
+    }
+    expect(flips.length).toBe(3);
+    for (const { narrower, wider } of flips) {
+      expect(wider).toBeGreaterThan(narrower);
+      expect(
+        Math.abs(XHS_GRID_TARGET_CARD_WIDTH / narrower - wider / XHS_GRID_TARGET_CARD_WIDTH),
+      ).toBeLessThan(0.1);
+    }
+  });
+
+  it("列宽加间距不超过可用宽度，不会产生横向滚动", () => {
+    for (const width of [80, 350, 370, 620, 650, 890, 920, 1140, 1155, 1400, 1415, 2133]) {
+      const { columns, cardWidth } = xhsGridLayout(width);
+      expect(cardWidth * columns + XHS_GRID_GAP * (columns - 1)).toBeLessThanOrEqual(width);
+    }
+  });
+
+  it("每张图右上角的下载按钮只导出自己那一页", async () => {
+    const onExportPage = vi.fn();
+    render(
+      <PrefsProvider>
+        <UserProfileProvider>
+          <XhsPreview
+            html="<p>图片正文</p>"
+            documentTitle="逐张下载"
+            hasTitle={false}
+            metadata={{ title: "", content: "", tags: [] }}
+            style={{
+              ...DEFAULT_XHS_STYLE,
+              cover: { ...DEFAULT_XHS_STYLE.cover, enabled: true },
+            }}
+            onPagesChange={vi.fn()}
+            onExport={vi.fn()}
+            onExportPage={onExportPage}
+            exportDisabled={false}
+            exporting={false}
+          />
+        </UserProfileProvider>
+      </PrefsProvider>,
+    );
+
+    const downloads = await waitFor(() => {
+      const buttons = screen.getAllByTitle(/下载第 \d+ 张图片|Download image \d+/);
+      expect(buttons).toHaveLength(2);
+      return buttons;
+    });
+
+    fireEvent.click(downloads[1]);
+    expect(onExportPage).toHaveBeenCalledTimes(1);
+    expect(onExportPage).toHaveBeenCalledWith(1);
+  });
+
+  it("默认进全图，没有手机外壳，把每一页都平铺出来", async () => {
+    const onPreviewModeChange = vi.fn();
+    render(
+      <PrefsProvider>
+        <UserProfileProvider>
+          <XhsPreview
+            html="<p>图片正文</p>"
+            documentTitle="全图预览"
+            hasTitle={false}
+            metadata={{ title: "", content: "", tags: [] }}
+            style={{
+              ...DEFAULT_XHS_STYLE,
+              cover: { ...DEFAULT_XHS_STYLE.cover, enabled: true },
+            }}
+            onPagesChange={vi.fn()}
+            onExport={vi.fn()}
+            onExportPage={vi.fn()}
+            exportDisabled={false}
+            exporting={false}
+            onPreviewModeChange={onPreviewModeChange}
+          />
+        </UserProfileProvider>
+      </PrefsProvider>,
+    );
+
+    const grid = await waitFor(() => screen.getByTestId("xhs-grid"));
+    expect(onPreviewModeChange).not.toHaveBeenCalled();
+    expect(grid.classList.contains("hidden")).toBe(false);
+    expect(grid.classList.contains("overflow-y-auto")).toBe(true);
+    expect(grid.classList.contains("overflow-x-hidden")).toBe(true);
+    expect(screen.queryByTestId("phone-status-bar")).toBeNull();
+    expect(screen.queryByTestId("xhs-swipe-carousel")).toBeNull();
+    // 封面 + 正文页都要列出来，缩放控件跟着手机外壳一起收起。
+    expect(screen.getAllByTestId("xhs-grid-card")).toHaveLength(2);
+    expect(screen.getByTitle(/放大预览|Zoom in/).closest("div")?.className).toContain("hidden");
+
+    fireEvent.click(screen.getByText(/^(首页|Home)$/));
+    expect(onPreviewModeChange).toHaveBeenLastCalledWith("home");
+    expect(screen.getByTestId("xhs-grid").classList.contains("hidden")).toBe(true);
+    expect(screen.getByTestId("phone-status-bar")).toBeTruthy();
+
+    // 每次切换都报告当前模式，重复点同一个按钮不重复通知。
+    fireEvent.click(screen.getByText(/^(全文|Full)$/));
+    expect(onPreviewModeChange).toHaveBeenLastCalledWith("full");
+    fireEvent.click(screen.getByText(/^(全文|Full)$/));
+    expect(onPreviewModeChange).toHaveBeenCalledTimes(2);
+  });
+
+  it("三种预览模式共用同一块底色，全图排在第一个", async () => {
+    render(
+      <PrefsProvider>
+        <UserProfileProvider>
+          <XhsPreview
+            html="<p>图片正文</p>"
+            documentTitle="底色一致"
+            hasTitle={false}
+            metadata={{ title: "", content: "", tags: [] }}
+            style={DEFAULT_XHS_STYLE}
+            onPagesChange={vi.fn()}
+            onExport={vi.fn()}
+            onExportPage={vi.fn()}
+            exportDisabled={false}
+            exporting={false}
+          />
+        </UserProfileProvider>
+      </PrefsProvider>,
+    );
+
+    const modes = screen
+      .getAllByText(/^(全图|All|全文|Full|首页|Home)$/)
+      .map((node) => node.textContent);
+    expect(modes[0]).toMatch(/^(全图|All)$/);
+
+    const stage = screen.getByTestId("xhs-preview-stage");
+    expect(stage.className).toContain("bg-accent");
+
+    switchToFullPreview();
+    expect(screen.getByTestId("xhs-preview-stage").className).toContain("bg-accent");
+
+    fireEvent.click(screen.getByText(/^(首页|Home)$/));
+    expect(screen.getByTestId("xhs-preview-stage").className).toContain("bg-accent");
   });
 });

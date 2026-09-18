@@ -1,14 +1,19 @@
 "use client";
 
-import { Wand2, X } from "lucide-react";
+import { Copy, Wand2, X } from "lucide-react";
 import * as React from "react";
+import { toast } from "sonner";
 
 import { SettingCard } from "@/components/common/setting-card";
 import { useT } from "@/components/providers/prefs-provider";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { useImeGuard } from "@/hooks/use-ime-guard";
-import { suggestXhsMetadata, type XhsMetadata } from "@/lib/markdown/xhs-frontmatter";
+import {
+  formatXhsPublishBody,
+  suggestXhsMetadata,
+  type XhsMetadata,
+} from "@/lib/markdown/xhs-frontmatter";
 import { XHS_INPUT_LIMITS, XHS_LIMITS } from "@/lib/themes/xhs";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +76,22 @@ export function XhsContentEditor({
     onMetadataChange(suggestXhsMetadata(sourceBody));
   }, [sourceBody, onMetadataChange]);
 
+  const copyPublishText = React.useCallback(
+    async (text: string, doneKey: "xhs.copyTitleDone" | "xhs.copyBodyTagsDone") => {
+      if (!text.trim()) {
+        toast.error(t("xhs.copyPublishEmpty"));
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        toast.success(t(doneKey));
+      } catch {
+        toast.error(t("xhs.copyPublishFailed"));
+      }
+    },
+    [t],
+  );
+
   const addTags = React.useCallback(
     (raw: string) => {
       const candidates = raw
@@ -96,17 +117,43 @@ export function XhsContentEditor({
         <p className="min-w-0 text-xs leading-5 text-muted-foreground">
           {t("xhs.autoFillFromBodyDesc")}
         </p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="shrink-0 gap-1.5"
-          disabled={!sourceBody.trim()}
-          onClick={handleAutoFill}
-        >
-          <Wand2 className="size-3.5" />
-          {t("xhs.autoFillFromBody")}
-        </Button>
+        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            disabled={!metadata.title.trim()}
+            onClick={() => void copyPublishText(metadata.title.trim(), "xhs.copyTitleDone")}
+          >
+            <Copy className="size-3.5" />
+            {t("xhs.copyTitle")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            disabled={!metadata.content.trim() && metadata.tags.length === 0}
+            onClick={() =>
+              void copyPublishText(formatXhsPublishBody(metadata), "xhs.copyBodyTagsDone")
+            }
+          >
+            <Copy className="size-3.5" />
+            {t("xhs.copyBodyTags")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            disabled={!sourceBody.trim()}
+            onClick={handleAutoFill}
+          >
+            <Wand2 className="size-3.5" />
+            {t("xhs.autoFillFromBody")}
+          </Button>
+        </div>
       </div>
 
       <CountedCard

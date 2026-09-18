@@ -46,20 +46,29 @@ export function SplitPane({
 
   const effectiveRatio = dragRatio ?? ratio;
 
+  /** 两侧最小可操作宽度换算出的比例区间；窗口太窄导致上下限交叉时按 null 处理，不产生负区间。 */
+  const ratioBounds = React.useMemo(() => {
+    if (width <= 0) return null;
+    const min = MIN_PREVIEW_WIDTH / width;
+    const max = 1 - MIN_EDITOR_WIDTH / width;
+    return min >= max ? null : { min, max };
+  }, [width]);
+
+  // 存下来的比例同样要守住最小宽度：换个窄一点的窗口，不能让某一侧被挤到不能用。
+  const boundedRatio = ratioBounds
+    ? clamp(effectiveRatio, ratioBounds.min, ratioBounds.max)
+    : effectiveRatio;
+
   /** 把像素位置换算成比例，并保证两侧都不低于最小可操作宽度。 */
   const ratioFromClientX = React.useCallback(
     (clientX: number) => {
       const element = containerRef.current;
-      if (!element || width <= 0) return effectiveRatio;
+      if (!element || !ratioBounds) return effectiveRatio;
       const bounds = element.getBoundingClientRect();
       const raw = (clientX - bounds.left) / width;
-      const min = MIN_PREVIEW_WIDTH / width;
-      const max = 1 - MIN_EDITOR_WIDTH / width;
-      // 窗口太窄导致上下限交叉时，退回默认比例而不是产生负区间。
-      if (min >= max) return effectiveRatio;
-      return clamp(raw, min, max);
+      return clamp(raw, ratioBounds.min, ratioBounds.max);
     },
-    [containerRef, width, effectiveRatio],
+    [containerRef, width, ratioBounds, effectiveRatio],
   );
 
   React.useEffect(() => {
@@ -93,11 +102,8 @@ export function SplitPane({
   }, [dragging, ratioFromClientX, onRatioCommit]);
 
   const nudge = (delta: number) => {
-    if (width <= 0) return;
-    const min = MIN_PREVIEW_WIDTH / width;
-    const max = 1 - MIN_EDITOR_WIDTH / width;
-    if (min >= max) return;
-    onRatioCommit(clamp(ratio + delta, min, max));
+    if (!ratioBounds) return;
+    onRatioCommit(clamp(boundedRatio + delta, ratioBounds.min, ratioBounds.max));
   };
 
   if (narrow) {
@@ -125,7 +131,7 @@ export function SplitPane({
     <div ref={containerRef} className="relative flex min-h-0 flex-1 overflow-hidden">
       <div
         className="flex min-w-0 flex-col overflow-hidden transition-[width] duration-200 ease-out motion-reduce:transition-none"
-        style={{ width: `${effectiveRatio * 100}%` }}
+        style={{ width: `${boundedRatio * 100}%` }}
         role="region"
         aria-label={previewLabel}
       >
@@ -137,7 +143,7 @@ export function SplitPane({
           role="separator"
           aria-orientation="vertical"
           aria-label={t("a11y.splitter")}
-          aria-valuenow={Math.round(effectiveRatio * 100)}
+          aria-valuenow={Math.round(boundedRatio * 100)}
           aria-valuemin={Math.round((MIN_PREVIEW_WIDTH / Math.max(width, 1)) * 100)}
           aria-valuemax={100 - Math.round((MIN_EDITOR_WIDTH / Math.max(width, 1)) * 100)}
           tabIndex={0}

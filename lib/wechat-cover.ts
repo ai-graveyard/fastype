@@ -1,3 +1,5 @@
+import { isImageRef } from "@/lib/image/ref";
+
 export const WECHAT_COVER_FORMATS = {
   wide: { width: 900, height: 383 },
   square: { width: 500, height: 500 },
@@ -40,8 +42,13 @@ export const DEFAULT_WECHAT_COVER: WechatCover = {
 const COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 const DATA_IMAGE_RE = /^data:image\/(?:png|jpeg|webp);base64,/i;
 
+/**
+ * 封面图存下来的正常形态是指向图片库的引用（图片本体在 IndexedDB 里）。
+ * data URL 这一路留着是为了读旧版本存的配置，以及导入进来的配置文件。
+ */
 function image(value: unknown): string {
-  return typeof value === "string" && DATA_IMAGE_RE.test(value) ? value : "";
+  if (typeof value !== "string") return "";
+  return DATA_IMAGE_RE.test(value) || isImageRef(value) ? value : "";
 }
 
 function text(value: unknown, max: number): string {

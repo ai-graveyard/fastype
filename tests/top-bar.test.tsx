@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "@/components/providers/app-providers";
@@ -114,7 +114,7 @@ describe("顶部栏", () => {
     expect(configured.querySelector(".bg-warning")).toBeNull();
   });
   // 不拦住 Cmd/Ctrl+S，浏览器会弹「保存网页」——写作工具里这是最容易踩的一脚。
-  it("Cmd/Ctrl+S 触发下载 Markdown 并阻止浏览器默认行为", () => {
+  it("Cmd/Ctrl+S 触发下载 Markdown 并阻止浏览器默认行为", async () => {
     render(
       <AppProviders>
         <TopBar view="xhs" onViewChange={vi.fn()} onOpenSettings={vi.fn()} />
@@ -132,6 +132,8 @@ describe("顶部栏", () => {
     const prevented = !fireEvent.keyDown(window, { key: "s", metaKey: true });
 
     expect(prevented).toBe(true);
+    // 下载前要把正文里的图片引用换回 data URI，这一步是异步的。
+    await act(async () => {});
     expect(clicks).toHaveLength(1);
     expect(clicks[0].endsWith(".md")).toBe(true);
     vi.mocked(document.createElement).mockRestore();

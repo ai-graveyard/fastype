@@ -1,5 +1,6 @@
 IMAGE = ai-graveyard/fastype
 VERSION = latest
+NEXT_PUBLIC_BASE_PATH ?=
 # 和 Dockerfile 最终阶段的 LABEL 保持一致，deploy 用它把清理限定在自己的镜像上。
 PRUNE_LABEL = com.ai-graveyard.project=fastype
 
@@ -11,7 +12,7 @@ dev:
 	pnpm dev
 
 build:
-	docker build -t $(IMAGE):$(VERSION) .
+	docker build --build-arg NEXT_PUBLIC_BASE_PATH="$(NEXT_PUBLIC_BASE_PATH)" -t $(IMAGE):$(VERSION) .
 
 start:
 	cd deploy && docker compose up -d

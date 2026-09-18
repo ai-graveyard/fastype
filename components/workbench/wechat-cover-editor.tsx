@@ -4,6 +4,7 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  Archive,
   Check,
   Download,
   Images,
@@ -25,6 +26,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { WechatCoverCropDialog } from "@/components/workbench/wechat-cover-crop-dialog";
 import { buildUsedFontEmbedCss } from "@/lib/export/font-embed";
 import { renderPageToBlob } from "@/lib/export/png";
+import { createWechatPackage } from "@/lib/export/wechat-package";
 import { downloadBlob } from "@/lib/file";
 import {
   WECHAT_COVER_FORMATS,
@@ -282,9 +284,11 @@ function CoverPreviewCard({
 export function WechatCoverEditor({
   documentTitle,
   docBaseName,
+  articleDocument = "",
 }: {
   documentTitle: string;
   docBaseName: string;
+  articleDocument?: string;
 }) {
   const t = useT();
   const { wechatCover, setWechatCover, resetWechatCover } = useStyles();
@@ -370,22 +374,36 @@ export function WechatCoverEditor({
     try {
       const [wide, square] = await Promise.all([renderCover("wide"), renderCover("square")]);
       if (!wide || !square) throw new Error("empty");
-      const { default: JSZip } = await import("jszip");
-      const zip = new JSZip();
-      zip.file(wechatCoverFilename(docBaseName, "wide"), new Uint8Array(await wide.arrayBuffer()));
-      zip.file(
-        wechatCoverFilename(docBaseName, "square"),
-        new Uint8Array(await square.arrayBuffer()),
-      );
-      const blob = await zip.generateAsync({
-        type: "blob",
-        compression: "STORE",
-        mimeType: "application/zip",
+      const blob = await createWechatPackage({
+        baseName: docBaseName,
+        wideCover: wide,
+        squareCover: square,
       });
       downloadBlob(blob, `${docBaseName}-wechat-covers.zip`);
       toast.success(t("wechat.coverBothDownloadDone"));
     } catch {
       toast.error(t("wechat.coverDownloadFailed"));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const downloadPackage = async () => {
+    if (exporting || !articleDocument) return;
+    setExporting(true);
+    try {
+      const [wide, square] = await Promise.all([renderCover("wide"), renderCover("square")]);
+      if (!wide || !square) throw new Error("empty");
+      const blob = await createWechatPackage({
+        baseName: docBaseName,
+        wideCover: wide,
+        squareCover: square,
+        articleHtml: articleDocument,
+      });
+      downloadBlob(blob, `${docBaseName}-wechat-package.zip`);
+      toast.success(t("wechat.packageDownloadDone"));
+    } catch {
+      toast.error(t("wechat.packageDownloadFailed"));
     } finally {
       setExporting(false);
     }
@@ -437,15 +455,27 @@ export function WechatCoverEditor({
           <Switch id="wechat-cover-safe-area" checked={safeArea} onCheckedChange={setSafeArea} />
         </div>
 
-        <Button
-          type="button"
-          className="w-full"
-          onClick={() => void downloadBoth()}
-          disabled={exporting}
-        >
-          <Layers3 />
-          {t("wechat.coverDownloadBoth")}
-        </Button>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => void downloadBoth()}
+            disabled={exporting}
+          >
+            <Layers3 />
+            {t("wechat.coverDownloadBoth")}
+          </Button>
+          <Button
+            type="button"
+            className="w-full"
+            onClick={() => void downloadPackage()}
+            disabled={exporting || !articleDocument}
+          >
+            <Archive />
+            {t("wechat.downloadPackage")}
+          </Button>
+        </div>
       </section>
 
       <section className="space-y-4 rounded-lg border border-border bg-card p-4">

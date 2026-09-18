@@ -16,12 +16,18 @@ export function isThemeMode(value: unknown): value is ThemeMode {
   return typeof value === "string" && (THEME_MODES as readonly string[]).includes(value);
 }
 
-/** 三个视图各自记住自己的分栏比例（PRD FT-LYT-003）。 */
+/**
+ * 三个视图各自记住自己的分栏比例（PRD FT-LYT-003）。
+ * 小红书默认进「全图」预览，卡片要横着铺，所以左侧默认就占 2/3。
+ */
 export const DEFAULT_RATIOS: Record<ViewId, number> = {
   markdown: 0.5,
-  xhs: 1 / 3,
+  xhs: 2 / 3,
   wechat: 1 / 3,
 };
+
+/** 小红书切到「全文 / 首页」手机预览时的分栏比例：手机占不满宽度，把地方让给编辑器。 */
+export const XHS_PHONE_PREVIEW_RATIO = 1 / 3;
 
 /** 分栏最小宽度（PRD FT-LYT-002）。 */
 export const MIN_PREVIEW_WIDTH = 280;

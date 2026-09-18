@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { usePrefs } from "@/components/providers/prefs-provider";
+import { useStoredImages } from "@/hooks/use-image-library";
 import { detectLocale } from "@/lib/i18n";
 import { StorageKey } from "@/lib/storage";
 import { createLocalStore } from "@/lib/storage/store";
@@ -25,6 +26,9 @@ const profileStore = createLocalStore(
     ),
 );
 
+/** 头像图本体在 IndexedDB 里，这条记录里存的是引用。 */
+const IMAGE_FIELDS = ["avatar"] as const;
+
 interface UserProfileContextValue {
   profile: UserProfile;
   setProfile: (profile: UserProfile) => void;
@@ -35,11 +39,13 @@ const UserProfileContext = React.createContext<UserProfileContextValue | null>(n
 
 export function UserProfileProvider({ children }: { children: React.ReactNode }) {
   const { locale } = usePrefs();
-  const profile = React.useSyncExternalStore(
+  const stored = React.useSyncExternalStore(
     profileStore.subscribe,
     profileStore.getSnapshot,
     profileStore.getServerSnapshot,
   );
+  // 对外给出的头像永远是能直接加载的地址：预览、导出 PNG、复制到公众号都靠它。
+  const [profile, setProfile] = useStoredImages(stored, IMAGE_FIELDS, profileStore.set);
 
   const resetProfile = React.useCallback(() => {
     profileStore.set(getDefaultUserProfile(locale));
@@ -48,10 +54,10 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
   const value = React.useMemo<UserProfileContextValue>(
     () => ({
       profile,
-      setProfile: profileStore.set,
+      setProfile,
       resetProfile,
     }),
-    [profile, resetProfile],
+    [profile, setProfile, resetProfile],
   );
 
   return <UserProfileContext.Provider value={value}>{children}</UserProfileContext.Provider>;

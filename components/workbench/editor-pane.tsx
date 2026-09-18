@@ -14,6 +14,7 @@ import {
   Link as LinkIcon,
   List,
   ListChecks,
+  ListTree,
   ListOrdered,
   Loader2,
   Minus,
@@ -50,7 +51,15 @@ import type { EditorApi } from "@/components/editor/markdown-editor";
 import { useImageInsert } from "@/hooks/use-image-insert";
 import type { TKey } from "@/lib/i18n";
 import { ACCEPTED_IMAGE_TYPES, pickImageFiles } from "@/lib/image/encode";
+import {
+  inlineImageRefsStrict,
+  loadImages,
+  peekImageDataUrl,
+  saveImageDataUrl,
+} from "@/lib/image/library";
+import { imageRefId } from "@/lib/image/ref";
 import type { ImageMarkupMatch } from "@/lib/markdown/image-markup";
+import { extractMarkdownOutline } from "@/lib/markdown/outline";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import { cn } from "@/lib/utils";
 
@@ -105,6 +114,8 @@ interface EditorPaneProps {
   children: React.ReactNode;
   /** 当前编辑还没完成这一轮本地自动保存。 */
   savePending: boolean;
+  /** 当前 Markdown，用于生成标题目录。 */
+  content?: string;
   /** 编辑器级附加操作；位于工具栏最右侧。 */
   extraActions?: React.ReactNode;
   /** 敏感词提示词使用的平台语境。 */
@@ -115,6 +126,7 @@ export function EditorPane({
   editorRef,
   children,
   savePending,
+  content = "",
   extraActions,
   aiPlatform = "common",
 }: EditorPaneProps) {
@@ -123,7 +135,30 @@ export function EditorPane({
   const { insertFiles, busy: imageBusy } = useImageInsert(editorRef);
   const [imageDragging, setImageDragging] = React.useState(false);
   const [imageMenuOpen, setImageMenuOpen] = React.useState(false);
-  const [cropping, setCropping] = React.useState<ImageMarkupMatch | null>(null);
+  const headings = React.useMemo(() => extractMarkdownOutline(content), [content]);
+  /** 裁剪器要的是能直接加载的地址，所以连同解析好的 src 一起存下来。 */
+  const [cropping, setCropping] = React.useState<{
+    image: ImageMarkupMatch;
+    src: string;
+  } | null>(null);
+
+  const openCrop = React.useCallback(
+    async (image: ImageMarkupMatch) => {
+      const id = imageRefId(image.src);
+      if (!id) {
+        setCropping({ image, src: image.src });
+        return;
+      }
+      await loadImages([id]);
+      const src = peekImageDataUrl(id);
+      if (!src) {
+        toast.error(t("image.cropFailed"));
+        return;
+      }
+      setCropping({ image, src });
+    },
+    [t],
+  );
 
   /** 剪贴板里有图就插图；只有文字时交给 CodeMirror 自己粘。 */
   const handlePaste = (event: React.ClipboardEvent) => {
@@ -177,8 +212,13 @@ export function EditorPane({
     const api = editorRef.current;
     if (!api) return;
 
-    const source = api.getValue();
-    const text = plain ? markdownToPlainText(source) : source;
+    // 复制出去的内容要能直接粘到别处用，图片引用换回 data URI。
+    const portable = await inlineImageRefsStrict(api.getValue());
+    if (portable.unresolvedIds.length > 0) {
+      toast.error(t("doc.missingLocalImages", { n: portable.unresolvedIds.length }));
+      return;
+    }
+    const text = plain ? markdownToPlainText(portable.content) : portable.content;
     if (!text.trim()) {
       toast.error(t("editor.copyEmpty"));
       return;
@@ -237,6 +277,42 @@ export function EditorPane({
               <Redo2 />
             </Button>
           </Tooltip>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="size-7 rounded-sm"
+                aria-label={t("editor.outline")}
+                title={headings.length ? t("editor.outline") : t("editor.outlineEmpty")}
+                disabled={headings.length === 0}
+              >
+                <ListTree />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="max-h-80 w-72 overflow-y-auto">
+              {headings.map((heading) => (
+                <DropdownMenuItem
+                  key={`${heading.line}-${heading.text}`}
+                  className="gap-3"
+                  onSelect={() => {
+                    editorRef.current?.scrollToLine(heading.line);
+                    editorRef.current?.focus();
+                  }}
+                >
+                  <span
+                    className="min-w-0 flex-1 truncate"
+                    style={{ paddingLeft: (heading.level - 1) * 12 }}
+                  >
+                    {heading.text}
+                  </span>
+                  <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                    {t("editor.outlineLine", { line: heading.line })}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <EditorSearchReplacePopover editorRef={editorRef} />
           <Tooltip label={t("editor.copyAll")}>
             <Button
@@ -358,7 +434,7 @@ export function EditorPane({
         }}
       />
 
-      <ImageToolbar editorRef={editorRef} onCrop={setCropping} />
+      <ImageToolbar editorRef={editorRef} onCrop={(image) => void openCrop(image)} />
 
       {cropping ? (
         <ImageCropDialog
@@ -366,10 +442,14 @@ export function EditorPane({
           open
           onOpenChange={(next) => !next && setCropping(null)}
           onSave={(dataUrl) => {
-            const api = editorRef.current;
-            const current = api?.getImageAtCursor();
-            if (api && current) api.replaceImage(current, { ...current, src: dataUrl });
-            setCropping(null);
+            const original = cropping.image;
+            // 裁剪结果和插入的图走同一条路：先进图片库，进不去才内嵌。
+            void saveImageDataUrl(dataUrl).then((ref) => {
+              const api = editorRef.current;
+              if (!api) return;
+              const replaced = api.replaceImage(original, { ...original, src: ref ?? dataUrl });
+              if (!replaced) toast.error(t("image.cropFailed"));
+            });
           }}
         />
       ) : null}

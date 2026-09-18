@@ -1,7 +1,12 @@
 import JSZip from "jszip";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { buildPagesZip, collectCrossOriginImages, findUnexportableImages } from "@/lib/export/png";
+import {
+  __resetCorsProbeCacheForTests,
+  buildPagesZip,
+  collectCrossOriginImages,
+  findUnexportableImages,
+} from "@/lib/export/png";
 
 describe("小红书 ZIP 导出", () => {
   it("只打包成功生成的 PNG，并保留原页码", async () => {
@@ -43,6 +48,7 @@ function fakeLoaded(root: HTMLElement) {
 describe("导出前的图片可用性探测", () => {
   afterEach(() => {
     document.body.innerHTML = "";
+    __resetCorsProbeCacheForTests();
     vi.unstubAllGlobals();
   });
 
@@ -96,5 +102,41 @@ describe("导出前的图片可用性探测", () => {
 
     await expect(findUnexportableImages([first, second])).resolves.toEqual([]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("同一会话重复导出复用探测结果", async () => {
+    const root = mountImages('<img src="https://cdn.example.com/cached.png">');
+    fakeLoaded(root);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true } as Response);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(findUnexportableImages([root])).resolves.toEqual([]);
+    await expect(findUnexportableImages([root])).resolves.toEqual([]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("大量远程图片最多并发探测四张", async () => {
+    const root = mountImages(
+      Array.from(
+        { length: 7 },
+        (_, index) => `<img src="https://cdn.example.com/image-${index}.png">`,
+      ).join(""),
+    );
+    fakeLoaded(root);
+    let active = 0;
+    let peak = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => {
+        active += 1;
+        peak = Math.max(peak, active);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        active -= 1;
+        return { ok: true } as Response;
+      }),
+    );
+
+    await expect(findUnexportableImages([root])).resolves.toEqual([]);
+    expect(peak).toBeLessThanOrEqual(4);
   });
 });

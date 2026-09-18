@@ -1,5 +1,6 @@
 import { buildUsedFontEmbedCss } from "@/lib/export/font-embed";
 import { downloadBlob } from "@/lib/file";
+import { TRANSPARENT_PIXEL } from "@/lib/image/data-url";
 
 /**
  * 小红书 PNG 导出（PRD FT-XHS-005）。
@@ -22,16 +23,6 @@ export interface PageExportResult {
   blob?: Blob;
 }
 
-/**
- * 1×1 全透明 PNG。
- *
- * html-to-image 取不到图片时默认会把整个渲染 promise reject 掉——一张跨域读不了的图
- * 会让整页导出失败，而不是只缺这一张。给它一个占位图，让这一张变成空白、其余内容照常
- * 导出；哪些图会缺已经由 findUnexportableImages() 在导出前提示过了（PRD 12.1）。
- */
-const TRANSPARENT_PIXEL =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-
 export async function renderPageToBlob(
   node: HTMLElement,
   options: Pick<ExportOptions, "scale" | "backgroundColor"> & { fontEmbedCSS?: string },
@@ -49,6 +40,11 @@ export async function renderPageToBlob(
     skipFonts: !fontEmbedCSS,
     fontEmbedCSS: fontEmbedCSS || undefined,
     cacheBust: false,
+    /*
+     * html-to-image 取不到图片时默认会把整个渲染 promise reject 掉——一张跨域读不了的图
+     * 会让整页导出失败，而不是只缺这一张。给它一个占位图，让这一张变成空白、其余内容照常
+     * 导出；哪些图会缺已经由 findUnexportableImages() 在导出前提示过了（PRD 12.1）。
+     */
     imagePlaceholder: TRANSPARENT_PIXEL,
   });
 }
@@ -144,6 +140,8 @@ export function findBrokenImages(root: HTMLElement): string[] {
 
 /** 跨域探测的超时上限：探测本身不该把导出拖住。 */
 const CORS_PROBE_TIMEOUT_MS = 6_000;
+const CORS_PROBE_CONCURRENCY = 4;
+const corsProbeCache = new Map<string, boolean>();
 
 function isCrossOrigin(url: string): boolean {
   if (typeof window === "undefined") return false;
@@ -183,20 +181,44 @@ export async function findUnexportableImages(roots: HTMLElement[]): Promise<stri
   }
 
   const probes = collectCrossOriginImages(roots).filter((src) => !missing.has(src));
-  await Promise.all(
-    probes.map(async (src) => {
-      try {
-        const response = await fetch(src, {
-          mode: "cors",
-          signal: AbortSignal.timeout(CORS_PROBE_TIMEOUT_MS),
-        });
-        if (!response.ok) missing.add(src);
-      } catch {
-        // 跨域被拒、网络失败或超时：导出时那次 fetch 同样会失败。
-        missing.add(src);
+  let cursor = 0;
+  const workers = Array.from(
+    { length: Math.min(CORS_PROBE_CONCURRENCY, probes.length) },
+    async () => {
+      while (cursor < probes.length) {
+        const src = probes[cursor];
+        cursor += 1;
+        const cached = corsProbeCache.get(src);
+        if (cached !== undefined) {
+          if (!cached) missing.add(src);
+          continue;
+        }
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), CORS_PROBE_TIMEOUT_MS);
+        let exportable = false;
+        try {
+          const response = await fetch(src, {
+            mode: "cors",
+            signal: controller.signal,
+          });
+          exportable = response.ok;
+        } catch {
+          // 跨域被拒、网络失败或超时：导出时那次 fetch 同样会失败。
+        } finally {
+          clearTimeout(timer);
+        }
+        corsProbeCache.set(src, exportable);
+        if (!exportable) missing.add(src);
       }
-    }),
+    },
   );
+  await Promise.all(workers);
 
   return [...missing];
+}
+
+/** 仅供测试使用：避免不同用例共享跨域探测结果。 */
+export function __resetCorsProbeCacheForTests(): void {
+  corsProbeCache.clear();
 }

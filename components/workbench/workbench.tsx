@@ -40,10 +40,15 @@ import {
 } from "@/components/workbench/wechat-preview";
 import { WechatPreviewStatus } from "@/components/workbench/wechat-preview-status";
 import { WechatWorkspace } from "@/components/workbench/wechat-workspace";
-import { XhsPreview, type XhsPreviewHandle } from "@/components/workbench/xhs-preview";
+import {
+  XhsPreview,
+  type XhsPreviewHandle,
+  type XhsPreviewMode,
+} from "@/components/workbench/xhs-preview";
 import { XhsPageStatus } from "@/components/workbench/xhs-page-status";
 import { XhsWorkspace, type XhsWorkspaceTab } from "@/components/workbench/xhs-workspace";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useResolvedImages } from "@/hooks/use-image-library";
 import { useHighlightedHtml } from "@/hooks/use-rich-blocks";
 import { useScrollSync } from "@/hooks/use-scroll-sync";
 import { buildUsedFontEmbedCss } from "@/lib/export/font-embed";
@@ -82,7 +87,12 @@ import {
 } from "@/lib/render/wechat";
 import { xhsPalette } from "@/lib/render/xhs";
 import { getExportSize, getXhsCanvasSize } from "@/lib/themes/xhs";
-import { DEFAULT_RATIOS, type PlatformEditorMode, type ViewId } from "@/lib/types";
+import {
+  DEFAULT_RATIOS,
+  XHS_PHONE_PREVIEW_RATIO,
+  type PlatformEditorMode,
+  type ViewId,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /** 预览更新防抖：输入停下来之后再解析（PRD FT-EDT-003 / 12.1）。 */
@@ -91,6 +101,27 @@ const LONG_IMAGE_SCALE = 2;
 const MAX_LONG_IMAGE_DIMENSION = 32_000;
 const XHS_CREATOR_URL = "https://creator.xiaohongshu.com/";
 const WECHAT_EDITOR_URL = "https://mp.weixin.qq.com/";
+
+export async function writeWechatClipboard(
+  html: string,
+  plainText: string,
+): Promise<"rich" | "plain"> {
+  if (typeof ClipboardItem !== "undefined" && typeof navigator.clipboard?.write === "function") {
+    try {
+      const item = new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([plainText], { type: "text/plain" }),
+      });
+      await navigator.clipboard.write([item]);
+      return "rich";
+    } catch {
+      // 富文本剪贴板在 Safari 等环境里可能存在 API 但拒绝写入，继续降级为纯文本。
+    }
+  }
+
+  await navigator.clipboard.writeText(plainText);
+  return "plain";
+}
 
 export function Workbench() {
   const { t, lastView, setLastView, ratios, setRatio, hydrated } = usePrefs();
@@ -152,10 +183,12 @@ export function Workbench() {
     [imageContent, parsedDocument.otherData, setContent, xhsMetadata],
   );
 
+  // 正文里的图片是指向 IndexedDB 的引用，渲染前换成 data URI（hooks/use-image-library.ts）。
+  const resolved = useResolvedImages(debounced);
   // 渲染依赖 DOM（DOMPurify），所以只在客户端接管后执行。
   const rendered = React.useMemo(
-    () => (hydrated ? renderMarkdown(debounced) : { html: "", title: null, text: "", images: [] }),
-    [debounced, hydrated],
+    () => (hydrated ? renderMarkdown(resolved) : { html: "", title: null, text: "", images: [] }),
+    [resolved, hydrated],
   );
   /*
    * 代码高亮在这里一次做完，三个视图共用结果。
@@ -188,6 +221,11 @@ export function Workbench() {
   const wechatResult = React.useMemo(
     () => (view === "wechat" ? renderWechat(highlightedHtml, wechat, profile) : null),
     [view, highlightedHtml, wechat, profile],
+  );
+  const wechatArticleDocument = React.useMemo(
+    () =>
+      wechatResult?.html ? buildWechatDocument(wechatResult.html, rendered.title ?? docBase) : "",
+    [docBase, rendered.title, wechatResult],
   );
 
   // 源码与预览按块级元素的源码行号双向联动（只在 Markdown 视图，平台视图的
@@ -248,6 +286,24 @@ export function Workbench() {
   const stableCopyRich = React.useCallback(() => void copyRichRef.current(), []);
   const stableCopyPlain = React.useCallback(() => void copyPlainRef.current(), []);
   const stableDownloadHtml = React.useCallback(() => downloadHtmlRef.current(), []);
+
+  /** 全图预览要横着铺卡片，左侧占 2/3；回到手机预览再还原成左窄右宽。 */
+  const [xhsPreviewMode, setXhsPreviewMode] = React.useState<XhsPreviewMode>("grid");
+  const xhsRatio = xhsPreviewMode === "grid" ? DEFAULT_RATIOS.xhs : XHS_PHONE_PREVIEW_RATIO;
+  const xhsPreviewModeRef = React.useRef<(mode: XhsPreviewMode) => void>(() => {});
+  React.useEffect(() => {
+    xhsPreviewModeRef.current = (mode) => {
+      // 全文和首页之间来回切不该覆盖用户自己拖过的宽度，只有进出全图才改比例。
+      if ((xhsPreviewMode === "grid") !== (mode === "grid")) {
+        setRatio("xhs", mode === "grid" ? DEFAULT_RATIOS.xhs : XHS_PHONE_PREVIEW_RATIO);
+      }
+      setXhsPreviewMode(mode);
+    };
+  });
+  const stableXhsPreviewMode = React.useCallback(
+    (mode: XhsPreviewMode) => xhsPreviewModeRef.current(mode),
+    [],
+  );
 
   /** Markdown 通用预览长图导出：只截取正文节点，不包含预览 Header。 */
   const handleExportLongImage = async () => {
@@ -429,23 +485,24 @@ export function Workbench() {
   const handleCopyRich = async () => {
     if (!wechatResult?.html) return;
     try {
-      const item = new ClipboardItem({
-        "text/html": new Blob([wechatResult.html], { type: "text/html" }),
-        "text/plain": new Blob([wechatResult.plainText], { type: "text/plain" }),
-      });
-      await navigator.clipboard.write([item]);
-      toast.success(t("wechat.copyRichDone"), {
-        duration: 5000,
-        action: {
-          label: (
-            <span className="flex items-center gap-1">
-              {t("wechat.openEditor")}
-              <ArrowUpRight className="size-3.5" aria-hidden="true" />
-            </span>
-          ),
-          onClick: () => window.open(WECHAT_EDITOR_URL, "_blank", "noopener,noreferrer"),
-        },
-      });
+      const copiedAs = await writeWechatClipboard(wechatResult.html, wechatResult.plainText);
+      toast.success(
+        t(copiedAs === "rich" ? "wechat.copyRichDone" : "wechat.copyPlainDone"),
+        copiedAs === "rich"
+          ? {
+              duration: 5000,
+              action: {
+                label: (
+                  <span className="flex items-center gap-1">
+                    {t("wechat.openEditor")}
+                    <ArrowUpRight className="size-3.5" aria-hidden="true" />
+                  </span>
+                ),
+                onClick: () => window.open(WECHAT_EDITOR_URL, "_blank", "noopener,noreferrer"),
+              },
+            }
+          : undefined,
+      );
     } catch {
       toast.error(t("wechat.copyFailed"), { duration: 8000 });
     }
@@ -491,7 +548,7 @@ export function Workbench() {
     (editorInputStats.words >= activeInputLimits.words ||
       editorInputStats.chars >= activeInputLimits.chars);
   const standardEditorNode = (
-    <EditorPane editorRef={editorRef} savePending={autoSavePending}>
+    <EditorPane editorRef={editorRef} savePending={autoSavePending} content={imageContent}>
       <div className="flex h-full flex-col">
         <div className="min-h-0 flex-1">
           <MarkdownEditor
@@ -502,6 +559,7 @@ export function Workbench() {
             placeholder={t("editor.placeholder")}
             resetKey={filename}
             ariaLabel={t("a11y.editorRegion")}
+            imageFailedText={t("image.failed")}
           />
         </div>
       </div>
@@ -540,6 +598,7 @@ export function Workbench() {
         savePending={autoSavePending}
         documentTitle={rendered.title ?? ""}
         docBaseName={docBase}
+        articleDocument={wechatArticleDocument}
         scrollTarget={wechatScrollTarget}
         onEditProfile={openProfileSettings}
       />
@@ -575,6 +634,7 @@ export function Workbench() {
           exporting={exporting !== null}
           onImageFailuresChange={setXhsFailedImages}
           onEditProfile={openProfileSettings}
+          onPreviewModeChange={stableXhsPreviewMode}
         />
       ) : null}
       {view === "wechat" ? (
@@ -623,6 +683,12 @@ export function Workbench() {
         void openFile(file);
       }}
     >
+      <a
+        href="#main-content"
+        className="sr-only z-50 rounded-md bg-background px-3 py-2 text-sm font-medium text-foreground focus:not-sr-only focus:absolute focus:left-3 focus:top-3"
+      >
+        {t("a11y.skipToContent")}
+      </a>
       <TopBar
         view={view}
         onViewChange={changeView}
@@ -631,7 +697,7 @@ export function Workbench() {
 
       <QuotaWarningBanner />
 
-      <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-card">
+      <main id="main-content" className="flex min-h-0 flex-1 flex-col overflow-hidden bg-card">
         {narrow ? (
           <div className="flex shrink-0 items-center justify-center border-b border-dashed border-border px-3 py-1.5">
             {/* 单栏切换本身已经自解释，不再需要额外说明文字（避免窄屏下和按钮挤在一起）。 */}
@@ -664,33 +730,35 @@ export function Workbench() {
 
         <SplitPane
           preview={
-            <>
-              {previewNode}
-              {view === "xhs" ? (
-                <XhsPageStatus
-                  total={pageInfo.total}
-                  ratio={xhs.aspectRatio === "custom" ? t("xhs.canvasCustom") : xhs.aspectRatio}
-                  width={xhsCanvas.width}
-                  height={xhsCanvas.height}
-                  onOpenCanvasSettings={openXhsCanvasSettings}
-                  overflowPages={pageInfo.overflowPages}
-                  failedImages={xhsFailedImageCount}
-                  exporting={exporting}
-                />
-              ) : view === "wechat" ? (
-                <WechatPreviewStatus
-                  images={previewContentStats.images}
-                  subheadings={previewContentStats.subheadings}
-                  readingMinutes={readingMinutes}
-                  remoteImages={previewContentStats.remoteImages}
-                  failedImages={wechatFailedImageCount}
-                  warnings={wechatResult?.warnings}
-                  issues={wechatResult?.issues}
-                  hasContent={Boolean(wechatResult?.html)}
-                  onLocateIssue={locateWechatIssue}
-                />
-              ) : null}
-            </>
+            narrow && narrowSide === "editor" ? null : (
+              <>
+                {previewNode}
+                {view === "xhs" ? (
+                  <XhsPageStatus
+                    total={pageInfo.total}
+                    ratio={xhs.aspectRatio === "custom" ? t("xhs.canvasCustom") : xhs.aspectRatio}
+                    width={xhsCanvas.width}
+                    height={xhsCanvas.height}
+                    onOpenCanvasSettings={openXhsCanvasSettings}
+                    overflowPages={pageInfo.overflowPages}
+                    failedImages={xhsFailedImageCount}
+                    exporting={exporting}
+                  />
+                ) : view === "wechat" ? (
+                  <WechatPreviewStatus
+                    images={previewContentStats.images}
+                    subheadings={previewContentStats.subheadings}
+                    readingMinutes={readingMinutes}
+                    remoteImages={previewContentStats.remoteImages}
+                    failedImages={wechatFailedImageCount}
+                    warnings={wechatResult?.warnings}
+                    issues={wechatResult?.issues}
+                    hasContent={Boolean(wechatResult?.html)}
+                    onLocateIssue={locateWechatIssue}
+                  />
+                ) : null}
+              </>
+            )
           }
           editor={
             <>
@@ -718,7 +786,7 @@ export function Workbench() {
             </>
           }
           ratio={ratios[view]}
-          defaultRatio={DEFAULT_RATIOS[view]}
+          defaultRatio={view === "xhs" ? xhsRatio : DEFAULT_RATIOS[view]}
           onRatioCommit={(next) => setRatio(view, next)}
           narrowSide={narrowSide}
           onNarrowChange={setNarrow}

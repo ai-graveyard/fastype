@@ -57,9 +57,10 @@ function hello(name: string) {
 
 ## 关于本地数据
 
-FasType 不需要注册登录，正文、样式和 AI 配置都只保存在浏览器的 localStorage 里：
+FasType 不需要注册登录，正文、样式和 AI 配置只保存在浏览器的 localStorage 里，图片（正文插图、头像、公众号封面）存在浏览器的 IndexedDB 里：
 
 - 关闭页面或刷新后，上次的草稿会自动恢复。
+- 下载或复制出去的 Markdown 会把图片还原成内嵌形式，拷到哪里都不缺图。
 - 在「设置 → 本地数据」里可以清除草稿、样式或全部数据；清除之后会重新回到这篇教程。
 
 现在可以清空这篇教程，开始写你自己的内容。
@@ -111,9 +112,10 @@ function hello(name: string) {
 
 ## About your local data
 
-FasType has no account system. Your draft, styles, and AI settings are stored only in this browser's localStorage:
+FasType has no account system. Your draft, styles, and AI settings are stored only in this browser's localStorage, and images (inline pictures, your avatar, WeChat covers) live in this browser's IndexedDB:
 
 - Reopening or refreshing the page restores your last draft automatically.
+- Markdown you download or copy out has its images embedded again, so nothing is missing wherever you take it.
 - Settings → Local Data lets you clear the draft, styles, or everything; clearing brings back this tutorial.
 
 Feel free to clear this tutorial and start writing your own content.

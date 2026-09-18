@@ -62,6 +62,11 @@ export function xhsIdentifierHeight(identifier: XhsIdentifierStyle): number {
   return Math.max(BASE_AVATAR_SIZE, textHeight) * identifier.scale;
 }
 
+/** 标识连同它自己那层留白一起占掉的高度，分页要按这个值预留。 */
+export function xhsIdentifierBlockHeight(identifier: XhsIdentifierStyle): number {
+  return xhsIdentifierHeight(identifier) + identifier.paddingY;
+}
+
 export function XhsIdentifier({
   identifier,
   profile,
@@ -87,6 +92,12 @@ export function XhsIdentifier({
   const avatarSize = BASE_AVATAR_SIZE * scale;
   const rowHeight = xhsIdentifierHeight(identifier) * unitScale;
   const alignRight = identifier.position.endsWith("right");
+  const atTop = identifier.position.startsWith("top");
+  /*
+   * 标识留白与页面留白同一坐标系（不随标识大小缩放）：横向直接把内容往里挤，
+   * 纵向只加在贴边那一侧，另一侧留给调用方传入的「标识与正文的间距」。
+   */
+  const edgePadding = identifier.paddingY * unitScale;
   const meta = [identifier.showDate ? formatIdentifierDate() : "", profile.slogan]
     .filter(Boolean)
     .join("  ");
@@ -98,6 +109,8 @@ export function XhsIdentifier({
       style={{
         height: rowHeight,
         justifyContent: alignRight ? "flex-end" : "flex-start",
+        paddingInline: identifier.paddingX * unitScale,
+        ...(atTop ? { marginTop: edgePadding } : { marginBottom: edgePadding }),
         ...style,
       }}
     >

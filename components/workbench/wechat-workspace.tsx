@@ -86,6 +86,7 @@ interface WechatWorkspaceProps {
   savePending: boolean;
   documentTitle?: string;
   docBaseName?: string;
+  articleDocument?: string;
   scrollTarget?: { id: string; nonce: number } | null;
   onEditProfile?: () => void;
 }
@@ -543,6 +544,7 @@ export function WechatWorkspace({
   savePending,
   documentTitle = "",
   docBaseName = "untitled",
+  articleDocument = "",
   scrollTarget,
   onEditProfile,
 }: WechatWorkspaceProps) {
@@ -658,6 +660,7 @@ export function WechatWorkspace({
         <EditorPane
           editorRef={editorRef}
           savePending={savePending}
+          content={content}
           extraActions={<PlatformModeSwitcher value={contentMode} onChange={onContentModeChange} />}
           aiPlatform="wechat"
         >
@@ -672,6 +675,7 @@ export function WechatWorkspace({
                 resetKey={resetKey}
                 ariaLabel={t("a11y.editorRegion")}
                 mode={contentMode}
+                imageFailedText={t("image.failed")}
                 inputLimits={PLATFORM_INPUT_LIMITS.wechat}
               />
             </div>
@@ -702,7 +706,11 @@ export function WechatWorkspace({
           className="min-h-0 flex-1 overflow-y-auto bg-background/35 p-4"
         >
           {activeTab === "cover" ? (
-            <WechatCoverEditor documentTitle={documentTitle} docBaseName={docBaseName} />
+            <WechatCoverEditor
+              documentTitle={documentTitle}
+              docBaseName={docBaseName}
+              articleDocument={articleDocument}
+            />
           ) : null}
           {activeTab === "theme" ? (
             <div className="mx-auto max-w-2xl space-y-4">

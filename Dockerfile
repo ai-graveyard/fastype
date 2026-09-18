@@ -2,12 +2,16 @@
 FROM node:22-slim AS builder
 WORKDIR /app
 
+ARG NEXT_PUBLIC_BASE_PATH=""
+ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH}
+
 RUN npm install -g pnpm@11
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
-RUN pnpm build
+# 生产镜像本身也必须通过完整质量门禁，避免部署工作流和 CI 并行时先上线坏提交。
+RUN pnpm check
 
 # Stage 2: 用 nginx 托管静态文件
 FROM nginx:alpine AS runner

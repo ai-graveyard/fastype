@@ -36,14 +36,17 @@ marked.use({
       const language = (lang ?? "").trim().split(/\s+/)[0].toLowerCase();
       if (isDiagramKind(language)) return diagramPlaceholderHtml(language, text);
 
+      // 结尾的换行不能留：<pre> 只会吞掉开标签后的那个换行，末尾这个会实打实渲染成一行空行，
+      // 让代码块底部凭空多出一截空白。
       const escaped = text
+        .replace(/\n+$/, "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
       const normalized = normalizeCodeLanguage(language);
       const attribute = normalized ? ` ${HIGHLIGHT_LANGUAGE_ATTRIBUTE}="${normalized}"` : "";
-      return `<pre><code${attribute}>${escaped}\n</code></pre>\n`;
+      return `<pre><code${attribute}>${escaped}</code></pre>\n`;
     },
   },
 });

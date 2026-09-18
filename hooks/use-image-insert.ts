@@ -5,16 +5,30 @@ import { toast } from "sonner";
 
 import type { EditorApi } from "@/components/editor/markdown-editor";
 import { useT } from "@/components/providers/prefs-provider";
-import { formatBytes } from "@/lib/image/data-url";
+import { blobToDataUrl, formatBytes } from "@/lib/image/data-url";
 import { encodeImageFile } from "@/lib/image/encode";
+import { saveImage } from "@/lib/image/library";
 
 /**
  * 把本地图片插进正文。
  *
- * 图片会被缩放、重新编码成 data URI 直接写进 Markdown——文件拷到哪里图都还在，不依赖
- * FasType 也不依赖图床。代价是正文体积会涨，所以插入后把大小报给用户，超过配额时
- * 自动保存那边（lib/storage）会给出提示。
+ * 图片缩放、重编码之后收进 IndexedDB，正文里只留一条短引用；下载、复制、导出那一刻
+ * 再换回 data URI，所以带走的 Markdown 依然是自包含的（lib/image/library.ts）。
+ *
+ * IndexedDB 用不了（无痕模式、用户禁用）时退回老办法，直接把 data URI 写进正文——
+ * 费 localStorage 配额，但插图这件事不能因此不可用；配额真的耗尽时 lib/storage 会提示。
  */
+/** 先进图片库，进不去就退回内嵌 data URI；两条路都不通才算这张图失败。 */
+async function storeImage(blob: Blob, width: number, height: number): Promise<string | null> {
+  const ref = await saveImage(blob, width, height);
+  if (ref) return ref;
+  try {
+    return await blobToDataUrl(blob);
+  } catch {
+    return null;
+  }
+}
+
 export function useImageInsert(editorRef: React.RefObject<EditorApi | null>) {
   const t = useT();
   const [busy, setBusy] = React.useState(false);
@@ -35,10 +49,15 @@ export function useImageInsert(editorRef: React.RefObject<EditorApi | null>) {
           failed += 1;
           continue;
         }
-        bytes += result.bytes;
+        const src = await storeImage(result.blob, result.width, result.height);
+        if (!src) {
+          failed += 1;
+          continue;
+        }
+        bytes += result.blob.size;
         // alt 用文件名（去掉扩展名），比空 alt 更有意义，也方便之后搜索定位。
         const alt = file.name.replace(/\.[^.]+$/, "").replace(/[[\]]/g, "");
-        snippets.push(`![${alt}](${result.dataUrl})`);
+        snippets.push(`![${alt}](${src})`);
       }
 
       setBusy(false);

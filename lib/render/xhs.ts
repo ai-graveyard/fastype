@@ -312,6 +312,9 @@ ${root} blockquote {
   font-style: ${p.quoteItalic ? "italic" : "normal"};
   font-size: ${Math.round(size * 0.94)}px;
 }
+/* 引用块有内边距，里面段落的外边距合并不出去，会在框底多撑出一段空白。 */
+${root} blockquote > *:first-child { margin-top: 0; }
+${root} blockquote > *:last-child { margin-bottom: 0; }
 ${root} hr {
   margin: ${size}px 0;
   border: none;

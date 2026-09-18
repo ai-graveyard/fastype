@@ -11,12 +11,13 @@ import { EditorPane } from "@/components/workbench/editor-pane";
 function renderPane(
   savePending: boolean,
   editorRef: RefObject<EditorApi | null> = { current: null },
+  content = "",
 ) {
   return render(
     <PrefsProvider>
       <AiProvider>
         <TooltipProvider>
-          <EditorPane editorRef={editorRef} savePending={savePending}>
+          <EditorPane editorRef={editorRef} savePending={savePending} content={content}>
             <div>Editor</div>
           </EditorPane>
         </TooltipProvider>
@@ -36,6 +37,8 @@ function createEditorApi(value: string): EditorApi {
     subscribeSearchPanel: () => () => undefined,
     subscribeSearchUpdate: () => () => undefined,
     getSearchStatus: () => ({ current: 0, count: 0 }),
+    scrollToLine: () => undefined,
+    focus: () => undefined,
   } as unknown as EditorApi;
 }
 
@@ -81,6 +84,24 @@ describe("编辑器保存状态", () => {
     const actions = humanize.closest("div.absolute");
     expect(actions?.classList.contains("top-3")).toBe(true);
     expect(actions?.classList.contains("flex-col")).toBe(true);
+  });
+});
+
+describe("编辑器文章目录", () => {
+  it("点击标题后滚动到对应源码行", async () => {
+    const content = "# 开头\n\n## 第二章";
+    const api = createEditorApi(content);
+    const scrollToLine = vi.spyOn(api, "scrollToLine");
+    renderPane(false, { current: api }, content);
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: /Document outline|文章目录/ }), {
+      button: 0,
+      ctrlKey: false,
+      pointerType: "mouse",
+    });
+    fireEvent.click(await screen.findByText("第二章"));
+
+    expect(scrollToLine).toHaveBeenCalledWith(3);
   });
 });
 

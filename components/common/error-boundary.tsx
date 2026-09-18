@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { detectLocale, translate, type Locale } from "@/lib/i18n";
+import { inlineImageRefsStrict } from "@/lib/image/library";
 import { StorageKey } from "@/lib/storage";
 
 /**
@@ -40,46 +41,48 @@ export class ErrorBoundary extends React.Component<
     this.setState({ error: null });
   };
 
-  private handleCopy = async () => {
-    const content = readDraftContent();
-    if (!content) return;
-    try {
-      await navigator.clipboard.writeText(content);
-    } catch {
-      // 剪贴板不可用时用户仍可手动选中 textarea 内容
-    }
-  };
-
   render() {
     if (!this.state.error) return this.props.children;
 
-    return (
-      <ErrorFallback error={this.state.error} onReset={this.handleReset} onCopy={this.handleCopy} />
-    );
+    return <ErrorFallback error={this.state.error} onReset={this.handleReset} />;
   }
 }
 
-function ErrorFallback({
-  error,
-  onReset,
-  onCopy,
-}: {
-  error: Error;
-  onReset: () => void;
-  onCopy: () => void;
-}) {
+function ErrorFallback({ error, onReset }: { error: Error; onReset: () => void }) {
   const locale: Locale =
     typeof navigator === "undefined"
       ? "zh"
       : detectLocale(navigator.languages ?? [navigator.language]);
-  const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
-  const [content] = React.useState(readDraftContent);
+  const t = (key: Parameters<typeof translate>[1], params?: Parameters<typeof translate>[2]) =>
+    translate(locale, key, params);
+  const [rawContent] = React.useState(readDraftContent);
+  const [content, setContent] = React.useState(rawContent);
+  const [resolvingImages, setResolvingImages] = React.useState(Boolean(rawContent));
+  const [missingImages, setMissingImages] = React.useState(0);
   const [copied, setCopied] = React.useState(false);
 
+  React.useEffect(() => {
+    if (!rawContent) return;
+    let alive = true;
+    void inlineImageRefsStrict(rawContent).then((portable) => {
+      if (!alive) return;
+      setContent(portable.content);
+      setMissingImages(portable.unresolvedIds.length);
+      setResolvingImages(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [rawContent]);
+
   const handleCopy = async () => {
-    await onCopy();
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // 剪贴板不可用时用户仍可手动选中 textarea 内容
+    }
   };
 
   return (
@@ -87,31 +90,46 @@ function ErrorFallback({
       <div className="max-w-lg space-y-3 text-center">
         <h1 className="text-lg font-semibold text-destructive">{t("common.errorPageTitle")}</h1>
         <p className="text-sm text-muted-foreground">{t("common.errorPageBody")}</p>
-        <details className="rounded bg-muted px-3 py-2 text-left">
-          <summary className="cursor-pointer select-none text-xs text-muted-foreground">
-            {t("common.errorDetails")}
-          </summary>
-          <p className="mt-2 break-all font-mono text-xs text-muted-foreground">{error.message}</p>
-        </details>
+        {process.env.NODE_ENV === "development" ? (
+          <details className="rounded bg-muted px-3 py-2 text-left">
+            <summary className="cursor-pointer select-none text-xs text-muted-foreground">
+              {t("common.errorDetails")}
+            </summary>
+            <p className="mt-2 break-all font-mono text-xs text-muted-foreground">
+              {error.message}
+            </p>
+          </details>
+        ) : null}
       </div>
 
       {content ? (
-        <textarea
-          readOnly
-          defaultValue={content}
-          className="h-48 w-full max-w-lg resize-y rounded-lg border border-border bg-card p-3 font-mono text-sm"
-          aria-label={t("common.draftContent")}
-        />
+        <div className="w-full max-w-lg space-y-2">
+          {missingImages > 0 ? (
+            <p role="alert" className="text-xs leading-5 text-destructive">
+              {t("common.draftImagesMissing", { n: missingImages })}
+            </p>
+          ) : null}
+          <textarea
+            readOnly
+            value={content}
+            className="h-48 w-full resize-y rounded-lg border border-border bg-card p-3 font-mono text-sm"
+            aria-label={t("common.draftContent")}
+          />
+        </div>
       ) : null}
 
       <div className="flex gap-3">
         <button
           type="button"
           onClick={handleCopy}
-          disabled={!content}
+          disabled={!content || resolvingImages}
           className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
         >
-          {copied ? t("common.draftCopied") : t("common.copyDraft")}
+          {resolvingImages
+            ? t("common.preparingDraft")
+            : copied
+              ? t("common.draftCopied")
+              : t("common.copyDraft")}
         </button>
         <button
           type="button"

@@ -24,6 +24,17 @@ export const DEFAULT_XHS_METADATA: XhsMetadata = {
   tags: [],
 };
 
+/** 小红书正文输入框需要的纯文本：发布正文后空一行，再跟规范化的 #标签。 */
+export function formatXhsPublishBody(metadata: XhsMetadata): string {
+  const content = metadata.content.trim();
+  const tags = metadata.tags
+    .map((tag) => tag.trim().replace(/^#+/, ""))
+    .filter(Boolean)
+    .map((tag) => `#${tag}`)
+    .join(" ");
+  return [content, tags].filter(Boolean).join("\n\n");
+}
+
 /** 将 Markdown 的图片正文与小红书发布元数据分开。 */
 export function parseXhsMarkdown(markdown: string): ParsedXhsContent {
   try {

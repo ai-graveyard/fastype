@@ -20,7 +20,7 @@ import {
   wechatStyleFromTheme,
   WECHAT_THEMES,
 } from "@/lib/themes/wechat";
-import { DEFAULT_RATIOS, VIEWS } from "@/lib/types";
+import { DEFAULT_RATIOS, VIEWS, XHS_PHONE_PREVIEW_RATIO } from "@/lib/types";
 import {
   DEFAULT_XHS_STYLE,
   getExportSize,
@@ -121,7 +121,9 @@ describe("prefs", () => {
 
   it("三个视图的默认比例符合 PRD", () => {
     expect(DEFAULT_RATIOS.markdown).toBe(0.5);
-    expect(DEFAULT_RATIOS.xhs).toBeCloseTo(1 / 3, 5);
+    // 小红书默认进全图预览，左侧要宽；切回手机预览才是 1/3。
+    expect(DEFAULT_RATIOS.xhs).toBeCloseTo(2 / 3, 5);
+    expect(XHS_PHONE_PREVIEW_RATIO).toBeCloseTo(1 / 3, 5);
     expect(DEFAULT_RATIOS.wechat).toBeCloseTo(1 / 3, 5);
   });
 
@@ -316,6 +318,8 @@ describe("主题配置", () => {
       badgeColor: "",
       badgeScale: 1,
       badgeStrokeWidth: 2,
+      paddingX: 0,
+      paddingY: 0,
     });
     expect(style?.qrCode.showOnCover).toBe(false);
   });
@@ -344,6 +348,8 @@ describe("主题配置", () => {
       badgeColor: "",
       badgeScale: 1,
       badgeStrokeWidth: 2,
+      paddingX: 0,
+      paddingY: 0,
     });
     expect(
       parseXhsStyle({ themeId: "classic", identifier: { position: "center" } })?.identifier
@@ -373,6 +379,14 @@ describe("主题配置", () => {
       parseXhsStyle({ themeId: "classic", identifier: { badgeStrokeWidth: 0.1 } })?.identifier
         .badgeStrokeWidth,
     ).toBe(1);
+    // 标识留白只在页面内边距之内生效，负值会把标识推到留白之外，一律夹回 0。
+    expect(
+      parseXhsStyle({ themeId: "classic", identifier: { paddingY: -20, paddingX: 999 } })
+        ?.identifier,
+    ).toMatchObject({ paddingY: 0, paddingX: 120 });
+    expect(
+      parseXhsStyle({ themeId: "classic", identifier: { paddingY: 48, paddingX: 24 } })?.identifier,
+    ).toMatchObject({ paddingY: 48, paddingX: 24 });
   });
 
   it("小红书封面和标题级别字段会被安全裁剪", () => {

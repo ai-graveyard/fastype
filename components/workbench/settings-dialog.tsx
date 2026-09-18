@@ -61,13 +61,14 @@ import {
 } from "@/lib/ai/types";
 import type { TKey } from "@/lib/i18n";
 import { downloadText } from "@/lib/file";
+import { forgetAllImages, inlineImageRefsStrict } from "@/lib/image/library";
 import { clearAllRecords, readRecord, StorageKey, writeRecord } from "@/lib/storage";
 import { emptyCustomThemeLibrary, parseCustomThemeLibrary } from "@/lib/themes/custom";
 import { parseWechatStyle, DEFAULT_WECHAT_STYLE } from "@/lib/themes/wechat";
 import { parseXhsStyle, DEFAULT_XHS_STYLE } from "@/lib/themes/xhs";
 import { APP_VERSION, REPO_URL } from "@/lib/constants";
 import { LOCALES, LOCALE_FULL_LABELS } from "@/lib/i18n";
-import { getDefaultUserProfile, type UserProfile } from "@/lib/user-profile";
+import { getDefaultUserProfile, parseUserProfile, type UserProfile } from "@/lib/user-profile";
 import { DEFAULT_WECHAT_COVER, parseWechatCover } from "@/lib/wechat-cover";
 import type { ThemeMode } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -269,7 +270,22 @@ export function SettingsDialog({
   };
 
   /** 导出配置默认不含 API Key，用户主动勾选才带上（PRD FT-SET-001）。 */
-  const handleExportConfig = () => {
+  const handleExportConfig = async () => {
+    const cover = readRecord(StorageKey.wechatCover, parseWechatCover, DEFAULT_WECHAT_COVER).value;
+    const [wideImage, squareImage, avatar] = await Promise.all([
+      inlineImageRefsStrict(cover.wideImage),
+      inlineImageRefsStrict(cover.squareImage),
+      inlineImageRefsStrict(profile.avatar),
+    ]);
+    const unresolved = new Set([
+      ...wideImage.unresolvedIds,
+      ...squareImage.unresolvedIds,
+      ...avatar.unresolvedIds,
+    ]);
+    if (unresolved.size > 0) {
+      toast.error(t("doc.missingLocalImages", { n: unresolved.size }));
+      return;
+    }
     const payload = {
       version: 1,
       exportedAt: new Date().toISOString(),
@@ -280,12 +296,18 @@ export function SettingsDialog({
         emptyCustomThemeLibrary(),
       ).value,
       wechat: readRecord(StorageKey.wechatStyle, parseWechatStyle, DEFAULT_WECHAT_STYLE).value,
-      wechatCover: readRecord(StorageKey.wechatCover, parseWechatCover, DEFAULT_WECHAT_COVER).value,
+      // 封面图在本地存的是指向 IndexedDB 的引用，换回 data URI 才能带到另一台机器上。
+      wechatCover: {
+        ...cover,
+        wideImage: wideImage.content,
+        squareImage: squareImage.content,
+      },
       wechatThemes: readRecord(
         StorageKey.wechatThemes,
         (raw) => parseCustomThemeLibrary(raw, parseWechatStyle),
         emptyCustomThemeLibrary(),
       ).value,
+      userProfile: { ...profile, avatar: avatar.content },
       ai: includeKey ? config : { ...config, apiKey: "" },
     };
     downloadText(JSON.stringify(payload, null, 2), "fastype-settings.json", "application/json");
@@ -300,19 +322,36 @@ export function SettingsDialog({
       const wechatCover = parseWechatCover(parsed.wechatCover);
       const xhsThemes = parseCustomThemeLibrary(parsed.xhsThemes, parseXhsStyle);
       const wechatThemes = parseCustomThemeLibrary(parsed.wechatThemes, parseWechatStyle);
+      const userProfile = parseUserProfile(parsed.userProfile);
       const ai = parseAiConfig(parsed.ai);
-      if (!xhs && !wechat && !wechatCover && !xhsThemes && !wechatThemes && !parsed.ai)
+      if (
+        !xhs &&
+        !wechat &&
+        !wechatCover &&
+        !xhsThemes &&
+        !wechatThemes &&
+        !userProfile &&
+        !parsed.ai
+      )
         throw new Error("empty");
       // 逐项写入，坏掉的字段由各自的 parse 兜底。
-      if (xhs) writeRecord(StorageKey.xhsStyle, xhs);
-      if (xhsThemes) writeRecord(StorageKey.xhsThemes, xhsThemes);
-      if (wechat) writeRecord(StorageKey.wechatStyle, wechat);
-      if (wechatCover) writeRecord(StorageKey.wechatCover, wechatCover);
-      if (wechatThemes) writeRecord(StorageKey.wechatThemes, wechatThemes);
+      const importRecord = (key: string, value: unknown) => {
+        const result = writeRecord(key, value);
+        if (!result.ok) throw new Error(result.issue ?? "write failed");
+        /*
+         * 原生 storage 事件不会发给执行写入的当前标签页。这里主动发同形事件，让各 provider
+         * 的外部 store 失效并立即读取导入值，不必刷新整页，也就不会绕过未保存文档保护。
+         */
+        window.dispatchEvent(new StorageEvent("storage", { key }));
+      };
+      if (xhs) importRecord(StorageKey.xhsStyle, xhs);
+      if (xhsThemes) importRecord(StorageKey.xhsThemes, xhsThemes);
+      if (wechat) importRecord(StorageKey.wechatStyle, wechat);
+      if (wechatCover) importRecord(StorageKey.wechatCover, wechatCover);
+      if (wechatThemes) importRecord(StorageKey.wechatThemes, wechatThemes);
+      if (userProfile) setProfile(userProfile);
       if (ai) setConfig(ai);
       toast.success(t("settings.importConfigDone"));
-      // 样式 provider 在下次挂载时读取，这里直接刷新最稳妥。
-      window.location.reload();
     } catch (error) {
       toast.error(
         t("settings.importConfigFailed", {
@@ -328,6 +367,8 @@ export function SettingsDialog({
     if (clearTarget === "ai") clearConfig();
     if (clearTarget === "all") {
       clearAllRecords();
+      // 正文插图、头像、封面都在图片库里，「清除全部」就是全部。
+      void forgetAllImages();
       clearDraft();
       clearStyles();
       clearConfig();
@@ -938,7 +979,7 @@ export function SettingsDialog({
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <Button variant="outline" onClick={handleExportConfig}>
+                        <Button variant="outline" onClick={() => void handleExportConfig()}>
                           {t("settings.exportConfig")}
                         </Button>
                         <Button variant="outline" onClick={() => importRef.current?.click()}>

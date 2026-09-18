@@ -10,6 +10,7 @@ import {
   FileText,
   Heart,
   ImageDown,
+  Images,
   LayoutGrid,
   Loader2,
   MessageCircle,
@@ -44,7 +45,7 @@ import { CoverGraphicsLayer } from "@/components/workbench/xhs-cover-graphics";
 import {
   XHS_IDENTIFIER_CONTENT_GAP,
   XhsIdentifier,
-  xhsIdentifierHeight,
+  xhsIdentifierBlockHeight,
 } from "@/components/workbench/xhs-identifier";
 import {
   hasRenderableXhsQrCode,
@@ -53,6 +54,7 @@ import {
   xhsQrCodeHeight,
 } from "@/components/workbench/xhs-qr-code";
 import { useImageFallback, useImagesSettled } from "@/hooks/use-image-status";
+import { useElementWidth } from "@/hooks/use-media-query";
 import { replayRichBlocks, useDiagrams } from "@/hooks/use-rich-blocks";
 import { paginate, type Page } from "@/lib/markdown/paginate";
 import type { XhsMetadata } from "@/lib/markdown/xhs-frontmatter";
@@ -95,13 +97,28 @@ interface XhsPreviewProps {
   exporting: boolean;
   onImageFailuresChange?: (sources: string[]) => void;
   onEditProfile?: () => void;
+  onPreviewModeChange?: (mode: XhsPreviewMode) => void;
 }
 
-type PreviewMode = "full" | "home";
+export type XhsPreviewMode = "full" | "home" | "grid";
+
+const PREVIEW_MODES: Array<{
+  id: XhsPreviewMode;
+  icon: React.ComponentType<{ className?: string }>;
+  labelKey: "xhs.previewModeFull" | "xhs.previewModeHome" | "xhs.previewModeGrid";
+}> = [
+  { id: "grid", icon: Images, labelKey: "xhs.previewModeGrid" },
+  { id: "full", icon: FileText, labelKey: "xhs.previewModeFull" },
+  { id: "home", icon: LayoutGrid, labelKey: "xhs.previewModeHome" },
+];
 
 const PHONE_SCREEN_WIDTH = PHONE_WIDTH - 24;
 const FULL_CARD_WIDTH = PHONE_SCREEN_WIDTH;
 const HOME_CARD_WIDTH = (PHONE_SCREEN_WIDTH - 24) / 2;
+const GRID_MAX_COLUMNS = 4;
+export const XHS_GRID_TARGET_CARD_WIDTH = 250;
+const GRID_PADDING = 12;
+export const XHS_GRID_GAP = 16;
 const ZOOM_STEP = 0.1;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 1.5;
@@ -111,6 +128,36 @@ const SWIPE_EDGE_RESISTANCE = 0.2;
 const SWIPE_TRANSITION_MS = 260;
 /** 封面标题留更宽的排版空间；标识、二维码和页脚仍复用正文卡片布局规则。 */
 const COVER_TITLE_PADDING = 48;
+
+const gridCardWidthFor = (availableWidth: number, columns: number) =>
+  (availableWidth - XHS_GRID_GAP * (columns - 1)) / columns;
+
+/**
+ * 全图铺排：最多 4 列，没到上限时列数取「卡片宽度最接近目标宽度」的那一个。
+ * 比的是比例偏差而不是像素差，退列的分界正好落在两种列宽的几何中点：
+ * 卡片不会先一路缩到很小才退列，退完也不会猛然变大。
+ * 宽度超过 4 列的目标宽度之后卡在上限，卡片继续跟着变大。
+ * 列宽向下取整，保证「列宽 × 列数 + 间距」不超过可用宽度，横向永远不出现滚动条。
+ */
+export function xhsGridLayout(availableWidth: number): { columns: number; cardWidth: number } {
+  if (availableWidth <= 0) {
+    return { columns: GRID_MAX_COLUMNS, cardWidth: XHS_GRID_TARGET_CARD_WIDTH };
+  }
+  const deviation = (columns: number) => {
+    const width = gridCardWidthFor(availableWidth, columns);
+    if (width <= 0) return Number.POSITIVE_INFINITY;
+    return Math.max(width / XHS_GRID_TARGET_CARD_WIDTH, XHS_GRID_TARGET_CARD_WIDTH / width);
+  };
+  // 卡片宽度随列数单调递减，偏差是个 V 形，最优解只会落在连续解的上下取整两侧。
+  const ideal = (availableWidth + XHS_GRID_GAP) / (XHS_GRID_TARGET_CARD_WIDTH + XHS_GRID_GAP);
+  const fewer = Math.min(Math.max(Math.floor(ideal), 1), GRID_MAX_COLUMNS);
+  const columns =
+    fewer < GRID_MAX_COLUMNS && deviation(fewer + 1) < deviation(fewer) ? fewer + 1 : fewer;
+  return {
+    columns,
+    cardWidth: Math.max(Math.floor(gridCardWidthFor(availableWidth, columns)), 1),
+  };
+}
 
 /**
  * 手机场景里的卡片始终从导出节点 clone，避免再维护一套“看起来差不多”的预览样式。
@@ -156,12 +203,8 @@ function XhsCardClone({
       host.appendChild(clone);
     };
     syncClone();
-    if (!source) return;
-    const observer = new MutationObserver(syncClone);
-    observer.observe(source, { attributes: true, childList: true, subtree: true });
 
     return () => {
-      observer.disconnect();
       host.replaceChildren();
     };
   }, [displayWidth, pageIndex, pageRefs, refreshKey, sourceWidth]);
@@ -460,6 +503,7 @@ export const XhsPreview = React.memo(
       exporting,
       onImageFailuresChange,
       onEditProfile,
+      onPreviewModeChange,
     },
     ref,
   ) {
@@ -472,10 +516,20 @@ export const XhsPreview = React.memo(
     const layoutRef = React.useRef<MeasureResult | null>(null);
     const [pages, setPages] = React.useState<Page[]>([]);
     const [selectedPage, setSelectedPage] = React.useState(0);
-    const [previewMode, setPreviewMode] = React.useState<PreviewMode>("full");
+    const [previewMode, setPreviewMode] = React.useState<XhsPreviewMode>("grid");
     const [previewZoom, setPreviewZoom] = React.useState(1);
     const [layoutTick, setLayoutTick] = React.useState(0);
     const phoneScale = usePhoneFitScale(previewStageRef, previewZoom);
+    // 全图容器常驻（隐藏时宽度为 0），ResizeObserver 才能在切过去的那一刻就量到宽度。
+    const [gridRef, gridWidth] = useElementWidth<HTMLDivElement>();
+    const { columns: gridColumns, cardWidth: gridCardWidth } = xhsGridLayout(gridWidth);
+
+    const changePreviewMode = (next: XhsPreviewMode) => {
+      if (next === previewMode) return;
+      // 只报告模式，由外层决定要不要动分栏比例。
+      onPreviewModeChange?.(next);
+      setPreviewMode(next);
+    };
 
     const css = React.useMemo(() => xhsCardCss(style), [style]);
     const palette = React.useMemo(() => xhsPalette(style), [style]);
@@ -486,7 +540,7 @@ export const XhsPreview = React.memo(
     const identifierAtTop = style.identifier.position.startsWith("top");
     const identifierGap = XHS_IDENTIFIER_CONTENT_GAP * style.identifier.scale;
     const identifierReservedHeight = style.identifier.enabled
-      ? xhsIdentifierHeight(style.identifier) + identifierGap
+      ? xhsIdentifierBlockHeight(style.identifier) + identifierGap
       : 0;
     const qrCodeAtTop = style.qrCode.position.startsWith("top");
     const qrCodeGap = XHS_QR_CODE_CONTENT_GAP * style.qrCode.scale;
@@ -678,7 +732,7 @@ export const XhsPreview = React.memo(
             type="button"
             className="-ml-1 flex size-8 items-center justify-center rounded-full transition-colors hover:bg-black/5"
             aria-label={t("xhs.previewBackToHome")}
-            onClick={() => setPreviewMode("home")}
+            onClick={() => changePreviewMode("home")}
           >
             <ChevronLeft className="size-6" />
           </button>
@@ -759,7 +813,7 @@ export const XhsPreview = React.memo(
           <div className="flex min-w-0 flex-col gap-2">
             <button
               type="button"
-              onClick={() => setPreviewMode("full")}
+              onClick={() => changePreviewMode("full")}
               className="min-w-0 overflow-hidden rounded-md bg-white text-left transition-opacity hover:opacity-95"
             >
               {totalPages > 0 ? (
@@ -819,34 +873,23 @@ export const XhsPreview = React.memo(
               className="flex h-8 items-center rounded-md border border-border bg-muted/45 p-0.5"
               aria-label={t("xhs.previewModeLabel")}
             >
-              <button
-                type="button"
-                onClick={() => setPreviewMode("full")}
-                aria-pressed={previewMode === "full"}
-                className={cn(
-                  "inline-flex h-7 items-center gap-1.5 rounded-sm border border-transparent px-2.5 text-xs font-medium transition-all",
-                  previewMode === "full"
-                    ? "bg-card text-brand-primary shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <FileText className="size-3.5" />
-                <span>{t("xhs.previewModeFull")}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewMode("home")}
-                aria-pressed={previewMode === "home"}
-                className={cn(
-                  "inline-flex h-7 items-center gap-1.5 rounded-sm border border-transparent px-2.5 text-xs font-medium transition-all",
-                  previewMode === "home"
-                    ? "bg-card text-brand-primary shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <LayoutGrid className="size-3.5" />
-                <span>{t("xhs.previewModeHome")}</span>
-              </button>
+              {PREVIEW_MODES.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => changePreviewMode(mode.id)}
+                  aria-pressed={previewMode === mode.id}
+                  className={cn(
+                    "inline-flex h-7 items-center gap-1.5 rounded-sm border border-transparent px-2.5 text-xs font-medium transition-all",
+                    previewMode === mode.id
+                      ? "bg-card text-brand-primary shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <mode.icon className="size-3.5" />
+                  <span>{t(mode.labelKey)}</span>
+                </button>
+              ))}
             </div>
           </div>
           <ProfileButton onClick={onEditProfile} />
@@ -887,11 +930,75 @@ export const XhsPreview = React.memo(
         <div
           ref={previewStageRef}
           data-testid="xhs-preview-stage"
-          className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-background/25 px-6 pt-4 pb-12"
+          className={cn(
+            // 底色压深一点，白卡片和手机外壳才浮得起来；三种预览模式共用同一块底色。
+            "relative min-h-0 flex-1 overflow-hidden bg-accent",
+            previewMode !== "grid" && "flex items-center justify-center px-6 pt-4 pb-12",
+          )}
         >
-          <PhoneFrame scale={phoneScale} screenClassName="text-[#222]">
-            {previewMode === "full" ? fullPreview : homePreview}
-          </PhoneFrame>
+          {previewMode === "grid" ? null : (
+            <PhoneFrame scale={phoneScale} screenClassName="text-[#222]">
+              {previewMode === "full" ? fullPreview : homePreview}
+            </PhoneFrame>
+          )}
+
+          {/* 全图只堆图片，不套手机外壳：横向永远只放整数列，溢出的往下排，靠竖向滚动看完。 */}
+          <div
+            ref={gridRef}
+            data-testid="xhs-grid"
+            className={cn(
+              "h-full overflow-x-hidden overflow-y-auto",
+              previewMode !== "grid" && "hidden",
+            )}
+            style={{ padding: GRID_PADDING }}
+          >
+            {previewMode === "grid" ? (
+              totalPages > 0 ? (
+                <div
+                  className="grid justify-center"
+                  style={{
+                    // minmax 而不是固定宽度：分栏宽度带过渡动画，中途某一帧算出的列宽会偏大，
+                    // 让轨道能压缩，横向就永远不会溢出（最多是那一帧右边少露一点）。
+                    gridTemplateColumns: `repeat(${gridColumns}, minmax(0, ${gridCardWidth}px))`,
+                    gap: XHS_GRID_GAP,
+                  }}
+                >
+                  {Array.from({ length: totalPages }, (_, index) => (
+                    <div
+                      key={index}
+                      data-testid="xhs-grid-card"
+                      className="group relative overflow-hidden rounded-md ring-1 ring-border/50 shadow-sm transition-[box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0"
+                    >
+                      <XhsCardClone
+                        className="bg-card"
+                        pageRefs={pageRefs}
+                        pageIndex={index}
+                        displayWidth={gridCardWidth}
+                        sourceWidth={canvas.width}
+                        sourceHeight={canvas.height}
+                        refreshKey={cloneRefreshKey}
+                      />
+                      <button
+                        type="button"
+                        disabled={exportDisabled}
+                        onClick={() => onExportPage(index)}
+                        aria-label={t("xhs.downloadImageAt", { page: index + 1 })}
+                        title={t("xhs.downloadImageAt", { page: index + 1 })}
+                        className="absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full bg-black/30 text-white opacity-60 backdrop-blur transition hover:bg-black/55 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:pointer-events-none disabled:opacity-25"
+                      >
+                        <ImageDown className="size-3.5" />
+                      </button>
+                      <span className="pointer-events-none absolute right-1.5 bottom-1.5 rounded-full bg-black/30 px-2 py-0.5 text-[11px] font-medium text-white opacity-0 backdrop-blur transition group-hover:opacity-100">
+                        {index + 1}/{totalPages}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-12 text-center text-sm text-muted-foreground">{t("xhs.empty")}</p>
+              )
+            ) : null}
+          </div>
 
           {previewMode === "full" && totalPages > 1 ? (
             <>
@@ -931,7 +1038,12 @@ export const XhsPreview = React.memo(
             </>
           ) : null}
 
-          <div className="absolute bottom-2 left-2 flex items-center gap-0.5">
+          <div
+            className={cn(
+              "absolute bottom-2 left-2 flex items-center gap-0.5",
+              previewMode === "grid" && "hidden",
+            )}
+          >
             <Button
               variant="ghost"
               size="icon"

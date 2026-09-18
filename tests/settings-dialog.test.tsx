@@ -1,8 +1,17 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "@/components/providers/app-providers";
 import { SettingsDialog } from "@/components/workbench/settings-dialog";
+
+const mocks = vi.hoisted(() => ({
+  downloadText: vi.fn(),
+}));
+
+vi.mock("@/lib/file", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/file")>()),
+  downloadText: mocks.downloadText,
+}));
 
 beforeAll(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({
@@ -18,6 +27,10 @@ beforeAll(() => {
 });
 
 afterAll(() => vi.unstubAllGlobals());
+beforeEach(() => {
+  window.localStorage.clear();
+  mocks.downloadText.mockClear();
+});
 
 describe("设置弹框", () => {
   it("用弹框和子菜单收拢全局设置", () => {
@@ -78,5 +91,24 @@ describe("设置弹框", () => {
 
     const otherNav = screen.getByRole("button", { name: /外观|Appearance/ });
     expect(otherNav.querySelector(".bg-warning")).toBeNull();
+  });
+
+  it("导出配置时包含可迁移的用户资料", async () => {
+    render(
+      <AppProviders>
+        <SettingsDialog open initialSection="data" onOpenChange={vi.fn()} />
+      </AppProviders>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /导出配置|Export settings/ }));
+    await waitFor(() => expect(mocks.downloadText).toHaveBeenCalledOnce());
+
+    const payload = JSON.parse(String(mocks.downloadText.mock.calls[0][0])) as {
+      userProfile?: { avatar?: string; name?: string };
+    };
+    expect(payload.userProfile).toMatchObject({
+      avatar: "/fastype-logo.png",
+      name: "FasType",
+    });
   });
 });

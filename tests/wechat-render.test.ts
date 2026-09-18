@@ -196,6 +196,18 @@ describe("renderWechat", () => {
     expect(quote).toContain("#654321");
   });
 
+  it("引用块首尾段落不留外边距，框里不多出一段空白", () => {
+    const { html } = render("正文\n\n> 第一句\n>\n> 第二句\n\n结尾", {
+      ...DEFAULT_WECHAT_STYLE,
+      paragraphSpacing: 20,
+    });
+    const inner = html.match(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/)?.[1] ?? "";
+    const paragraphs = inner.match(/<p[^>]*>/g) ?? [];
+    expect(paragraphs).toHaveLength(2);
+    expect(paragraphs[0]).toContain("margin: 0px 0px 20px");
+    expect(paragraphs[1]).toContain("margin: 20px 0px 0px");
+  });
+
   it("身份卡片支持各区域对齐、字号与头像占位", () => {
     const { html } = render("# 正文标题\n\n正文", {
       ...DEFAULT_WECHAT_STYLE,

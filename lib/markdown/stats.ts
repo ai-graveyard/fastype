@@ -1,3 +1,5 @@
+import { imageRefPattern } from "@/lib/image/ref";
+
 export interface DocStats {
   /** 中文按字计、西文按词计。 */
   words: number;
@@ -36,7 +38,7 @@ export function countText(text: string): DocStats {
   };
 }
 
-/** 内嵌图片的 base64 载荷。 */
+/** 图片本体在正文里的两种形态：内嵌的 base64，和指向图片库的引用。 */
 const EMBEDDED_IMAGE_PAYLOAD = /data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
 
 /**
@@ -45,12 +47,12 @@ const EMBEDDED_IMAGE_PAYLOAD = /data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-
  * 字数沿用状态栏口径；字符数统计完整 Markdown 源码，确保格式标记、空白和换行
  * 也不会绕过平台声明的“可输入字符”上限。
  *
- * 唯一的例外是内嵌图片的 base64：那是一整张图，不是用户敲进去的字。平台说的
- * 「正文最多两万字符」也是这个意思。真把它算进来，插一张图就有几十万字符，
- * 上限瞬间顶满，之后连一个字都打不进去。
+ * 唯一的例外是图片本体：那是一整张图，不是用户敲进去的字。平台说的「正文最多两万
+ * 字符」也是这个意思。真把 base64 算进来，插一张图就有几十万字符，上限瞬间顶满，
+ * 之后连一个字都打不进去；引用形态短得多，但同样不该占用户的字数额度。
  */
 export function countEditorInput(text: string): DocStats {
-  const body = text.replace(EMBEDDED_IMAGE_PAYLOAD, "");
+  const body = text.replace(EMBEDDED_IMAGE_PAYLOAD, "").replace(imageRefPattern(), "");
   return {
     words: countText(body).words,
     chars: Array.from(body).length,
@@ -92,10 +94,4 @@ export function countPreviewContent(html: string): PreviewContentStats {
 /** 中英文混排取折中速度；只用于给作者一个内容量级提示。 */
 export function estimateReadingMinutes(words: number): number {
   return words > 0 ? Math.max(1, Math.ceil(words / 400)) : 0;
-}
-
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }

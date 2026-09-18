@@ -19,6 +19,7 @@ pnpm typecheck      # TypeScript
 pnpm lint           # ESLint
 pnpm format:check   # Prettier（只查不改；`pnpm format` 直接改写）
 pnpm test           # Vitest（jsdom 环境，tests/**/*.test.ts(x)）
+pnpm test:e2e       # Playwright（Chromium / Firefox / WebKit，需先安装浏览器）
 pnpm build          # 静态导出到 out/
 ```
 
@@ -28,12 +29,12 @@ pnpm build          # 静态导出到 out/
 
 1. **没有后端。** 不引入 Route Handler、Server Action、数据库、队列或对象存储。产物必须能在纯静态文件服务器上跑。
 2. **单文档。** 界面里永远只有一篇正在处理的文档，不加文件树、多标签页或项目概念。
-3. **内容与样式分离。** Markdown 是唯一的内容源，平台样式（主题、排版）不写回正文。
+3. **内容与样式分离。** Markdown 正文是唯一内容源；`xhs` Front Matter 只保存发布元数据，不是样式。平台主题与排版不写回正文或 Front Matter。
 4. **预览与导出复用同一套渲染配置。** 禁止「预览一套、导出另一套」的实现。
 5. **AI 是可选的。** 没有 AI 配置时，编辑、预览、导出必须完整可用；AI 结果在用户确认前不得覆盖正文。
 6. **API Key 不外泄。** 不写进日志、URL、埋点、导出文件或错误文案。
 7. **文案全部走 i18n。** 业务组件里不出现硬编码的中英文字符串，也不硬编码主题颜色（颜色进 `lib/themes/`）。
-8. **不引入第三方运行时脚本、远程字体和遥测。**
+8. **不引入第三方运行时脚本、远程字体、埋点和遥测。** 项目不采集使用分析，也不保留模糊的 opt-in。
 
 ## 目录结构
 
@@ -51,6 +52,7 @@ lib/
   themes/               结构化主题配置（xhs.ts / wechat.ts）
   ai/                   OpenAI 兼容客户端与错误分类
   storage/              带版本号的 localStorage 读写
+  image/                正文插图：编码、IndexedDB 图片库、正文里的引用与 data URI 互转
   i18n/                 中英文文案（zh.ts / en.ts）
   export/               PNG 导出
   file/                 File System Access API 封装
@@ -79,6 +81,7 @@ src-tauri/              Tauri 桌面客户端外壳（只是把 out/ 装进原�
 
 - 纯计算逻辑（分页规则、错误分类、字数统计、存储版本迁移）必须有单元测试。
 - 涉及 DOM 的部分（Markdown 消毒、公众号内联样式、卡片拆分克隆）在 jsdom 下测（`vitest.config.ts` 已配置 `environment: "jsdom"`）。
+- 改动浏览器能力、工作台主流程或静态导出行为时补 Playwright 冒烟测试；CI 会在三种浏览器引擎中单独执行。
 - 新增边界处理要连带补测试，尤其是「不应该发生什么」这类：不裁切内容、不覆盖正文、不泄露 API Key。
 - 测试文件放在 `tests/`，命名与被测模块对应，例如改 `lib/markdown/paginate.ts` 就对应 `tests/paginate.test.ts`。
 

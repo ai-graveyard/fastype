@@ -17,6 +17,8 @@ export interface LocalStore<T> {
   reset: () => void;
   /** 本地是否真的存过（用来区分「首次访问」和「用户存了默认值」）。 */
   isFound: () => boolean;
+  /** 仅供测试使用：丢掉内存缓存，下一次读取重新走 localStorage。 */
+  __forgetForTests: () => void;
 }
 
 export function createLocalStore<T>(
@@ -29,6 +31,7 @@ export function createLocalStore<T>(
   const listeners = new Set<() => void>();
   let cache: T | null = null;
   let found = false;
+  let stopStorageListening: (() => void) | null = null;
 
   const load = (): T => {
     if (cache !== null) return cache;
@@ -42,10 +45,39 @@ export function createLocalStore<T>(
     for (const listener of listeners) listener();
   };
 
+  const startStorageListening = () => {
+    if (stopStorageListening || typeof window === "undefined") return;
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== key) return;
+      if (event.storageArea !== null) {
+        try {
+          if (event.storageArea !== window.localStorage) return;
+        } catch {
+          return;
+        }
+      }
+
+      cache = null;
+      found = false;
+      emit();
+    };
+
+    window.addEventListener("storage", handleStorage);
+    stopStorageListening = () => {
+      window.removeEventListener("storage", handleStorage);
+      stopStorageListening = null;
+    };
+  };
+
   return {
     subscribe: (listener) => {
       listeners.add(listener);
-      return () => listeners.delete(listener);
+      if (listeners.size === 1) startStorageListening();
+      return () => {
+        listeners.delete(listener);
+        if (listeners.size === 0) stopStorageListening?.();
+      };
     },
     // getSnapshot 必须返回稳定引用，否则 React 会判定为无限更新。
     getSnapshot: load,
@@ -68,6 +100,10 @@ export function createLocalStore<T>(
       emit();
     },
     isFound: () => found,
+    __forgetForTests: () => {
+      cache = null;
+      found = false;
+    },
   };
 }
 

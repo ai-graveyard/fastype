@@ -8,7 +8,7 @@
 pnpm check   # typecheck + lint + format:check + test + build
 ```
 
-五项都要通过。CI 跑的就是这条命令。格式没过时跑 `pnpm format` 自动改写。
+五项都要通过。CI 的基础门禁跑的就是这条命令；另有 Playwright 在 Chromium、Firefox 和 WebKit 中验证核心写作流程。格式没过时跑 `pnpm format` 自动改写。
 
 ## 目录结构
 
@@ -26,8 +26,9 @@ lib/
   themes/               结构化主题配置
   ai/                   OpenAI 兼容客户端与错误分类
   storage/              带版本号的 localStorage 读写
+  image/                正文插图：编码、IndexedDB 图片库、引用与 data URI 互转
   i18n/                 中英文文案
-tests/                  Vitest 单元测试
+tests/                  Vitest 单元测试与 Playwright 浏览器测试
 src-tauri/              Tauri 桌面客户端外壳
 docs/                   产品需求文档等长文档
 ```
@@ -40,12 +41,12 @@ docs/                   产品需求文档等长文档
 
 1. **没有后端。** 不引入 Route Handler、Server Action、数据库、队列或对象存储。构建产物必须能在纯静态文件服务器上跑起来。
 2. **单文档。** 界面里永远只有一篇正在处理的文档。不加文件树、多标签页或项目概念。
-3. **内容与样式分离。** Markdown 是唯一的内容源，平台样式不写回正文。
+3. **内容与样式分离。** Markdown 正文是唯一内容源；`xhs` Front Matter 只保存发布元数据，不是样式。主题、排版等平台样式不写回正文或 Front Matter。
 4. **预览与导出复用同一套渲染配置。** 不允许出现「预览一套、导出另一套」的实现。
 5. **AI 是可选的。** 没有 AI 配置时，编辑、预览和导出必须完整可用。AI 结果在用户确认前不得覆盖正文。
 6. **API Key 不外泄。** 不写进日志、URL、埋点、导出文件或错误文案。
 7. **文案全部走 i18n。** 业务组件里不出现硬编码的中英文，也不硬编码主题颜色。
-8. **不引入第三方运行时脚本、远程字体和遥测。**
+8. **不引入第三方运行时脚本、远程字体、埋点和遥测。** 项目不采集使用分析，也不保留模糊的 opt-in。
 
 ## 加一套主题
 
@@ -60,6 +61,13 @@ docs/                   产品需求文档等长文档
 纯计算逻辑（分页规则、错误分类、字数统计、存储版本迁移）必须有单元测试。涉及 DOM 的部分（Markdown 消毒、公众号内联样式、卡片拆分克隆）在 jsdom 下测。
 
 新增的边界处理请连带补一条测试——特别是「不应该发生什么」这类，比如不裁切内容、不覆盖正文、不泄露 Key。
+
+改动浏览器能力、工作台主流程或静态导出行为时，再跑：
+
+```bash
+pnpm exec playwright install chromium firefox webkit
+pnpm test:e2e
+```
 
 ## 提交信息
 

@@ -29,6 +29,10 @@ describe("文档自动保存", () => {
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
     // 配额耗尽是模块级状态，不重置会污染同文件里后面的用例。
     __resetStorageStateForTests();
   });
@@ -100,6 +104,60 @@ describe("文档自动保存", () => {
     act(() => vi.advanceTimersByTime(3_000));
     setItem.mockRestore();
 
+    expect(unloadPrevented()).toBe(true);
+  });
+
+  it("移动端紧急落盘失败时保留待保存状态并拦截离开", () => {
+    render(
+      <PrefsProvider>
+        <DocumentProvider>
+          <EditorHarness />
+        </DocumentProvider>
+      </PrefsProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "first" }));
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw Object.assign(new Error("full"), { name: "QuotaExceededError" });
+    });
+    Object.defineProperty(document, "visibilityState", {
+      value: "hidden",
+      configurable: true,
+    });
+
+    act(() => document.dispatchEvent(new Event("visibilitychange")));
+    setItem.mockRestore();
+
+    expect(screen.getByTestId("auto-save-state").textContent).toBe("pending");
+    expect(unloadPrevented()).toBe(true);
+  });
+
+  it("另一个标签页更新草稿后暂停本页自动保存，避免静默覆盖", () => {
+    render(
+      <PrefsProvider>
+        <DocumentProvider>
+          <EditorHarness />
+        </DocumentProvider>
+      </PrefsProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "first" }));
+    window.localStorage.setItem(
+      StorageKey.draft,
+      JSON.stringify({
+        v: 1,
+        data: { filename: "另一页.md", content: "external", savedAt: Date.now() + 1_000 },
+      }),
+    );
+    window.dispatchEvent(new StorageEvent("storage", { key: StorageKey.draft }));
+
+    act(() => vi.advanceTimersByTime(3_000));
+
+    const saved = JSON.parse(window.localStorage.getItem(StorageKey.draft) ?? "null") as {
+      data?: { content?: string };
+    } | null;
+    expect(saved?.data?.content).toBe("external");
+    expect(screen.getByTestId("auto-save-state").textContent).toBe("pending");
     expect(unloadPrevented()).toBe(true);
   });
 });

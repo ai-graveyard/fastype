@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { extractTitleFromSource, renderMarkdown } from "@/lib/markdown/parse";
 import {
+  countEditorInput,
   countPreviewContent,
   countText,
   estimateReadingMinutes,
-  formatBytes,
+  isEditorInputChangeAllowed,
 } from "@/lib/markdown/stats";
 
 describe("renderMarkdown", () => {
@@ -44,6 +45,16 @@ describe("renderMarkdown", () => {
       "3",
       "8",
     ]);
+  });
+
+  it("代码块不带尾随换行，底部不多渲染一行空行", () => {
+    const { html } = renderMarkdown("```js\nconst a = 1;\nconst b = 2;\n```");
+    const holder = document.createElement("div");
+    holder.innerHTML = html;
+
+    const code = holder.querySelector("pre > code");
+    expect(code?.textContent).toBe("const a = 1;\nconst b = 2;");
+    expect(code?.textContent?.split("\n")).toHaveLength(2);
   });
 
   it("把第一个一级标题作为标题", () => {
@@ -151,6 +162,27 @@ describe("countText", () => {
   });
 });
 
+describe("编辑器输入上限", () => {
+  const limits = { words: 2, chars: 10 };
+
+  it("允许上限内输入，拒绝继续增加超限内容", () => {
+    expect(isEditorInputChangeAllowed("", "中文", limits)).toBe(true);
+    expect(isEditorInputChangeAllowed("中文", "中文再", limits)).toBe(false);
+  });
+
+  it("历史内容已经超限时仍允许删除，但不允许继续增长", () => {
+    expect(isEditorInputChangeAllowed("中文测试", "中文测", limits)).toBe(true);
+    expect(isEditorInputChangeAllowed("中文测试", "中文测试再", limits)).toBe(false);
+  });
+
+  it("图片本体和本地引用不计入字符数", () => {
+    const embedded = "![图](data:image/png;base64,AAAA)";
+    const referenced = "![图](fastype-img:0123456789abcdef)";
+    expect(countEditorInput(embedded).chars).toBe("![图]()".length);
+    expect(countEditorInput(referenced).chars).toBe("![图]()".length);
+  });
+});
+
 describe("预览内容统计", () => {
   it("统计图片、小标题和远程图片", () => {
     expect(
@@ -164,13 +196,5 @@ describe("预览内容统计", () => {
     expect(estimateReadingMinutes(0)).toBe(0);
     expect(estimateReadingMinutes(1)).toBe(1);
     expect(estimateReadingMinutes(401)).toBe(2);
-  });
-});
-
-describe("formatBytes", () => {
-  it("按量级格式化", () => {
-    expect(formatBytes(512)).toBe("512 B");
-    expect(formatBytes(2048)).toBe("2.0 KB");
-    expect(formatBytes(3 * 1024 * 1024)).toBe("3.0 MB");
   });
 });
