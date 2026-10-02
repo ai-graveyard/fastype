@@ -64,27 +64,33 @@ export function useImagesSettled(
   React.useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const images = Array.from(container.querySelectorAll("img"));
-    const pending = images.filter((img) => !img.complete);
-    if (pending.length === 0) return;
-
-    let alive = true;
-    let remaining = pending.length;
+    const dimensions = (images: HTMLImageElement[]) => {
+      if (images.some((image) => !image.complete)) return null;
+      return JSON.stringify(
+        images.map((image) => [image.src, image.naturalWidth, image.naturalHeight]),
+      );
+    };
+    let lastImages = Array.from(container.querySelectorAll("img"));
+    let lastDimensions = dimensions(lastImages);
     const settle = () => {
-      remaining -= 1;
-      if (alive && remaining <= 0) setTick((value) => value + 1);
+      const images = Array.from(container.querySelectorAll("img"));
+      const next = dimensions(images);
+      const sameNodes =
+        images.length === lastImages.length &&
+        images.every((image, index) => image === lastImages[index]);
+      if (next === null || (sameNodes && next === lastDimensions)) return;
+      lastImages = images;
+      lastDimensions = next;
+      setTick((value) => value + 1);
     };
 
-    for (const img of pending) {
-      img.addEventListener("load", settle, { once: true });
-      img.addEventListener("error", settle, { once: true });
-    }
+    // 字体或样式变化会替换测量节点；监听容器才能收到新图片事件。
+    // 同一批节点的重复事件不触发重排；新节点即使命中缓存也要重新确认布局。
+    container.addEventListener("load", settle, true);
+    container.addEventListener("error", settle, true);
     return () => {
-      alive = false;
-      for (const img of pending) {
-        img.removeEventListener("load", settle);
-        img.removeEventListener("error", settle);
-      }
+      container.removeEventListener("load", settle, true);
+      container.removeEventListener("error", settle, true);
     };
   }, [containerRef, html]);
 

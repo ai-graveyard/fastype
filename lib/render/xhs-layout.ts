@@ -12,43 +12,108 @@ import {
 
 const SPLIT_CLASS = "ft-split";
 
-/** 句子边界：中文标点优先，其次是英文句号后跟空格。 */
-const SENTENCE_RE = /[^。！？；!?;]+(?:[。！？；!?;]+["'”’)）]*|$)/g;
+interface TextPoint {
+  node: Text;
+  offset: number;
+}
 
-/**
- * 测量前的预处理：把长段落切成句子 span、把代码块切成行 span。
- * span 不改变排版（段落用行内 span，代码行用块级 span 配合 pre-wrap），
- * 但让「一段话比一整页还长」也能按句子拆开，而不是被裁掉。
- */
-export function prepareForMeasure(container: HTMLElement): void {
-  container.querySelectorAll("p").forEach((paragraph) => {
-    if (paragraph.querySelector("img, pre, table")) return;
-    if (paragraph.children.length > 0) return; // 含行内标记的段落保持原样，避免破坏结构
-    const text = paragraph.textContent ?? "";
-    const sentences = text.match(SENTENCE_RE);
-    if (!sentences || sentences.length < 2) return;
-    paragraph.textContent = "";
-    for (const sentence of sentences) {
-      const span = document.createElement("span");
-      span.className = SPLIT_CLASS;
-      span.textContent = sentence;
-      paragraph.appendChild(span);
+function textPoints(element: HTMLElement): { points: TextPoint[]; text: string } {
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  const points: TextPoint[] = [];
+  let text = "";
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text;
+    for (let offset = 0; offset < node.length; offset += 1) points.push({ node, offset });
+    text += node.data;
+  }
+  return { points, text };
+}
+
+function fragmentAt(
+  element: HTMLElement,
+  points: TextPoint[],
+  from: number,
+  to: number,
+): DocumentFragment {
+  const range = document.createRange();
+  if (from === 0) range.setStart(element, 0);
+  else range.setStart(points[from].node, points[from].offset);
+  if (to === points.length) range.setEnd(element, element.childNodes.length);
+  else range.setEnd(points[to].node, points[to].offset);
+  return range.cloneContents();
+}
+
+/** 按真实行盒分段，Range 克隆保留加粗、链接等行内结构。 */
+function prepareParagraph(paragraph: HTMLElement): void {
+  if (paragraph.querySelector("img, pre, table, .ft-split")) return;
+  const { points, text } = textPoints(paragraph);
+  if (!text) return;
+  const boundaries = [0];
+  const probe = document.createRange();
+  if (typeof probe.getClientRects === "function") {
+    let lineBottom = 0;
+    for (const { segment, index } of new Intl.Segmenter(undefined, {
+      granularity: "grapheme",
+    }).segment(text)) {
+      const start = points[index];
+      const end = points[index + segment.length - 1];
+      probe.setStart(start.node, start.offset);
+      probe.setEnd(end.node, end.offset + 1);
+      const rect = Array.from(probe.getClientRects()).find(
+        (box) => box.height > 0 && box.width > 0,
+      );
+      if (!rect) continue;
+      if (lineBottom > 0 && rect.top >= lineBottom - 1) boundaries.push(index);
+      if (lineBottom === 0 || rect.top >= lineBottom - 1) {
+        lineBottom = rect.bottom;
+      } else {
+        lineBottom = Math.max(lineBottom, rect.bottom);
+      }
     }
+  } else {
+    // 无布局引擎的 DOM 环境仍可验证拆分时的文字和行内结构保真。
+    for (const match of text.matchAll(/[。！？；!?;]+["'”’)）]*/g)) {
+      const end = match.index + match[0].length;
+      if (end < text.length) boundaries.push(end);
+    }
+  }
+  if (boundaries.length < 2) return;
+  boundaries.push(text.length);
+  const fragments = boundaries.slice(0, -1).map((from, index) => {
+    const span = document.createElement("span");
+    span.className = SPLIT_CLASS;
+    span.style.display = "block";
+    span.style.textIndent = index === 0 ? "inherit" : "0";
+    span.append(fragmentAt(paragraph, points, from, boundaries[index + 1]));
+    return span;
   });
+  paragraph.replaceChildren(...fragments);
+}
 
-  container.querySelectorAll("pre > code").forEach((code) => {
-    const text = code.textContent ?? "";
+export function prepareForMeasure(container: HTMLElement): void {
+  // 离屏测量区不会触发懒加载；必须先取到图片真实尺寸，再由加载事件重排。
+  container.querySelectorAll("img").forEach((image) => {
+    image.loading = "eager";
+  });
+  container.querySelectorAll<HTMLElement>("p, li").forEach((element) => {
+    if (!element.querySelector("p, ul, ol, blockquote")) prepareParagraph(element);
+  });
+  container.querySelectorAll<HTMLElement>("pre > code").forEach((code) => {
+    if (code.querySelector(".ft-split")) return;
+    const { points, text } = textPoints(code);
     const lines = text.split("\n");
     if (lines.length < 2) return;
-    code.textContent = "";
-    for (const line of lines) {
+    let from = 0;
+    const spans = lines.map((line) => {
       const span = document.createElement("span");
       span.className = SPLIT_CLASS;
       span.style.display = "block";
-      // 空行也要占一行高度，否则测量出来的代码块会比实际渲染矮。
-      span.textContent = line.length > 0 ? line : "\u00a0";
-      code.appendChild(span);
-    }
+      if (line.length > 0) span.append(fragmentAt(code, points, from, from + line.length));
+      else span.textContent = "\u00a0";
+      from += line.length + 1;
+      return span;
+    });
+    code.replaceChildren(...spans);
   });
 }
 
@@ -59,6 +124,7 @@ interface SplitTarget {
   parts: HTMLElement[];
   /** 每个片段都要保留的子项下标，例如表头。 */
   repeat: number[];
+  nested?: boolean;
 }
 
 function pathTo(root: HTMLElement, target: HTMLElement): number[] {
@@ -77,9 +143,16 @@ function pathTo(root: HTMLElement, target: HTMLElement): number[] {
 export function splitTargetOf(block: HTMLElement): SplitTarget | null {
   const tag = block.tagName.toLowerCase();
 
-  if (tag === "ul" || tag === "ol") {
-    const parts = Array.from(block.children) as HTMLElement[];
-    return parts.length > 1 ? { container: block, path: [], parts, repeat: [] } : null;
+  if (tag === "ul" || tag === "ol" || tag === "blockquote") {
+    const parts = Array.from(block.children).flatMap((child) => {
+      const spans = Array.from(child.children) as HTMLElement[];
+      return spans.length > 0 && spans.every((span) => span.classList.contains(SPLIT_CLASS))
+        ? spans
+        : [child as HTMLElement];
+    });
+    return parts.length > 1
+      ? { container: block, path: [], parts, repeat: [], nested: true }
+      : null;
   }
 
   if (tag === "table") {
@@ -88,11 +161,6 @@ export function splitTargetOf(block: HTMLElement): SplitTarget | null {
     const rows = Array.from(tbody.children) as HTMLElement[];
     if (rows.length < 2) return null;
     return { container: tbody, path: pathTo(block, tbody), parts: rows, repeat: [] };
-  }
-
-  if (tag === "blockquote") {
-    const parts = Array.from(block.children) as HTMLElement[];
-    return parts.length > 1 ? { container: block, path: [], parts, repeat: [] } : null;
   }
 
   if (tag === "pre") {
@@ -124,57 +192,59 @@ export interface MeasureResult {
   targets: (SplitTarget | null)[];
 }
 
-/**
- * 量高度。
- *
- * 相邻块的外边距会合并，直接读 offsetHeight 会算多。这里改用「下一个块的顶边减当前块的顶边」，
- * 合并后的真实占位自然就对了。
- */
+/** 块高度与折叠外边距分开计量，分页时才决定页首、页尾的间距。 */
 export function measureBlocks(container: HTMLElement): MeasureResult {
   const nodes = Array.from(container.children) as HTMLElement[];
-  const containerTop = container.getBoundingClientRect().top;
   const blocks: MeasuredBlock[] = [];
   const targets: (SplitTarget | null)[] = [];
 
-  const tops = nodes.map((node) => node.getBoundingClientRect().top - containerTop);
-  const totalHeight = container.getBoundingClientRect().height;
-
   nodes.forEach((node, index) => {
-    const top = tops[index];
-    const bottom = index + 1 < nodes.length ? tops[index + 1] : totalHeight;
-    const height = Math.max(0, bottom - top);
-
+    const height = node.getBoundingClientRect().height;
+    const style = getComputedStyle(node);
     const target = splitTargetOf(node);
     targets.push(target);
-
     let children: MeasuredChild[] | undefined;
     let chrome = 0;
     if (target) {
-      const partBottoms = target.parts.map(
-        (part) => part.getBoundingClientRect().bottom - containerTop,
-      );
-      const firstTop = target.parts[0].getBoundingClientRect().top - containerTop;
-      children = target.parts.map((_, childIndex) => ({
+      const rects = target.parts.map((part) => part.getBoundingClientRect());
+      children = rects.map((rect, childIndex) => ({
         index: childIndex,
         height: Math.max(
           0,
-          partBottoms[childIndex] - (childIndex > 0 ? partBottoms[childIndex - 1] : firstTop),
+          rect.bottom - (childIndex > 0 ? rects[childIndex - 1].bottom : rect.top),
         ),
       }));
-      const childrenHeight = children.reduce((sum, child) => sum + child.height, 0);
-      chrome = Math.max(0, height - childrenHeight);
+      chrome = Math.max(0, height - children.reduce((sum, child) => sum + child.height, 0));
     }
-
+    const image = imageOf(node);
+    const imageRect = image?.getBoundingClientRect();
     blocks.push({
       index,
-      kind: blockKindOf(node.tagName),
+      kind: image ? "media" : blockKindOf(node.tagName),
       height,
       children,
       chrome,
+      marginTop: parseFloat(style.marginTop) || 0,
+      marginBottom: parseFloat(style.marginBottom) || 0,
+      ...(imageRect && imageRect.height > 0 && imageRect.width > 0
+        ? {
+            media: {
+              height: imageRect.height,
+              maxScale: Math.min(4 / 3, container.getBoundingClientRect().width / imageRect.width),
+            },
+          }
+        : {}),
     });
   });
-
   return { blocks, nodes, targets };
+}
+
+function imageOf(node: HTMLElement): HTMLImageElement | null {
+  if (node instanceof HTMLImageElement) return node;
+  if (node.tagName !== "P" && node.tagName !== "FIGURE") return null;
+  const images = node.querySelectorAll("img");
+  // 图文混排、图注和多图块不能当作一张图片整体缩放。
+  return images.length === 1 && !node.textContent?.trim() ? images[0] : null;
 }
 
 function resolvePath(root: HTMLElement, path: number[]): HTMLElement {
@@ -196,12 +266,44 @@ export function cloneForPage(
   const source = nodes[placed.blockIndex];
   if (!source) return null;
   const clone = source.cloneNode(true) as HTMLElement;
+  if (placed.imageScale !== undefined) {
+    const image = imageOf(clone);
+    const sourceImage = imageOf(source);
+    if (image && sourceImage) {
+      const rect = sourceImage.getBoundingClientRect();
+      image.style.width = `${rect.width * placed.imageScale}px`;
+      image.style.height = `${rect.height * placed.imageScale}px`;
+      image.style.maxHeight = "none";
+    }
+  }
   if (!placed.childRange) return clone;
 
   const target = targets[placed.blockIndex];
   if (!target) return clone;
 
   const [from, to] = placed.childRange;
+  if (target.nested) {
+    const first = resolvePath(clone, pathTo(source, target.parts[from]));
+    const last = resolvePath(clone, pathTo(source, target.parts[to - 1]));
+    const tail = document.createRange();
+    tail.selectNodeContents(clone);
+    tail.setStartAfter(last);
+    tail.deleteContents();
+    const head = document.createRange();
+    head.selectNodeContents(clone);
+    head.setEndBefore(first);
+    head.deleteContents();
+    if (source.tagName === "OL" || source.tagName === "UL") {
+      const part = target.parts[from];
+      const item = part.closest("li");
+      const itemIndex = Array.from(source.children).indexOf(item!);
+      applyListStart(clone, Math.max(0, itemIndex));
+      if (part !== item && part !== item?.firstElementChild) {
+        (clone.firstElementChild as HTMLElement).style.listStyleType = "none";
+      }
+    }
+    return clone;
+  }
   const container = resolvePath(clone, target.path);
   const parts = Array.from(container.children);
   parts.forEach((part, index) => {
@@ -214,6 +316,28 @@ export function cloneForPage(
 /** 有序列表被拆到第二页时要接着上一页的序号，不能又从 1 开始。 */
 export function applyListStart(clone: HTMLElement, from: number): void {
   if (clone.tagName.toLowerCase() === "ol" && from > 0) {
-    clone.setAttribute("start", String(from + 1));
+    const start = Number.parseInt(clone.getAttribute("start") ?? "1", 10);
+    clone.setAttribute("start", String((Number.isFinite(start) ? start : 1) + from));
   }
+}
+
+/** 最后按实际 DOM 检查不可拆块，等比缩放整个内容区，保证预览和导出都不裁切。 */
+export function fitPageContent(body: HTMLElement): void {
+  const children = Array.from(body.children) as HTMLElement[];
+  if (children.length === 0 || body.clientHeight <= 0) return;
+  const bounds = body.getBoundingClientRect();
+  const height = Math.max(
+    ...children.map((child) => child.getBoundingClientRect().bottom - bounds.top),
+  );
+  const width = Math.max(body.clientWidth, body.scrollWidth);
+  const scale = Math.min(1, body.clientHeight / height, body.clientWidth / width);
+  if (scale >= 1) return;
+  const wrapper = document.createElement("div");
+  wrapper.className = "ft-xhs-body";
+  wrapper.style.display = "flow-root";
+  wrapper.style.width = `${body.clientWidth}px`;
+  wrapper.style.transformOrigin = "top left";
+  wrapper.style.transform = `scale(${scale})`;
+  wrapper.append(...children);
+  body.append(wrapper);
 }

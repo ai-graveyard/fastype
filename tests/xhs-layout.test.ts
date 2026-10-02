@@ -56,6 +56,29 @@ describe("prepareForMeasure", () => {
     expect(container.querySelector("strong")).not.toBeNull();
   });
 
+  it("拆分保留标点、空格、加粗、链接和 emoji", () => {
+    const container = mount("！？ **加粗👩‍👩‍👧‍👦。继续**[链接](https://example.com)！ tail");
+    const before = container.textContent;
+    prepareForMeasure(container);
+    expect(container.textContent).toBe(before);
+    expect(container.querySelector("strong")?.textContent).toContain("加粗");
+    expect(container.querySelector("a")?.getAttribute("href")).toBe("https://example.com");
+  });
+
+  it("代码拆行保留语法高亮节点", () => {
+    const container = document.createElement("div");
+    container.innerHTML =
+      '<pre><code><span class="hljs-keyword">const</span> a = 1;\nnext();</code></pre>';
+    prepareForMeasure(container);
+    expect(container.querySelector(".hljs-keyword")?.textContent).toBe("const");
+  });
+
+  it("离屏测量图片主动加载，不被懒加载卡住", () => {
+    const container = mount("![图片](https://example.com/image.png)");
+    prepareForMeasure(container);
+    expect(container.querySelector("img")?.loading).toBe("eager");
+  });
+
   it("代码块按行切分，空行也占一行", () => {
     const container = mount("```\na\n\nb\n```");
     prepareForMeasure(container);
@@ -135,6 +158,37 @@ describe("cloneForPage", () => {
     expect(clone?.querySelectorAll("tbody tr")).toHaveLength(2);
   });
 
+  it("长列表项内部拆分后保留列表结构、续号且不重复标记", () => {
+    const container = mount("7. 一。二。三。\n8. 四。五。");
+    prepareForMeasure(container);
+    const nodes = Array.from(container.children) as HTMLElement[];
+    const targets = nodes.map(splitTargetOf);
+    const first = cloneForPage({ blockIndex: 0, childRange: [0, 2] }, nodes, targets)!;
+    const second = cloneForPage({ blockIndex: 0, childRange: [2, 5] }, nodes, targets)!;
+    expect(first.textContent).toBe("一。二。");
+    expect(Array.from(second.querySelectorAll("li"), (item) => item.textContent)).toEqual([
+      "三。",
+      "四。五。",
+    ]);
+    expect(second.querySelectorAll("li")).toHaveLength(2);
+    expect(second.getAttribute("start")).toBe("7");
+    expect(second.querySelector("li")?.style.listStyleType).toBe("none");
+    expect(container.textContent).toContain("一。二。三。");
+  });
+
+  it("单段引用可从段落内部拆开，引用容器保持完整", () => {
+    const container = mount("> 一。二。三。");
+    prepareForMeasure(container);
+    const nodes = Array.from(container.children) as HTMLElement[];
+    const clone = cloneForPage(
+      { blockIndex: 0, childRange: [1, 3] },
+      nodes,
+      nodes.map(splitTargetOf),
+    )!;
+    expect(clone.tagName).toBe("BLOCKQUOTE");
+    expect(clone.querySelector("p")?.textContent).toBe("二。三。");
+  });
+
   it("越界下标返回 null 而不是抛错", () => {
     expect(cloneForPage({ blockIndex: 99 }, [], [])).toBeNull();
   });
@@ -146,6 +200,18 @@ describe("applyListStart", () => {
     const ol = container.querySelector("ol")!.cloneNode(true) as HTMLElement;
     applyListStart(ol, 2);
     expect(ol.getAttribute("start")).toBe("3");
+  });
+
+  it("有序列表续页保留非一的起始编号", () => {
+    const ol = mount("7. a\n8. b\n9. c").querySelector("ol")!;
+    applyListStart(ol, 2);
+    expect(ol.getAttribute("start")).toBe("9");
+  });
+
+  it("从零开始的列表续页仍按原始编号递增", () => {
+    const ol = mount("0. a\n1. b\n2. c").querySelector("ol")!;
+    applyListStart(ol, 2);
+    expect(ol.getAttribute("start")).toBe("2");
   });
 
   it("第一页不加 start 属性", () => {

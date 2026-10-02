@@ -59,8 +59,8 @@ import { replayRichBlocks, useDiagrams } from "@/hooks/use-rich-blocks";
 import { paginate, type Page } from "@/lib/markdown/paginate";
 import type { XhsMetadata } from "@/lib/markdown/xhs-frontmatter";
 import {
-  applyListStart,
   cloneForPage,
+  fitPageContent,
   measureBlocks,
   prepareForMeasure,
   type MeasureResult,
@@ -588,11 +588,32 @@ export const XhsPreview = React.memo(
       onImageFailuresChange?.(failedImages);
     }, [failedImages, onImageFailuresChange]);
     const imagesTick = useImagesSettled(measureRef, contentHtml);
+    const [fontsTick, setFontsTick] = React.useState(0);
+    React.useEffect(() => {
+      if (!document.fonts) return;
+      let active = true;
+      const remeasure = () => {
+        if (active) setFontsTick((value) => value + 1);
+      };
+      void document.fonts.ready.then(remeasure);
+      document.fonts.addEventListener("loadingdone", remeasure);
+      return () => {
+        active = false;
+        document.fonts.removeEventListener("loadingdone", remeasure);
+      };
+    }, []);
+
     // 代码高亮和图表都在测量容器里就位，分页量到的才是图表的真实高度。
     const richTick = useDiagrams(measureRef, contentHtml, {
       dark: isDarkColor(style.background),
       diagramErrorLabel: t("diagram.failed"),
     });
+
+    const measurementInput = React.useMemo(
+      () => ({ contentHtml, css, innerWidth, fontsTick, richTick }),
+      [contentHtml, css, innerWidth, fontsTick, richTick],
+    );
+    const preparedInputRef = React.useRef<typeof measurementInput | null>(null);
 
     // 测量 + 分页。图片高度要等图片 settle 之后才准，所以 imagesTick 也是依赖。
     /*
@@ -606,6 +627,7 @@ export const XhsPreview = React.memo(
       if (!contentHtml) {
         const next = paginate([], canvas.height);
         container.innerHTML = "";
+        preparedInputRef.current = null;
         layoutRef.current = null;
         setPages(next);
         setLayoutTick((value) => value + 1);
@@ -613,10 +635,13 @@ export const XhsPreview = React.memo(
         return;
       }
 
-      container.innerHTML = contentHtml;
-      // 重设 innerHTML 把上一轮渲染好的图表和高亮冲掉了，这一帧就要量高度，先同步补回来。
-      replayRichBlocks(container, isDarkColor(style.background));
-      prepareForMeasure(container);
+      // 图片加载后的重排复用原节点；Firefox 的新图片节点即使命中缓存也可能暂时没有尺寸。
+      if (preparedInputRef.current !== measurementInput) {
+        container.innerHTML = contentHtml;
+        replayRichBlocks(container, isDarkColor(style.background));
+        prepareForMeasure(container);
+        preparedInputRef.current = measurementInput;
+      }
 
       const available =
         canvas.height -
@@ -636,6 +661,7 @@ export const XhsPreview = React.memo(
           .filter((index) => index > 0),
       });
     }, [
+      measurementInput,
       contentHtml,
       // 测量容器的排版完全由注入的 css 和 innerWidth 决定；css 是字符串，配色以外的
       // 改动若没改变它的内容就不会重新测量。
@@ -645,6 +671,7 @@ export const XhsPreview = React.memo(
       // 图表要按底色选深浅配色，换了背景就得重画一遍。
       style.background,
       imagesTick,
+      fontsTick,
       richTick,
       onPagesChange,
       coverOffset,
@@ -668,9 +695,9 @@ export const XhsPreview = React.memo(
         for (const placed of page.blocks) {
           const clone = cloneForPage(placed, nodes, targets);
           if (!clone) continue;
-          if (placed.childRange) applyListStart(clone, placed.childRange[0]);
           body.appendChild(clone);
         }
+        fitPageContent(body);
       });
     }, [pages, layoutTick]);
 
@@ -1148,6 +1175,7 @@ export const XhsPreview = React.memo(
           不能 display:none / visibility:hidden，否则浏览器导出时会把卡片画成空白。
         */}
         <div
+          data-testid="xhs-export-pages"
           aria-hidden
           style={{ position: "fixed", top: 0, left: -100_000, width: canvas.width, zIndex: -1 }}
         >
