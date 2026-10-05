@@ -9,6 +9,7 @@ import {
   isThemeMode,
   isViewId,
   VIEWS,
+  type PlatformEditorMode,
   type ThemeMode,
   type ViewId,
 } from "@/lib/types";
@@ -20,6 +21,7 @@ export interface Prefs {
   markdownPreviewTheme: MarkdownPreviewTheme;
   lastView: ViewId;
   ratios: Record<ViewId, number>;
+  platformModes: Record<"xhs" | "wechat", PlatformEditorMode>;
 }
 
 export const DEFAULT_PREFS: Prefs = {
@@ -28,6 +30,7 @@ export const DEFAULT_PREFS: Prefs = {
   markdownPreviewTheme: DEFAULT_MARKDOWN_PREVIEW_THEME,
   lastView: "xhs",
   ratios: { ...DEFAULT_RATIOS },
+  platformModes: { xhs: "preview", wechat: "preview" },
 };
 
 /** 比例限制在合理区间，避免坏数据把某一栏挤没（PRD FT-LYT-002）。 */
@@ -51,6 +54,10 @@ export function parsePrefs(raw: unknown): Prefs | null {
       ? input.markdownPreviewTheme
       : DEFAULT_PREFS.markdownPreviewTheme,
     lastView: isViewId(input.lastView) ? input.lastView : DEFAULT_PREFS.lastView,
+    platformModes: {
+      xhs: input.platformModes?.xhs === "text" ? "text" : "preview",
+      wechat: input.platformModes?.wechat === "text" ? "text" : "preview",
+    },
     ratios: Object.fromEntries(
       VIEWS.map((view) => [view, ratio(ratios[view], DEFAULT_RATIOS[view])]),
     ) as Record<ViewId, number>,

@@ -230,36 +230,38 @@ export const WechatPreview = React.memo(function WechatPreview({
   );
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="ft-toolbar-container flex h-full flex-col">
       <style dangerouslySetInnerHTML={{ __html: PREVIEW_HOVER_STYLES }} />
-      <div className="grid h-[53px] shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-dashed bg-background/30 px-5">
+      <div className="ft-preview-toolbar grid h-[53px] shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-dashed bg-background/30 px-5">
         <div className="flex min-w-0 items-center">
           <div className="flex h-8 items-center rounded-md border bg-muted/45 p-0.5">
             <button
               type="button"
               onClick={() => onStyleChange({ showPhoneFrame: true })}
-              className={`inline-flex h-7 items-center gap-1.5 rounded-sm border border-transparent px-2.5 text-xs font-medium transition-all ${
+              className={`ft-toolbar-action inline-flex h-7 shrink-0 items-center gap-1.5 rounded-sm border border-transparent px-2.5 text-xs font-medium transition-all ${
                 style.showPhoneFrame
                   ? "bg-card text-brand-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
+              aria-label={t("wechat.phone")}
               title={t("wechat.phonePreview")}
             >
-              <Smartphone className="h-3.5 w-3.5" />
-              <span>{t("wechat.phone")}</span>
+              <Smartphone className="h-3.5 w-3.5 shrink-0" />
+              <span className="ft-toolbar-label">{t("wechat.phone")}</span>
             </button>
             <button
               type="button"
               onClick={() => onStyleChange({ showPhoneFrame: false })}
-              className={`inline-flex h-7 items-center gap-1.5 rounded-sm border border-transparent px-2.5 text-xs font-medium transition-all ${
+              className={`ft-toolbar-action inline-flex h-7 shrink-0 items-center gap-1.5 rounded-sm border border-transparent px-2.5 text-xs font-medium transition-all ${
                 !style.showPhoneFrame
                   ? "bg-card text-brand-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
+              aria-label={t("wechat.desktop")}
               title={t("wechat.widePreview")}
             >
-              <Monitor className="h-3.5 w-3.5" />
-              <span>{t("wechat.desktop")}</span>
+              <Monitor className="h-3.5 w-3.5 shrink-0" />
+              <span className="ft-toolbar-label">{t("wechat.desktop")}</span>
             </button>
           </div>
         </div>
@@ -267,12 +269,14 @@ export const WechatPreview = React.memo(function WechatPreview({
         <div className="flex items-center justify-self-end gap-1.5">
           <Button
             size="sm"
-            className="border border-brand-primary/30 bg-brand-primary/10 text-brand-primary shadow-none hover:bg-brand-primary/15"
+            className="ft-toolbar-action border border-brand-primary/30 bg-brand-primary/10 text-brand-primary shadow-none hover:bg-brand-primary/15"
             disabled={copyDisabled}
             onClick={onCopy}
+            aria-label={t("common.copy")}
+            title={t("common.copy")}
           >
             <Copy />
-            {t("common.copy")}
+            <span className="ft-toolbar-label">{t("common.copy")}</span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

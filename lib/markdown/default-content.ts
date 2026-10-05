@@ -1,131 +1,68 @@
 import type { Locale } from "@/lib/i18n";
 
-/**
- * 首次访问和「清除全部本地数据」之后展示的默认内容（PRD FT-SET-002 / FT-SET-004）。
- * 按语言分别维护，且顺带演示常用 Markdown 语法，兼具教程和排版自检两个作用。
- */
-const DEFAULT_DRAFT_FILENAME: Record<Locale, string> = {
-  zh: "使用教程.md",
-  en: "FasType Guide.md",
-};
+const SAMPLE: Record<Locale, { filename: string; content: string }> = {
+  zh: {
+    filename: "把日常写成值得分享的内容.md",
+    content: `# 把日常写成值得分享的内容
 
-const DEFAULT_DRAFT_CONTENT: Record<Locale, string> = {
-  zh: `# 欢迎使用 FasType
+灵感不一定来自远方。一次散步、一顿早餐、一个刚解决的小问题，都可以成为下一篇笔记的起点。
 
-FasType 是一个纯前端的多平台 Markdown 排版工具：只写一份 Markdown，就能同时生成小红书图文、公众号文章，以及一份干净的 Markdown 预览。所有内容都只保存在这台设备的浏览器里，不会上传到任何服务器。
+## 先留下一个具体细节
 
-## 快速上手
+比起“今天很开心”，试着写下：阳光落在桌角，咖啡刚好不烫。
 
-1. 在编辑器里写 Markdown，左侧会实时生成对应平台的排版预览。
-2. 点击顶部的「小红书 / 公众号 / 编辑器」切换不同平台的预览效果。
-3. 在每个平台的设置面板里调整主题、字体、封面和用户标识。
-4. 写完之后，用「下载 Markdown」保存原文，或直接导出图片、复制富文本到公众号编辑器。
+**让读者看见一个画面，比告诉他一种感受更容易。**
 
-## 常用格式示例
+## 再分享一点自己的发现
 
-- **加粗**、*斜体*、~~删除线~~ 都能正常显示。
-- 支持 [链接](https://github.com) 和行内代码 \`const x = 1\`。
+- 这件事为什么让你停下来？
+- 你试过哪些方法，最后留下了哪个？
+- 如果重来一次，你会怎么做？
 
-> 引用块可以用来突出一句重要的话。
+不必一次讲完所有道理。一篇笔记，讲清一件事就够了。
 
-### 列表
+> 把亲身经历写具体，就是你的独特视角。
 
-- 无序列表第一项
-- 无序列表第二项
+## 最后，给它一个清楚的标题
 
-1. 有序列表第一项
-2. 有序列表第二项
+用“我怎样把通勤时间变成阅读时间”，代替“我的生活感悟”。让读者知道，点开之后能看到什么。
 
-- [x] 已完成的任务
-- [ ] 还没做的任务
+从今天的一件小事开始。`,
+  },
+  en: {
+    filename: "Turn everyday moments into stories.md",
+    content: `# Turn everyday moments into stories worth sharing
 
-### 代码块
+A short walk, a good breakfast, a problem you just solved. Your next story may already be in your day.
 
-\`\`\`ts
-function hello(name: string) {
-  console.log(\`你好，\${name}\`);
-}
-\`\`\`
+## Start with one detail
 
-### 表格
+Instead of “I had a lovely morning,” describe the sunlight on the table and the coffee that was finally cool enough to drink.
 
-| 功能 | 说明 |
-| --- | --- |
-| 小红书 | 自动分页排版，支持封面、主题和用户标识 |
-| 公众号 | 一键复制富文本，直接粘贴进公众号编辑器 |
-| AI 助手 | 配置自己的模型 Key 后，一键去 AI 味 / 去敏感词 |
+**A scene gives your reader something to remember.**
 
-## 关于本地数据
+## Share what you learned
 
-FasType 不需要注册登录，正文、样式和 AI 配置只保存在浏览器的 localStorage 里，图片（正文插图、头像、公众号封面）存在浏览器的 IndexedDB 里：
+- What made you stop and notice?
+- What did you try, and what worked?
+- What would you do differently next time?
 
-- 关闭页面或刷新后，上次的草稿会自动恢复。
-- 下载或复制出去的 Markdown 会把图片还原成内嵌形式，拷到哪里都不缺图。
-- 在「设置 → 本地数据」里可以清除草稿、样式或全部数据；清除之后会重新回到这篇教程。
+One post can tell one small story well.
 
-现在可以清空这篇教程，开始写你自己的内容。
-`,
-  en: `# Welcome to FasType
+> Your experience becomes useful when you make it specific.
 
-FasType is a fully client-side Markdown tool for multi-platform publishing: write once in Markdown and get ready-to-publish layouts for Xiaohongshu and WeChat, plus a clean Markdown preview. Everything stays in this browser — nothing is uploaded to any server.
+## Give it a clear title
 
-## Quick start
+“How I made time to read on my commute” tells readers more than “Thoughts on life.”
 
-1. Write Markdown in the editor; the preview updates live for the current platform.
-2. Use the "Xiaohongshu / WeChat / Editor" switcher at the top to preview each platform.
-3. Open each platform's settings panel to adjust theme, typography, cover, and your profile badge.
-4. When you're done, download the Markdown source, export images, or copy rich text straight into the WeChat editor.
-
-## Formatting cheatsheet
-
-- **Bold**, *italic*, and ~~strikethrough~~ all render correctly.
-- Links like [FasType on GitHub](https://github.com) and inline code such as \`const x = 1\` work too.
-
-> Blockquotes are a good way to highlight a key sentence.
-
-### Lists
-
-- First bullet
-- Second bullet
-
-1. First numbered item
-2. Second numbered item
-
-- [x] Done task
-- [ ] Pending task
-
-### Code block
-
-\`\`\`ts
-function hello(name: string) {
-  console.log(\`Hello, \${name}\`);
-}
-\`\`\`
-
-### Table
-
-| Feature | What it does |
-| --- | --- |
-| Xiaohongshu | Auto-paginated cards with covers, themes, and profile badges |
-| WeChat | One-click copy of rich text straight into the WeChat editor |
-| AI assistant | Bring your own API key to humanize text or soften sensitive wording |
-
-## About your local data
-
-FasType has no account system. Your draft, styles, and AI settings are stored only in this browser's localStorage, and images (inline pictures, your avatar, WeChat covers) live in this browser's IndexedDB:
-
-- Reopening or refreshing the page restores your last draft automatically.
-- Markdown you download or copy out has its images embedded again, so nothing is missing wherever you take it.
-- Settings → Local Data lets you clear the draft, styles, or everything; clearing brings back this tutorial.
-
-Feel free to clear this tutorial and start writing your own content.
-`,
+Start with something that happened today.`,
+  },
 };
 
 export function getDefaultDraftFilename(locale: Locale): string {
-  return DEFAULT_DRAFT_FILENAME[locale] ?? DEFAULT_DRAFT_FILENAME.zh;
+  return SAMPLE[locale].filename;
 }
 
 export function getDefaultDraftContent(locale: Locale): string {
-  return DEFAULT_DRAFT_CONTENT[locale] ?? DEFAULT_DRAFT_CONTENT.zh;
+  return SAMPLE[locale].content;
 }

@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   Palette,
   RotateCcw,
+  SlidersHorizontal,
   Sparkles,
   Type,
   UserRound,
@@ -24,6 +25,12 @@ import {
 import { useT } from "@/components/providers/prefs-provider";
 import { useStyles } from "@/components/providers/style-provider";
 import { useUserProfile } from "@/components/providers/user-profile-provider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ChoiceGrid, Field, Label, SliderField, Switch } from "@/components/ui/misc";
 import {
@@ -89,6 +96,7 @@ interface WechatWorkspaceProps {
   articleDocument?: string;
   scrollTarget?: { id: string; nonce: number } | null;
   onEditProfile?: () => void;
+  onBeforeReplaceDocument?: () => void;
 }
 
 const TABS: Array<{
@@ -547,6 +555,7 @@ export function WechatWorkspace({
   articleDocument = "",
   scrollTarget,
   onEditProfile,
+  onBeforeReplaceDocument,
 }: WechatWorkspaceProps) {
   const t = useT();
   const { profile } = useUserProfile();
@@ -631,16 +640,18 @@ export function WechatWorkspace({
   }, [activeTab, scrollTarget]);
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col bg-card">
+    <div className="ft-toolbar-container flex h-full min-h-0 flex-1 flex-col bg-card">
       <div
-        className="grid h-[53px] shrink-0 grid-cols-5 border-b border-dashed border-border bg-background/25 px-2"
+        className="grid h-[53px] shrink-0 grid-cols-4 border-b border-dashed border-border bg-background/25 px-2"
         data-testid="wechat-workspace-header"
       >
-        {TABS.map((tab) => (
+        {TABS.filter((tab) => tab.id !== "typography" && tab.id !== "enhance").map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => onActiveTabChange(tab.id)}
+            aria-label={t(tab.key)}
+            title={t(tab.key)}
             className={cn(
               "flex min-w-0 items-center justify-center gap-1.5 border-b-2 px-1 text-[11px] font-medium transition-colors",
               activeTab === tab.id
@@ -649,9 +660,32 @@ export function WechatWorkspace({
             )}
           >
             <tab.icon className="size-3.5 shrink-0" />
-            <span className="truncate">{t(tab.key)}</span>
+            <span className="ft-toolbar-label">{t(tab.key)}</span>
           </button>
         ))}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-full min-w-0 px-1 text-[11px]"
+              aria-label={t("creator.editDetails")}
+              title={t("creator.editDetails")}
+              data-active={activeTab === "typography" || activeTab === "enhance"}
+            >
+              <SlidersHorizontal aria-hidden="true" />
+              <span className="ft-toolbar-label">{t("creator.editDetails")}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {TABS.filter((tab) => tab.id === "typography" || tab.id === "enhance").map((tab) => (
+              <DropdownMenuItem key={tab.id} onSelect={() => onActiveTabChange(tab.id)}>
+                <tab.icon className="size-4" />
+                {t(tab.key)}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div
@@ -668,6 +702,7 @@ export function WechatWorkspace({
             <div className="min-h-0 flex-1">
               <MarkdownEditor
                 ref={editorRef}
+                onBeforeReplaceDocument={onBeforeReplaceDocument}
                 value={content}
                 onChange={onContentChange}
                 onSelectionChange={onSelectionChange}

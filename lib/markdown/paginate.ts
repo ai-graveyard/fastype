@@ -9,6 +9,7 @@ export interface MeasuredChild {
 export interface MeasuredBlock {
   index: number;
   kind: BlockKind;
+  breakBefore?: boolean;
   /** 块的边框盒高度；外边距单独计量。 */
   height: number;
   /** 可拆分块的子项；不可拆分时为空。 */
@@ -36,7 +37,7 @@ export interface Page {
   overflow: boolean;
 }
 
-export function paginate(blocks: MeasuredBlock[], pageHeight: number): Page[] {
+export function paginate(blocks: MeasuredBlock[], pageHeight: number, keepHeadings = true): Page[] {
   if (blocks.length === 0) return [{ blocks: [], overflow: false }];
   if (!Number.isFinite(pageHeight) || pageHeight <= 0) {
     return [{ blocks: blocks.map(toPlaced), overflow: true }];
@@ -76,7 +77,7 @@ export function paginate(blocks: MeasuredBlock[], pageHeight: number): Page[] {
   };
   const advance = () => {
     let start = current.length;
-    while (start > 0 && current[start - 1].block.kind === "heading") start -= 1;
+    while (keepHeadings && start > 0 && current[start - 1].block.kind === "heading") start -= 1;
     if (start === 0) return;
     const headings = current.splice(start);
     flush();
@@ -84,6 +85,7 @@ export function paginate(blocks: MeasuredBlock[], pageHeight: number): Page[] {
   };
 
   for (const block of blocks) {
+    if (block.breakBefore) flush();
     if (block.height <= space(block)) {
       add(block);
       continue;

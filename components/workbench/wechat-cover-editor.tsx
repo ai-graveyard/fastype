@@ -158,7 +158,7 @@ function CoverArtwork({
   );
 }
 
-function ScaledCoverPreview({
+export function ScaledCoverPreview({
   cover,
   format,
   title,
@@ -209,6 +209,7 @@ function ScaledCoverPreview({
 }
 
 function CoverPreviewCard({
+  embedded = false,
   format,
   cover,
   title,
@@ -228,14 +229,19 @@ function CoverPreviewCard({
   onUpload: (format: WechatCoverFormat) => void;
   onClear: (format: WechatCoverFormat) => void;
   onDownload: (format: WechatCoverFormat) => void;
+  embedded?: boolean;
 }) {
   const t = useT();
   const size = WECHAT_COVER_FORMATS[format];
   const hasImage = Boolean(format === "wide" ? cover.wideImage : cover.squareImage);
 
   return (
-    <article className="overflow-hidden rounded-lg border bg-card">
-      <div className="flex items-center gap-3 border-b border-dashed px-3 py-2.5">
+    <article
+      className={embedded ? "min-w-0 space-y-3" : "overflow-hidden rounded-lg border bg-card"}
+    >
+      <div
+        className={cn("flex items-center gap-3", !embedded && "border-b border-dashed px-3 py-2.5")}
+      >
         <div className="min-w-0 flex-1">
           <h4 className="text-xs font-semibold">
             {t(format === "wide" ? "wechat.coverWide" : "wechat.coverSquare")}
@@ -250,18 +256,22 @@ function CoverPreviewCard({
         </span>
       </div>
 
-      <div className="bg-muted/20 p-3">
-        <ScaledCoverPreview
-          cover={cover}
-          format={format}
-          title={title}
-          avatar={avatar}
-          profileName={profileName}
-          showSafeArea={showSafeArea}
-        />
+      <div className={embedded ? "flex h-44 items-center justify-center" : "bg-muted/20 p-3"}>
+        <div className={embedded && format === "square" ? "w-44 max-w-full" : "w-full"}>
+          <ScaledCoverPreview
+            cover={cover}
+            format={format}
+            title={title}
+            avatar={avatar}
+            profileName={profileName}
+            showSafeArea={showSafeArea}
+          />
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 border-t border-dashed px-3 py-2.5">
+      <div
+        className={cn("flex flex-wrap gap-1.5", !embedded && "border-t border-dashed px-3 py-2.5")}
+      >
         <Button type="button" variant="outline" size="sm" onClick={() => onUpload(format)}>
           <Upload />
           {hasImage ? t("wechat.coverRecrop") : t("wechat.coverAddImage")}
@@ -285,10 +295,12 @@ export function WechatCoverEditor({
   documentTitle,
   docBaseName,
   articleDocument = "",
+  publishOnly = false,
 }: {
   documentTitle: string;
   docBaseName: string;
   articleDocument?: string;
+  publishOnly?: boolean;
 }) {
   const t = useT();
   const { wechatCover, setWechatCover, resetWechatCover } = useStyles();
@@ -410,52 +422,69 @@ export function WechatCoverEditor({
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <section className="space-y-4 rounded-lg border border-border bg-card p-4">
-        <div>
-          <h3 className="flex items-center gap-2 text-sm font-semibold">
-            <Images className="size-4 text-brand-primary" />
-            {t("wechat.coverPreviewTitle")}
-          </h3>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {t("wechat.coverPreviewDesc")}
-          </p>
-        </div>
-
-        <CoverPreviewCard
-          format="wide"
-          cover={wechatCover}
-          title={resolvedTitle}
-          avatar={profile.avatar}
-          profileName={profile.name}
-          showSafeArea={safeArea}
-          onUpload={chooseSource}
-          onClear={() => setCover({ wideImage: "" })}
-          onDownload={(format) => void downloadOne(format)}
-        />
-        <CoverPreviewCard
-          format="square"
-          cover={wechatCover}
-          title={resolvedTitle}
-          avatar={profile.avatar}
-          profileName={profile.name}
-          showSafeArea={false}
-          onUpload={chooseSource}
-          onClear={() => setCover({ squareImage: "" })}
-          onDownload={(format) => void downloadOne(format)}
-        />
-
-        <div className="flex items-center justify-between gap-4 rounded-md border border-dashed px-3 py-2.5">
+    <div className={publishOnly ? "space-y-4" : "mx-auto max-w-2xl space-y-4"}>
+      <section
+        className={cn("space-y-4", !publishOnly && "rounded-lg border border-border bg-card p-4")}
+      >
+        {!publishOnly ? (
           <div>
-            <Label htmlFor="wechat-cover-safe-area">{t("wechat.coverSafeArea")}</Label>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {t("wechat.coverSafeAreaDesc")}
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <Images className="size-4 text-brand-primary" />
+              {t("wechat.coverPreviewTitle")}
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              {t("wechat.coverPreviewDesc")}
             </p>
           </div>
-          <Switch id="wechat-cover-safe-area" checked={safeArea} onCheckedChange={setSafeArea} />
+        ) : null}
+
+        <div className={publishOnly ? "grid gap-6 sm:grid-cols-2" : "grid gap-4"}>
+          <CoverPreviewCard
+            embedded={publishOnly}
+            format="wide"
+            cover={wechatCover}
+            title={resolvedTitle}
+            avatar={profile.avatar}
+            profileName={profile.name}
+            showSafeArea={!publishOnly && safeArea}
+            onUpload={chooseSource}
+            onClear={() => setCover({ wideImage: "" })}
+            onDownload={(format) => void downloadOne(format)}
+          />
+          <CoverPreviewCard
+            embedded={publishOnly}
+            format="square"
+            cover={wechatCover}
+            title={resolvedTitle}
+            avatar={profile.avatar}
+            profileName={profile.name}
+            showSafeArea={false}
+            onUpload={chooseSource}
+            onClear={() => setCover({ squareImage: "" })}
+            onDownload={(format) => void downloadOne(format)}
+          />
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        {!publishOnly ? (
+          <>
+            <div className="flex items-center justify-between gap-4 rounded-md border border-dashed px-3 py-2.5">
+              <div>
+                <Label htmlFor="wechat-cover-safe-area">{t("wechat.coverSafeArea")}</Label>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {t("wechat.coverSafeAreaDesc")}
+                </p>
+              </div>
+              <Switch
+                id="wechat-cover-safe-area"
+                checked={safeArea}
+                onCheckedChange={setSafeArea}
+              />
+            </div>
+          </>
+        ) : null}
+        <div
+          className={cn("grid gap-2 sm:grid-cols-2", publishOnly && "border-t border-border pt-4")}
+        >
           <Button
             type="button"
             variant="outline"
@@ -478,152 +507,155 @@ export function WechatCoverEditor({
         </div>
       </section>
 
-      <section className="space-y-4 rounded-lg border border-border bg-card p-4">
-        <div>
-          <h3 className="text-sm font-semibold">{t("wechat.coverContentTitle")}</h3>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {t("wechat.coverContentDesc")}
-          </p>
-        </div>
+      {!publishOnly ? (
+        <>
+          <section className="space-y-4 rounded-lg border border-border bg-card p-4">
+            <div>
+              <h3 className="text-sm font-semibold">{t("wechat.coverContentTitle")}</h3>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {t("wechat.coverContentDesc")}
+              </p>
+            </div>
 
-        <div className="flex items-center justify-between gap-4">
-          <Label htmlFor="wechat-cover-auto-title">{t("wechat.coverAutoTitle")}</Label>
-          <Switch
-            id="wechat-cover-auto-title"
-            checked={wechatCover.useDocumentTitle}
-            onCheckedChange={(useDocumentTitle) => setCover({ useDocumentTitle })}
-          />
-        </div>
-        {!wechatCover.useDocumentTitle ? (
-          <Field label={t("wechat.coverTitle")} htmlFor="wechat-cover-title">
-            <textarea
-              id="wechat-cover-title"
-              value={wechatCover.title}
-              maxLength={120}
-              rows={3}
-              onChange={(event) => setCover({ title: event.target.value })}
-              className="w-full resize-y rounded-md border border-input bg-card/60 px-3 py-2 text-sm"
-            />
-          </Field>
-        ) : null}
-        <Field label={t("wechat.coverSubtitle")} htmlFor="wechat-cover-subtitle">
-          <input
-            id="wechat-cover-subtitle"
-            value={wechatCover.subtitle}
-            maxLength={160}
-            placeholder={t("wechat.coverSubtitlePlaceholder")}
-            onChange={(event) => setCover({ subtitle: event.target.value })}
-            className="h-9 w-full rounded-md border border-input bg-card/60 px-3 text-sm"
-          />
-        </Field>
-        <div className="flex items-center justify-between gap-4">
-          <Label htmlFor="wechat-cover-profile">{t("wechat.coverShowProfile")}</Label>
-          <Switch
-            id="wechat-cover-profile"
-            checked={wechatCover.showProfile}
-            onCheckedChange={(showProfile) => setCover({ showProfile })}
-          />
-        </div>
-      </section>
+            <div className="flex items-center justify-between gap-4">
+              <Label htmlFor="wechat-cover-auto-title">{t("wechat.coverAutoTitle")}</Label>
+              <Switch
+                id="wechat-cover-auto-title"
+                checked={wechatCover.useDocumentTitle}
+                onCheckedChange={(useDocumentTitle) => setCover({ useDocumentTitle })}
+              />
+            </div>
+            {!wechatCover.useDocumentTitle ? (
+              <Field label={t("wechat.coverTitle")} htmlFor="wechat-cover-title">
+                <textarea
+                  id="wechat-cover-title"
+                  value={wechatCover.title}
+                  maxLength={120}
+                  rows={3}
+                  onChange={(event) => setCover({ title: event.target.value })}
+                  className="w-full resize-y rounded-md border border-input bg-card/60 px-3 py-2 text-sm"
+                />
+              </Field>
+            ) : null}
+            <Field label={t("wechat.coverSubtitle")} htmlFor="wechat-cover-subtitle">
+              <input
+                id="wechat-cover-subtitle"
+                value={wechatCover.subtitle}
+                maxLength={160}
+                placeholder={t("wechat.coverSubtitlePlaceholder")}
+                onChange={(event) => setCover({ subtitle: event.target.value })}
+                className="h-9 w-full rounded-md border border-input bg-card/60 px-3 text-sm"
+              />
+            </Field>
+            <div className="flex items-center justify-between gap-4">
+              <Label htmlFor="wechat-cover-profile">{t("wechat.coverShowProfile")}</Label>
+              <Switch
+                id="wechat-cover-profile"
+                checked={wechatCover.showProfile}
+                onCheckedChange={(showProfile) => setCover({ showProfile })}
+              />
+            </div>
+          </section>
 
-      <section className="space-y-4 rounded-lg border border-border bg-card p-4">
-        <div>
-          <h3 className="text-sm font-semibold">{t("wechat.coverStyleTitle")}</h3>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {t("wechat.coverStyleDesc")}
-          </p>
-        </div>
+          <section className="space-y-4 rounded-lg border border-border bg-card p-4">
+            <div>
+              <h3 className="text-sm font-semibold">{t("wechat.coverStyleTitle")}</h3>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {t("wechat.coverStyleDesc")}
+              </p>
+            </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <ColorPicker
-            label={t("wechat.coverBackground")}
-            value={wechatCover.backgroundColor}
-            displayValue={wechatCover.backgroundColor}
-            onChange={(backgroundColor) => setCover({ backgroundColor })}
-          />
-          <ColorPicker
-            label={t("wechat.coverTextColor")}
-            value={wechatCover.textColor}
-            displayValue={wechatCover.textColor}
-            onChange={(textColor) => setCover({ textColor })}
-          />
-          <ColorPicker
-            label={t("wechat.coverOverlayColor")}
-            value={wechatCover.overlayColor}
-            displayValue={wechatCover.overlayColor}
-            onChange={(overlayColor) => setCover({ overlayColor })}
-          />
-          <SliderField
-            label={t("wechat.coverOverlayOpacity")}
-            value={wechatCover.overlayOpacity}
-            min={0}
-            max={0.85}
-            step={0.05}
-            onChange={(overlayOpacity) => setCover({ overlayOpacity })}
-          />
-        </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ColorPicker
+                label={t("wechat.coverBackground")}
+                value={wechatCover.backgroundColor}
+                displayValue={wechatCover.backgroundColor}
+                onChange={(backgroundColor) => setCover({ backgroundColor })}
+              />
+              <ColorPicker
+                label={t("wechat.coverTextColor")}
+                value={wechatCover.textColor}
+                displayValue={wechatCover.textColor}
+                onChange={(textColor) => setCover({ textColor })}
+              />
+              <ColorPicker
+                label={t("wechat.coverOverlayColor")}
+                value={wechatCover.overlayColor}
+                displayValue={wechatCover.overlayColor}
+                onChange={(overlayColor) => setCover({ overlayColor })}
+              />
+              <SliderField
+                label={t("wechat.coverOverlayOpacity")}
+                value={wechatCover.overlayOpacity}
+                min={0}
+                max={0.85}
+                step={0.05}
+                onChange={(overlayOpacity) => setCover({ overlayOpacity })}
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label>{t("wechat.coverAlign")}</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {(["left", "center", "right"] as const).map((align) => (
-              <button
-                key={align}
-                type="button"
-                aria-pressed={wechatCover.align === align}
-                onClick={() => setCover({ align })}
-                className={cn(
-                  "flex h-9 items-center justify-center gap-2 rounded-md border text-xs transition-colors",
-                  wechatCover.align === align
-                    ? "border-brand-primary bg-brand-primary/8 text-brand-primary"
-                    : "border-border hover:bg-accent",
-                )}
-              >
-                {align === "left" ? <AlignLeft className="size-4" /> : null}
-                {align === "center" ? <AlignCenter className="size-4" /> : null}
-                {align === "right" ? <AlignRight className="size-4" /> : null}
-                {t(
-                  align === "left"
-                    ? "wechat.alignLeft"
-                    : align === "center"
-                      ? "wechat.alignCenter"
-                      : "wechat.alignRight",
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
+            <div className="space-y-2">
+              <Label>{t("wechat.coverAlign")}</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["left", "center", "right"] as const).map((align) => (
+                  <button
+                    key={align}
+                    type="button"
+                    aria-pressed={wechatCover.align === align}
+                    onClick={() => setCover({ align })}
+                    className={cn(
+                      "flex h-9 items-center justify-center gap-2 rounded-md border text-xs transition-colors",
+                      wechatCover.align === align
+                        ? "border-brand-primary bg-brand-primary/8 text-brand-primary"
+                        : "border-border hover:bg-accent",
+                    )}
+                  >
+                    {align === "left" ? <AlignLeft className="size-4" /> : null}
+                    {align === "center" ? <AlignCenter className="size-4" /> : null}
+                    {align === "right" ? <AlignRight className="size-4" /> : null}
+                    {t(
+                      align === "left"
+                        ? "wechat.alignLeft"
+                        : align === "center"
+                          ? "wechat.alignCenter"
+                          : "wechat.alignRight",
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        <div className="space-y-2">
-          <Label>{t("wechat.coverPosition")}</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {(["top", "center", "bottom"] as const).map((position) => (
-              <button
-                key={position}
-                type="button"
-                aria-pressed={wechatCover.position === position}
-                onClick={() => setCover({ position })}
-                className={cn(
-                  "h-9 rounded-md border text-xs transition-colors",
-                  wechatCover.position === position
-                    ? "border-brand-primary bg-brand-primary/8 text-brand-primary"
-                    : "border-border hover:bg-accent",
-                )}
-              >
-                {t(
-                  `wechat.coverPosition${position[0].toUpperCase()}${position.slice(1)}` as "wechat.coverPositionTop",
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
+            <div className="space-y-2">
+              <Label>{t("wechat.coverPosition")}</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["top", "center", "bottom"] as const).map((position) => (
+                  <button
+                    key={position}
+                    type="button"
+                    aria-pressed={wechatCover.position === position}
+                    onClick={() => setCover({ position })}
+                    className={cn(
+                      "h-9 rounded-md border text-xs transition-colors",
+                      wechatCover.position === position
+                        ? "border-brand-primary bg-brand-primary/8 text-brand-primary"
+                        : "border-border hover:bg-accent",
+                    )}
+                  >
+                    {t(
+                      `wechat.coverPosition${position[0].toUpperCase()}${position.slice(1)}` as "wechat.coverPositionTop",
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        <Button type="button" variant="outline" className="w-full" onClick={resetWechatCover}>
-          <RotateCcw />
-          {t("wechat.coverReset")}
-        </Button>
-      </section>
-
+            <Button type="button" variant="outline" className="w-full" onClick={resetWechatCover}>
+              <RotateCcw />
+              {t("wechat.coverReset")}
+            </Button>
+          </section>
+        </>
+      ) : null}
       <input
         ref={inputRef}
         type="file"

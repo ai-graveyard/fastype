@@ -86,7 +86,7 @@ export const MarkdownPreview = React.memo(
     );
 
     return (
-      <div className="flex h-full min-h-0 flex-col">
+      <div className="ft-toolbar-container flex h-full min-h-0 flex-col">
         <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />
         <div className="flex h-[53px] shrink-0 items-center gap-3 border-b border-dashed border-border bg-background/30 px-4">
           <div className="flex shrink-0 items-center gap-2 text-sm font-medium">
@@ -118,12 +118,14 @@ export const MarkdownPreview = React.memo(
               <Button
                 size="sm"
                 // 与公众号预览的「复制」保持同一套主题色描边样式和尺寸。
-                className="border border-brand-primary/30 bg-brand-primary/10 text-brand-primary shadow-none hover:bg-brand-primary/15"
+                className="ft-toolbar-action border border-brand-primary/30 bg-brand-primary/10 text-brand-primary shadow-none hover:bg-brand-primary/15"
                 disabled={!html}
                 onClick={onCopyStyled}
+                aria-label={t("editor.copyStyled")}
+                title={t("editor.copyStyledLabel")}
               >
                 <ClipboardCheck />
-                {t("editor.copyStyled")}
+                <span className="ft-toolbar-label">{t("editor.copyStyled")}</span>
               </Button>
             </Tooltip>
 
@@ -132,12 +134,17 @@ export const MarkdownPreview = React.memo(
                 <Button
                   variant="outline"
                   size="sm"
-                  aria-label={t("editor.exportMenuLabel")}
+                  className="ft-toolbar-action"
+                  aria-label={t(exporting ? "editor.exportingLongImage" : "editor.exportMenuLabel")}
+                  title={t(exporting ? "editor.exportingLongImage" : "editor.exportMenuLabel")}
+                  aria-busy={exporting}
                   disabled={!html || exporting}
                 >
                   {exporting ? <Loader2 className="animate-spin" /> : <Download />}
-                  {exporting ? t("editor.exportingLongImage") : t("editor.exportMenu")}
-                  <ChevronDown className="size-3" aria-hidden="true" />
+                  <span className="ft-toolbar-label">
+                    {exporting ? t("editor.exportingLongImage") : t("editor.exportMenu")}
+                  </span>
+                  <ChevronDown className="ft-toolbar-label size-3" aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

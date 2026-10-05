@@ -1,4 +1,4 @@
-import { ALL_STORAGE_KEYS, SCHEMA_VERSION } from "./keys";
+import { ALL_STORAGE_KEYS, SCHEMA_VERSION, StorageKey } from "./keys";
 
 export * from "./keys";
 
@@ -166,6 +166,18 @@ export function writeRecord(key: string, data: unknown): WriteResult {
     return { ok: true };
   } catch (error) {
     if (isQuotaError(error)) {
+      // History is expendable; the current draft gets the space first.
+      if (key === StorageKey.draft) {
+        try {
+          if (window.localStorage.getItem(StorageKey.history)) {
+            window.localStorage.removeItem(StorageKey.history);
+            window.localStorage.setItem(key, JSON.stringify(envelope));
+            return { ok: true };
+          }
+        } catch {
+          /* Fall through to the persistent quota warning. */
+        }
+      }
       setQuotaExhausted(true);
       emit("quota");
       return { ok: false, issue: "quota" };

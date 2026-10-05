@@ -94,13 +94,14 @@ function canUseDom(): boolean {
  * 渲染层（lib/render/wechat.ts、lib/render/xhs.ts）在把 HTML 字符串塞进
  * `innerHTML` 前会再调用一次本函数兜底，不完全依赖调用方「已经消毒过」的约定。
  */
-export function sanitizeHtml(rawHtml: string): DocumentFragment {
+export function sanitizeHtml(rawHtml: string, preserveLayout = false): DocumentFragment {
   return DOMPurify.sanitize(rawHtml, {
     FORBID_TAGS,
     FORBID_ATTR: ["style"],
     ALLOW_DATA_ATTR: false,
     // 图表占位和代码语言这三个 data-* 是我们自己写进去的，得在 ALLOW_DATA_ATTR:false 下逐个放行。
     ADD_ATTR: [
+      ...(preserveLayout ? [SOURCE_LINE_ATTRIBUTE, "data-page-break-before"] : []),
       "target",
       "rel",
       DIAGRAM_KIND_ATTRIBUTE,

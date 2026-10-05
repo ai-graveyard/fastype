@@ -65,9 +65,10 @@ describe("平台内容编辑器显示方式", () => {
     expect(workspaceHeader.firstElementChild?.classList.contains("h-full")).toBe(true);
     expect(workspaceHeader.contains(modeSwitcher)).toBe(false);
     expect(editorToolbar.lastElementChild?.lastElementChild).toBe(modeSwitcher);
-    expect(screen.getByRole("button", { name: /^Text$|^文本$/ }).getAttribute("aria-pressed")).toBe(
-      "true",
-    );
+    expect(
+      screen.getByRole("button", { name: /^Preview$|^预览$/ }).getAttribute("aria-pressed"),
+    ).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: /^Text$|^文本$/ }));
     expect(screen.getByRole("tab", { name: /Theme|主题/ })).toBeTruthy();
     expect(screen.getByRole("region", { name: /Preview(?: area)?|预览区/ })).toBeTruthy();
     expect(document.querySelector(".cm-gutters")).toBeTruthy();

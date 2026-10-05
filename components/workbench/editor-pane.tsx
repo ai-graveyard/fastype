@@ -60,6 +60,7 @@ import {
 import { imageRefId } from "@/lib/image/ref";
 import type { ImageMarkupMatch } from "@/lib/markdown/image-markup";
 import { extractMarkdownOutline } from "@/lib/markdown/outline";
+import { htmlToMarkdown } from "@/lib/markdown/from-html";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import { cn } from "@/lib/utils";
 
@@ -160,8 +161,21 @@ export function EditorPane({
     [t],
   );
 
-  /** 剪贴板里有图就插图；只有文字时交给 CodeMirror 自己粘。 */
+  /** Capture before CodeMirror handles the plain-text clipboard flavor. */
   const handlePaste = (event: React.ClipboardEvent) => {
+    const html = event.clipboardData?.getData("text/html");
+    if (html && editorRef.current) {
+      const markdown = htmlToMarkdown(html);
+      if (markdown) {
+        event.preventDefault();
+        event.stopPropagation();
+        const api = editorRef.current;
+        const before = api.getValue();
+        api.replaceSelection(markdown);
+        if (api.getValue() === before) toast.error(t("image.insertRejected"));
+        return;
+      }
+    }
     const files = pickImageFiles(event.clipboardData?.items ?? null);
     if (files.length === 0) return;
     event.preventDefault();
@@ -233,13 +247,13 @@ export function EditorPane({
   };
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-card">
+    <div className="ft-toolbar-container flex min-h-0 min-w-0 flex-1 flex-col bg-card">
       <div
         role="toolbar"
         aria-label={t("a11y.formatToolbar")}
         className="flex h-[53px] shrink-0 items-center border-b border-dashed border-border bg-background/30 px-4"
       >
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex min-w-0 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&>button]:shrink-0 [&>span]:shrink-0">
           <Tooltip label={t(savePending ? "doc.statusDirty" : "doc.statusSaved")}>
             <span
               role="status"
@@ -456,7 +470,7 @@ export function EditorPane({
 
       <div
         className="relative min-h-0 flex-1 overflow-hidden"
-        onPaste={handlePaste}
+        onPasteCapture={handlePaste}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}

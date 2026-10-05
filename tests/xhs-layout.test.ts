@@ -469,7 +469,7 @@ describe("applyXhsBodyTitleOverride", () => {
   it("已有一级标题时，只替换标题文字，不影响正文其余内容", () => {
     const html = renderMarkdown("# 原始标题\n\n正文段落").html;
     const result = applyXhsBodyTitleOverride(html, "自定义标题");
-    expect(result).toContain("<h1>自定义标题</h1>");
+    expect(result).toMatch(/<h1[^>]*>自定义标题<\/h1>/);
     expect(result).not.toContain("原始标题");
     expect(result).toContain("正文段落");
   });
@@ -483,6 +483,6 @@ describe("applyXhsBodyTitleOverride", () => {
   it("支持多行标题，换行会转换成 <br>，同时会转义 HTML 特殊字符", () => {
     const html = renderMarkdown("# 原始标题").html;
     const result = applyXhsBodyTitleOverride(html, "第一行\n第二行 <script>");
-    expect(result).toContain("<h1>第一行<br>第二行 &lt;script&gt;</h1>");
+    expect(result).toMatch(/<h1[^>]*>第一行<br>第二行 &lt;script&gt;<\/h1>/);
   });
 });

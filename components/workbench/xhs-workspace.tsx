@@ -8,6 +8,7 @@ import {
   Palette,
   QrCode,
   RotateCcw,
+  SlidersHorizontal,
   Type,
 } from "lucide-react";
 import * as React from "react";
@@ -21,6 +22,12 @@ import {
 import { useT } from "@/components/providers/prefs-provider";
 import { useStyles } from "@/components/providers/style-provider";
 import { useUserProfile } from "@/components/providers/user-profile-provider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import {
   XHS_IDENTIFIER_BADGE_ICONS,
@@ -94,6 +101,7 @@ interface XhsWorkspaceProps {
   savePending: boolean;
   scrollTarget?: { id: string; nonce: number } | null;
   onEditProfile?: () => void;
+  onBeforeReplaceDocument?: () => void;
 }
 
 const TABS: Array<{
@@ -243,6 +251,7 @@ export function XhsWorkspace({
   savePending,
   scrollTarget,
   onEditProfile,
+  onBeforeReplaceDocument,
 }: XhsWorkspaceProps) {
   const t = useT();
   const {
@@ -299,23 +308,48 @@ export function XhsWorkspace({
     <Tabs
       value={activeTab}
       onValueChange={(value) => onActiveTabChange(value as XhsWorkspaceTab)}
-      className="flex h-full min-h-0 flex-1 flex-col gap-0 bg-card"
+      className="ft-toolbar-container flex h-full min-h-0 flex-1 flex-col gap-0 bg-card"
     >
       <div
         className="h-[53px] shrink-0 border-b border-dashed border-border bg-background/25 px-2"
         data-testid="xhs-workspace-header"
       >
-        <TabsList className="grid h-full w-full grid-cols-6 rounded-none border-0 bg-transparent p-0 shadow-none">
-          {TABS.map((tab) => (
+        <TabsList className="grid h-full w-full grid-cols-5 rounded-none border-0 bg-transparent p-0 shadow-none">
+          {TABS.filter((tab) => tab.id !== "typography" && tab.id !== "enhance").map((tab) => (
             <TabsTrigger
               key={tab.id}
               value={tab.id}
+              aria-label={t(tab.key)}
+              title={t(tab.key)}
               className="min-w-0 gap-1.5 rounded-none border-0 border-b-2 border-transparent bg-transparent px-1 text-[11px] text-muted-foreground shadow-none transition-colors hover:text-foreground focus-visible:bg-accent/50 focus-visible:outline-none focus-visible:ring-0 data-[state=active]:border-brand-primary data-[state=active]:bg-transparent data-[state=active]:text-brand-primary data-[state=active]:shadow-none"
             >
               <tab.icon className="size-3.5 shrink-0" />
-              <span className="truncate">{t(tab.key)}</span>
+              <span className="ft-toolbar-label">{t(tab.key)}</span>
             </TabsTrigger>
           ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-full min-w-0 px-1 text-[11px]"
+                aria-label={t("creator.editDetails")}
+                title={t("creator.editDetails")}
+                data-active={activeTab === "typography" || activeTab === "enhance"}
+              >
+                <SlidersHorizontal aria-hidden="true" />
+                <span className="ft-toolbar-label">{t("creator.editDetails")}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {TABS.filter((tab) => tab.id === "typography" || tab.id === "enhance").map((tab) => (
+                <DropdownMenuItem key={tab.id} onSelect={() => onActiveTabChange(tab.id)}>
+                  <tab.icon className="size-4" />
+                  {t(tab.key)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </TabsList>
       </div>
 
@@ -331,6 +365,7 @@ export function XhsWorkspace({
             <div className="min-h-0 flex-1">
               <MarkdownEditor
                 ref={editorRef}
+                onBeforeReplaceDocument={onBeforeReplaceDocument}
                 value={content}
                 onChange={onContentChange}
                 onSelectionChange={onSelectionChange}

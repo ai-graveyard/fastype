@@ -9,7 +9,7 @@ test("编辑、切换双平台并自动恢复草稿", async ({ page }) => {
   await editor.fill("# Browser smoke\n\nCross-browser draft.");
 
   await page.getByRole("tab", { name: /Xiaohongshu|小红书/ }).click();
-  await expect(page.getByRole("tab", { name: /Content|内容/ })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Publishing text|发布文案/ })).toBeVisible();
 
   await page.getByRole("tab", { name: /WeChat|公众号/ }).click();
   await expect(page.getByRole("button", { name: /^Copy$|^复制$/ })).toBeVisible();

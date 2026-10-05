@@ -6,9 +6,19 @@ import {
   buildPagesZip,
   collectCrossOriginImages,
   findUnexportableImages,
+  settleExportImages,
 } from "@/lib/export/png";
 
 describe("小红书 ZIP 导出", () => {
+  it("发布包带走标题和正文标签，不包含其他设置", async () => {
+    const archive = await buildPagesZip([{ index: 0, ok: true, blob: new Blob(["png"]) }], "文章", {
+      title: "标题",
+      body: "正文\n\n#标签",
+    });
+    const zip = await JSZip.loadAsync(await archive!.blob.arrayBuffer());
+    expect(Object.keys(zip.files)).toEqual(["文章-xhs-01.png", "文章-title.txt", "文章-body.txt"]);
+    expect(await zip.file("文章-body.txt")?.async("text")).toBe("正文\n\n#标签");
+  });
   it("只打包成功生成的 PNG，并保留原页码", async () => {
     const archive = await buildPagesZip(
       [
@@ -46,6 +56,28 @@ function fakeLoaded(root: HTMLElement) {
 }
 
 describe("导出前的图片可用性探测", () => {
+  it("等待离屏懒加载头像完成，再判断是否缺图", async () => {
+    const root = mountImages('<img src="/avatar.png" loading="lazy">');
+    const pending = settleExportImages([root]);
+    const image = root.querySelector("img")!;
+    expect(image.loading).toBe("eager");
+    fakeLoaded(root);
+    image.dispatchEvent(new Event("load"));
+    await pending;
+    await expect(findUnexportableImages([root])).resolves.toEqual([]);
+  });
+  it("图片一直加载时超时退出，不无限阻塞导出", async () => {
+    vi.useFakeTimers();
+    try {
+      const root = mountImages('<img src="/pending.png">');
+      const pending = settleExportImages([root], 100);
+      await vi.advanceTimersByTimeAsync(100);
+      await pending;
+      await expect(findUnexportableImages([root])).resolves.toEqual(["/pending.png"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   afterEach(() => {
     document.body.innerHTML = "";
     __resetCorsProbeCacheForTests();

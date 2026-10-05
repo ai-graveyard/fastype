@@ -178,8 +178,14 @@ export function StyleProvider({ children }: { children: React.ReactNode }) {
       isSelectedWechatThemeDirty: Boolean(
         selectedWechatTheme && selectedWechatThemeJson !== wechatJson,
       ),
-      setXhs: (patch) => xhsStore.set({ ...xhs, ...patch }),
-      setWechat: (patch) => wechatStore.set({ ...wechat, ...patch }),
+      setXhs: (patch) => {
+        if (patch.themeId !== undefined) setXhsLibrary({ selectedId: null });
+        xhsStore.set({ ...xhs, ...patch });
+      },
+      setWechat: (patch) => {
+        if (patch.themeId !== undefined) setWechatLibrary({ selectedId: null });
+        wechatStore.set({ ...wechat, ...patch });
+      },
       // 基线用存下来的那份而不是解析过的，否则等于把刚换出来的 data URI 又写回 localStorage。
       setWechatCover: (patch) => storeWechatCover({ ...storedCover, ...patch }),
       setXhsTheme: (themeId) => {

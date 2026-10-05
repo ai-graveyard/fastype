@@ -18,6 +18,9 @@ import { getDefaultDraftContent, getDefaultDraftFilename } from "@/lib/markdown/
 import { formatBytes } from "@/lib/image/data-url";
 import { DEFAULT_DRAFT, parseDraft, type Draft } from "@/lib/prefs";
 import { onStorageIssue, readAllRawRecords, readRecord, StorageKey } from "@/lib/storage";
+import { isMajorReplacement, saveSnapshot, type DraftSnapshot } from "@/lib/storage/history";
+import { documentLayoutStore } from "@/lib/storage/document-layout";
+import { removeRecord } from "@/lib/storage";
 import { createLocalStore } from "@/lib/storage/store";
 
 /** 编辑期间每 3 秒自动保存一次，避免每次按键都同步写入存储。 */
@@ -63,6 +66,8 @@ interface DocumentContextValue {
   openFile: (file: File, handle?: FileSystemFileHandle) => Promise<void>;
   downloadMarkdown: () => Promise<boolean>;
   clearDraft: () => void;
+  checkpoint: () => boolean;
+  restoreSnapshot: (snapshot: DraftSnapshot) => void;
   pending: PendingAction | null;
   resolvePending: (choice: "discard" | "download" | "cancel") => void;
 }
@@ -112,6 +117,8 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   const lastDraftWriteAt = React.useRef(0);
   const draftRevisionInitialized = React.useRef(false);
   const draftConflictNotified = React.useRef(false);
+
+  const lastSnapshotAt = React.useRef(0);
 
   const filename = local?.filename ?? storedDraft.filename ?? "";
   const content = local?.content ?? storedDraft.content ?? "";
@@ -271,6 +278,14 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   const setContent = React.useCallback(
     (next: string) => {
       const name = filename || defaultName;
+      if (
+        next !== contentRef.current &&
+        (Date.now() - lastSnapshotAt.current > 60_000 ||
+          isMajorReplacement(contentRef.current, next))
+      ) {
+        saveSnapshot({ filename: name, content: contentRef.current, savedAt: Date.now() });
+        lastSnapshotAt.current = Date.now();
+      }
       const version = ++contentChangeVersion.current;
       contentRef.current = next;
       setLocal({ filename: name, content: next });
@@ -316,6 +331,9 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
 
   const applyDocument = React.useCallback(
     (nextName: string, nextContent: string, handle?: FileSystemFileHandle) => {
+      saveSnapshot({ filename, content: contentRef.current, savedAt: Date.now() });
+      documentLayoutStore.reset();
+      lastSnapshotAt.current = 0;
       cancelAutoSave();
       contentChangeVersion.current += 1;
       contentRef.current = nextContent;
@@ -335,7 +353,19 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
       }
       setDraftWriteFailed(!result.ok);
     },
-    [cancelAutoSave],
+    [cancelAutoSave, filename],
+  );
+
+  const checkpoint = React.useCallback(
+    () => saveSnapshot({ filename, content: contentRef.current, savedAt: Date.now() }),
+    [filename],
+  );
+  const restoreSnapshot = React.useCallback(
+    (snapshot: DraftSnapshot) => {
+      applyDocument(snapshot.filename, snapshot.content);
+      setPersisted("");
+    },
+    [applyDocument],
   );
 
   const newDocument = React.useCallback(() => {
@@ -390,6 +420,8 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
 
   /** 清除草稿（单独清除或作为「清除全部」的一部分）后回到教程内容，而不是空白文档。 */
   const clearDraft = React.useCallback(() => {
+    removeRecord(StorageKey.history);
+    documentLayoutStore.reset();
     cancelAutoSave();
     const next: Draft = {
       filename: getDefaultDraftFilename(locale),
@@ -492,6 +524,8 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
       openFile: openFileGuarded,
       downloadMarkdown,
       clearDraft,
+      checkpoint,
+      restoreSnapshot,
       pending,
       resolvePending,
     }),
@@ -507,6 +541,8 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
       openFileGuarded,
       downloadMarkdown,
       clearDraft,
+      checkpoint,
+      restoreSnapshot,
       pending,
       resolvePending,
     ],

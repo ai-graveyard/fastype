@@ -57,11 +57,9 @@ describe("小红书设置导航", () => {
   it("把图片和内容作为并列的一级模块", () => {
     const view = renderWorkspace("image");
 
-    expect(screen.getAllByRole("tab")).toHaveLength(6);
-    expect(screen.getByRole("tab", { name: /^Image$|^图文$/ })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: /^Content$|^内容$/ })).toBeTruthy();
-    expect(screen.queryByRole("tab", { name: /Image body|图片正文/ })).toBeNull();
-    expect(screen.queryByRole("tab", { name: /Text body|正文/ })).toBeNull();
+    expect(screen.getAllByRole("tab")).toHaveLength(4);
+    expect(screen.getByRole("tab", { name: /^Image content$|^图片正文$/ })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /^Publishing text$|^发布文案$/ })).toBeTruthy();
     expect(screen.getByRole("toolbar", { name: /Formatting toolbar|格式工具栏/ })).toBeTruthy();
 
     view.rerender(
@@ -190,10 +188,10 @@ describe("小红书设置导航", () => {
   it("把版式和元素设置统一归入排版标签", () => {
     const view = renderWorkspace("typography");
 
-    expect(screen.getAllByRole("tab")).toHaveLength(6);
-    expect(screen.getByRole("tab", { name: /Typography|排版/ })).toBeTruthy();
+    expect(screen.getAllByRole("tab")).toHaveLength(4);
+    expect(screen.getByRole("button", { name: /Fine-tune|精细调整/ })).toBeTruthy();
     expect(screen.queryByRole("tab", { name: /Elements|元素/ })).toBeNull();
-    expect(screen.getByRole("tab", { name: /Persona|人设/ })).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: /Author|作者标识/ })).toBeNull();
     expect(screen.queryByText(/Canvas size|^比例$/)).toBeNull();
     expect(screen.getByRole("heading", { name: /Heading design|标题排版/ })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /Text elements|文字元素/ })).toBeTruthy();

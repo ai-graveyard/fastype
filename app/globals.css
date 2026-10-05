@@ -610,3 +610,41 @@
     margin: 16mm 14mm;
   }
 }
+
+/* 分栏拖动也会改变按钮可用宽度，因此按所在区域而非视口收起文字。 */
+.ft-toolbar-container {
+  container: toolbar / inline-size;
+}
+
+.ft-toolbar-action {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.ft-creator-hint {
+  display: none;
+}
+
+@container toolbar (min-width: 1100px) {
+  .ft-creator-hint {
+    display: block;
+  }
+}
+
+@container toolbar (max-width: 640px) {
+  .ft-toolbar-label {
+    display: none;
+  }
+
+  .ft-toolbar-action {
+    gap: 0;
+    padding-inline: 8px;
+  }
+
+  .ft-preview-toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding-inline: 12px;
+  }
+}

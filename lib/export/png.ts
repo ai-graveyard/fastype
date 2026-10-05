@@ -90,6 +90,7 @@ export interface PagesZipResult {
 export async function buildPagesZip(
   results: PageExportResult[],
   docBaseName: string,
+  publishText?: { title: string; body: string },
 ): Promise<PagesZipResult | null> {
   const { default: JSZip } = await import("jszip");
   const zip = new JSZip();
@@ -105,6 +106,10 @@ export async function buildPagesZip(
   }
 
   if (included === 0) return null;
+  if (publishText) {
+    zip.file(`${docBaseName}-title.txt`, publishText.title);
+    zip.file(`${docBaseName}-body.txt`, publishText.body);
+  }
 
   // PNG 本身已经压缩，STORE 可以避免无意义的重复压缩和额外等待。
   const blob = await zip.generateAsync({
@@ -119,11 +124,36 @@ export async function buildPagesZip(
 export async function downloadPagesAsZip(
   results: PageExportResult[],
   docBaseName: string,
+  publishText?: { title: string; body: string },
 ): Promise<number> {
-  const archive = await buildPagesZip(results, docBaseName);
+  const archive = await buildPagesZip(results, docBaseName, publishText);
   if (!archive) return 0;
   downloadBlob(archive.blob, zipFilename(docBaseName));
   return archive.included;
+}
+
+/** Export nodes can contain lazy avatars outside the viewport; allow them to load before classifying failures. */
+export async function settleExportImages(roots: HTMLElement[], timeoutMs = 6_000): Promise<void> {
+  await Promise.all(
+    roots
+      .flatMap((root) => Array.from(root.querySelectorAll("img")))
+      .map((image) => {
+        image.loading = "eager";
+        if (image.complete) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          const finish = () => {
+            clearTimeout(timer);
+            image.removeEventListener("load", finish);
+            image.removeEventListener("error", finish);
+            resolve();
+          };
+          const timer = setTimeout(finish, timeoutMs);
+          image.addEventListener("load", finish, { once: true });
+          image.addEventListener("error", finish, { once: true });
+          if (image.complete) finish();
+        });
+      }),
+  );
 }
 
 /** 找出加载失败的远程图片，导出前提示用户（PRD FT-IMG-001）。 */
@@ -174,7 +204,10 @@ export function collectCrossOriginImages(roots: HTMLElement[]): string[] {
  *
  * 同时把预览里就没加载出来的图片一并算进去——那些图导出自然也不会有。
  */
-export async function findUnexportableImages(roots: HTMLElement[]): Promise<string[]> {
+export async function findUnexportableImages(
+  roots: HTMLElement[],
+  fresh = false,
+): Promise<string[]> {
   const missing = new Set<string>();
   for (const root of roots) {
     for (const src of findBrokenImages(root)) missing.add(src);
@@ -188,7 +221,7 @@ export async function findUnexportableImages(roots: HTMLElement[]): Promise<stri
       while (cursor < probes.length) {
         const src = probes[cursor];
         cursor += 1;
-        const cached = corsProbeCache.get(src);
+        const cached = fresh ? undefined : corsProbeCache.get(src);
         if (cached !== undefined) {
           if (!cached) missing.add(src);
           continue;

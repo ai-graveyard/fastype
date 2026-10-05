@@ -88,7 +88,7 @@ export function TopBar({ view, onViewChange, onOpenSettings }: TopBarProps) {
   };
 
   return (
-    <header className="flex h-auto shrink-0 flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-border bg-card px-3 py-1.5 sm:h-12 sm:flex-nowrap sm:px-4 sm:py-0">
+    <header className="@container/topbar flex h-auto shrink-0 flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-border bg-card px-3 py-1.5 sm:h-12 sm:flex-nowrap sm:px-4 sm:py-0">
       <div className="flex min-w-0 items-center gap-2">
         <div className="flex shrink-0 select-none items-center gap-2.5 pr-1">
           <span className="group flex size-8 items-center justify-center">
@@ -192,10 +192,14 @@ export function TopBar({ view, onViewChange, onOpenSettings }: TopBarProps) {
               <TabsTrigger
                 key={item}
                 value={item}
+                aria-label={t(VIEW_LABEL_KEYS[item])}
+                title={t(VIEW_LABEL_KEYS[item])}
                 className="h-full gap-1.5 rounded-md px-2.5 py-0 text-sm [&_svg]:size-4"
               >
                 <ViewLogo view={item} />
-                {t(VIEW_LABEL_KEYS[item])}
+                <span className="hidden @min-[900px]/topbar:inline">
+                  {t(VIEW_LABEL_KEYS[item])}
+                </span>
               </TabsTrigger>
             ))}
           </TabsList>

@@ -7,7 +7,7 @@ import { DEFAULT_PREFS, parsePrefs, type Prefs } from "@/lib/prefs";
 import { StorageKey } from "@/lib/storage";
 import { clientOnlyStore, createLocalStore } from "@/lib/storage/store";
 import type { MarkdownPreviewTheme } from "@/lib/themes/markdown";
-import { DEFAULT_RATIOS, type ThemeMode, type ViewId } from "@/lib/types";
+import { DEFAULT_RATIOS, type PlatformEditorMode, type ThemeMode, type ViewId } from "@/lib/types";
 
 /** 首次访问优先跟随浏览器语言，不匹配时默认中文（PRD FT-SET-004）。 */
 const prefsStore = createLocalStore(StorageKey.prefs, parsePrefs, DEFAULT_PREFS, (fallback) => ({
@@ -24,6 +24,7 @@ interface PrefsContextValue extends Prefs {
   setThemeMode: (mode: ThemeMode) => void;
   setMarkdownPreviewTheme: (theme: MarkdownPreviewTheme) => void;
   setLastView: (view: ViewId) => void;
+  setPlatformMode: (view: "xhs" | "wechat", mode: PlatformEditorMode) => void;
   setRatio: (view: ViewId, ratio: number) => void;
   resetPrefs: () => void;
   /** 已经在客户端跑起来了；依赖 DOM 的渲染要等它为 true。 */
@@ -54,6 +55,8 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
       setMarkdownPreviewTheme: (markdownPreviewTheme) =>
         prefsStore.set({ ...prefs, markdownPreviewTheme }),
       setLastView: (lastView) => prefsStore.set({ ...prefs, lastView }),
+      setPlatformMode: (view, mode) =>
+        prefsStore.set({ ...prefs, platformModes: { ...prefs.platformModes, [view]: mode } }),
       setRatio: (view, ratio) =>
         prefsStore.set({ ...prefs, ratios: { ...prefs.ratios, [view]: ratio } }),
       resetPrefs: () => prefsStore.set({ ...DEFAULT_PREFS, ratios: { ...DEFAULT_RATIOS } }),

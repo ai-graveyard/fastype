@@ -220,6 +220,7 @@ export function measureBlocks(container: HTMLElement): MeasureResult {
     const imageRect = image?.getBoundingClientRect();
     blocks.push({
       index,
+      breakBefore: node.getAttribute("data-page-break-before") === "true",
       kind: image ? "media" : blockKindOf(node.tagName),
       height,
       children,

@@ -23,6 +23,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CreatorToolbar } from "@/components/workbench/creator-toolbar";
+import { PublishDialog } from "@/components/workbench/publish-dialog";
+import {
+  ExportImageReview,
+  type ExportImageIssue,
+} from "@/components/workbench/export-image-review";
+import { documentLayoutStore } from "@/lib/storage/document-layout";
+import { layoutBlocks, applyLayoutBreaks } from "@/lib/markdown/layout-anchors";
+import { findImageMarkups, stringifyImageMarkup } from "@/lib/markdown/image-markup";
+import { encodeImageFile } from "@/lib/image/encode";
+import { saveImage, peekImageDataUrl } from "@/lib/image/library";
+import { imageRefId } from "@/lib/image/ref";
+import { blobToDataUrl } from "@/lib/image/data-url";
 import { EditorPane } from "@/components/workbench/editor-pane";
 import {
   MarkdownPreview,
@@ -58,6 +71,7 @@ import {
   findUnexportableImages,
   pageFilename,
   renderPageToBlob,
+  settleExportImages,
 } from "@/lib/export/png";
 import { printNode } from "@/lib/export/print";
 import { baseName, downloadBlob, downloadText, hasAcceptedExtension } from "@/lib/file";
@@ -70,6 +84,7 @@ import {
   estimateReadingMinutes,
 } from "@/lib/markdown/stats";
 import {
+  formatXhsPublishBody,
   DEFAULT_XHS_METADATA,
   parseXhsMarkdown,
   stringifyXhsMarkdown,
@@ -124,15 +139,43 @@ export async function writeWechatClipboard(
 }
 
 export function Workbench() {
-  const { t, lastView, setLastView, ratios, setRatio, hydrated } = usePrefs();
-  const { content, filename, autoSavePending, setContent, pending, resolvePending, openFile } =
-    useDocument();
+  const { t, lastView, setLastView, ratios, setRatio, hydrated, platformModes, setPlatformMode } =
+    usePrefs();
+  const {
+    content,
+    filename,
+    autoSavePending,
+    setContent,
+    pending,
+    resolvePending,
+    openFile,
+    checkpoint,
+  } = useDocument();
   const { xhs, wechat, setWechat } = useStyles();
   const { profile } = useUserProfile();
   const editorRef = React.useRef<EditorApi>(null);
   const markdownPreviewRef = React.useRef<MarkdownPreviewHandle>(null);
   const xhsRef = React.useRef<XhsPreviewHandle>(null);
 
+  const layout = React.useSyncExternalStore(
+    documentLayoutStore.subscribe,
+    documentLayoutStore.getSnapshot,
+    documentLayoutStore.getServerSnapshot,
+  );
+  const [publishOpen, setPublishOpen] = React.useState(false);
+  const [imageIssues, setImageIssues] = React.useState<ExportImageIssue[] | null>(null);
+  const reviewResolve = React.useRef<((proceed: boolean) => void) | null>(null);
+  const exportBusy = React.useRef(false);
+  const currentContent = React.useRef(content);
+  React.useEffect(() => {
+    currentContent.current = content;
+  }, [content]);
+  React.useEffect(
+    () => () => {
+      reviewResolve.current?.(false);
+    },
+    [],
+  );
   const [narrow, setNarrow] = React.useState(false);
   const [narrowSide, setNarrowSide] = React.useState<"preview" | "editor">("editor");
   const [settingsDialogOpen, setSettingsDialogOpen] = React.useState(false);
@@ -147,9 +190,6 @@ export function Workbench() {
     id: string;
     nonce: number;
   } | null>(null);
-  const [platformModes, setPlatformModes] = React.useState<
-    Record<"xhs" | "wechat", PlatformEditorMode>
-  >({ xhs: "text", wechat: "text" });
   const [cursor, setCursor] = React.useState<EditorSelectionInfo>({
     line: 1,
     col: 1,
@@ -197,6 +237,17 @@ export function Workbench() {
    * 换算发生在 renderWechat 内部，所以高亮必须赶在喂给它之前完成。
    */
   const highlightedHtml = useHighlightedHtml(rendered.html);
+  const paginationBlocks = React.useMemo(
+    () => (hydrated ? layoutBlocks(rendered.html, debounced) : []),
+    [hydrated, rendered.html, debounced],
+  );
+  const xhsHtml = React.useMemo(
+    () =>
+      hydrated
+        ? applyLayoutBreaks(highlightedHtml, paginationBlocks, layout.breakBefore)
+        : highlightedHtml,
+    [hydrated, highlightedHtml, paginationBlocks, layout.breakBefore],
+  );
 
   const stats = React.useMemo(() => countText(rendered.text), [rendered.text]);
   const editorInputStats = React.useMemo(() => countEditorInput(imageContent), [imageContent]);
@@ -258,7 +309,7 @@ export function Workbench() {
 
   const changePlatformMode = (mode: PlatformEditorMode) => {
     if (view === "markdown") return;
-    setPlatformModes((current) => ({ ...current, [view]: mode }));
+    setPlatformMode(view, mode);
   };
 
   // 稳定化回调：用 ref 保存最新实现，对外暴露引用不变的包装函数，
@@ -305,6 +356,84 @@ export function Workbench() {
     [],
   );
 
+  const resolveImageReview = (proceed: boolean) => {
+    reviewResolve.current?.(proceed);
+    reviewResolve.current = null;
+    setImageIssues(null);
+  };
+  const requestImageApproval = async (nodes: HTMLElement[], pageOffset = 0) => {
+    await settleExportImages(nodes);
+    const missing = await findUnexportableImages(nodes, true);
+    if (!missing.length) return true;
+    setImageIssues(
+      missing.map((src) => ({
+        src,
+        pages: nodes.flatMap((node, index) =>
+          Array.from(node.querySelectorAll("img")).some((img) => img.getAttribute("src") === src)
+            ? [index + 1 + pageOffset]
+            : [],
+        ),
+      })),
+    );
+    return new Promise<boolean>((resolve) => {
+      reviewResolve.current = resolve;
+    });
+  };
+  const matchingImage = (source: string, src: string) =>
+    findImageMarkups(source).filter((item) => {
+      const id = imageRefId(item.src);
+      return item.src === src || (id && peekImageDataUrl(id) === src);
+    });
+  const replaceExportImage = async (src: string, file: File) => {
+    const initial = currentContent.current;
+    const images = matchingImage(initial, src);
+    if (!images.length) {
+      toast.error(t("creator.imageLocateFailed"));
+      return false;
+    }
+    try {
+      const result = await encodeImageFile(file);
+      if (!result.ok) throw new Error("image");
+      const ref =
+        (await saveImage(result.blob, result.width, result.height)) ??
+        (await blobToDataUrl(result.blob));
+      if (currentContent.current !== initial) {
+        toast.error(t("creator.imageChanged"));
+        return false;
+      }
+      let next = initial;
+      for (const item of [...images].reverse())
+        next =
+          next.slice(0, item.from) +
+          stringifyImageMarkup({ ...item, src: ref }) +
+          next.slice(item.to);
+      setContent(next);
+      toast.success(t("creator.imageReplaced"));
+      return true;
+    } catch {
+      toast.error(t("creator.imageReplaceFailed"));
+      return false;
+    }
+  };
+  const locateExportImage = (src: string) => {
+    const item = matchingImage(imageContent, src)[0];
+    if (!item) {
+      toast.error(t("creator.imageLocateFailed"));
+      return;
+    }
+    setPublishOpen(false);
+    setXhsTab("image");
+    setWechatTab("content");
+    setNarrowSide("editor");
+    requestAnimationFrame(() =>
+      editorRef.current?.locateText(imageContent.slice(item.from, item.to)),
+    );
+  };
+  const openPublish = () => {
+    setNarrowSide("preview");
+    setPublishOpen(true);
+  };
+
   /** Markdown 通用预览长图导出：只截取正文节点，不包含预览 Header。 */
   const handleExportLongImage = async () => {
     const node = markdownPreviewRef.current?.getExportNode();
@@ -317,13 +446,12 @@ export function Workbench() {
       return;
     }
 
-    const missing = await findUnexportableImages([node]);
-    if (missing.length > 0) {
-      toast.warning(t("image.exportTaintWarn", { n: missing.length }), { duration: 8000 });
-    }
-
+    if (exportBusy.current) return;
+    exportBusy.current = true;
     setExportingLongImage(true);
+    const initial = currentContent.current;
     try {
+      if (!(await requestImageApproval([node])) || initial !== currentContent.current) return;
       await document.fonts?.ready;
       const backgroundColor = getComputedStyle(node).backgroundColor;
       const blob = await renderPageToBlob(node, {
@@ -339,6 +467,7 @@ export function Workbench() {
       toast.error(t("editor.longImageFailed"), { duration: 8000 });
     } finally {
       setExportingLongImage(false);
+      exportBusy.current = false;
     }
   };
   React.useEffect(() => {
@@ -409,72 +538,53 @@ export function Workbench() {
   const handleExportPng = async (pageIndex?: number) => {
     const allNodes = xhsRef.current?.getPageNodes() ?? [];
     const nodes = pageIndex === undefined ? allNodes : allNodes.slice(pageIndex, pageIndex + 1);
-    if (nodes.length === 0) return;
-
-    const missing = await findUnexportableImages(nodes);
-    if (missing.length > 0) {
-      toast.warning(t("image.exportTaintWarn", { n: missing.length }), { duration: 8000 });
-    }
-
-    const size = getExportSize();
+    if (nodes.length === 0 || exportBusy.current) return;
+    exportBusy.current = true;
+    const initial = currentContent.current;
     setExporting({ current: 0, total: nodes.length });
-
-    const rawResults = await exportPages(nodes, {
-      scale: size.scale,
-      backgroundColor: xhsPalette(xhs).background,
-      onProgress: (current, total) => setExporting({ current, total }),
-    });
-    const results = rawResults.map((result) => ({
-      ...result,
-      index: pageIndex === undefined ? result.index : pageIndex,
-    }));
-
-    const failed = results.filter((result) => !result.ok);
-    let downloaded = 0;
     try {
-      if (pageIndex === undefined) {
-        downloaded = await downloadPagesAsZip(results, docBase);
-      } else {
-        const result = results[0];
-        if (result?.ok && result.blob) {
-          downloadBlob(result.blob, pageFilename(docBase, result.index));
-          downloaded = 1;
-        }
+      if (
+        !(await requestImageApproval(nodes, pageIndex ?? 0)) ||
+        initial !== currentContent.current
+      )
+        return;
+      const rawResults = await exportPages(nodes, {
+        scale: getExportSize().scale,
+        backgroundColor: xhsPalette(xhs).background,
+        onProgress: (current, total) => setExporting({ current, total }),
+      });
+      const results = rawResults.map((result) => ({
+        ...result,
+        index: pageIndex === undefined ? result.index : pageIndex,
+      }));
+      const failed = results.filter((result) => !result.ok);
+      let downloaded = 0;
+      if (pageIndex === undefined)
+        downloaded = await downloadPagesAsZip(results, docBase, {
+          title: xhsMetadata.title,
+          body: formatXhsPublishBody(xhsMetadata),
+        });
+      else if (results[0]?.ok && results[0].blob) {
+        downloadBlob(results[0].blob, pageFilename(docBase, results[0].index));
+        downloaded = 1;
       }
+      if (downloaded)
+        toast.success(
+          t(pageIndex === undefined ? "xhs.exportZipDone" : "xhs.exportDone", { n: downloaded }),
+          {
+            action: {
+              label: t("xhs.openCreator"),
+              onClick: () => window.open(XHS_CREATOR_URL, "_blank", "noopener,noreferrer"),
+            },
+          },
+        );
+      for (const result of failed)
+        toast.error(t("xhs.exportPageFailed", { page: result.index + 1 }));
     } catch {
-      toast.error(
-        pageIndex === undefined
-          ? t("xhs.exportZipFailed")
-          : t("xhs.exportPageFailed", { page: pageIndex + 1 }),
-        { duration: 8000 },
-      );
+      toast.error(t("creator.exportFailed"));
     } finally {
       setExporting(null);
-    }
-
-    if (downloaded > 0) {
-      if (pageIndex === undefined) {
-        toast.success(t("xhs.exportZipDone", { n: downloaded }), {
-          duration: 5000,
-          action: {
-            label: (
-              <span className="flex items-center gap-1">
-                {t("xhs.openCreator")}
-                <ArrowUpRight className="size-3.5" aria-hidden="true" />
-              </span>
-            ),
-            onClick: () => window.open(XHS_CREATOR_URL, "_blank", "noopener,noreferrer"),
-          },
-        });
-      } else {
-        toast.success(t("xhs.exportDone", { n: downloaded }));
-      }
-    }
-    if (failed.length > 0) {
-      toast.error(
-        failed.map((result) => t("xhs.exportPageFailed", { page: result.index + 1 })).join("\n"),
-        { duration: 10_000 },
-      );
+      exportBusy.current = false;
     }
   };
   React.useEffect(() => {
@@ -553,6 +663,7 @@ export function Workbench() {
         <div className="min-h-0 flex-1">
           <MarkdownEditor
             ref={editorRef}
+            onBeforeReplaceDocument={checkpoint}
             value={imageContent}
             onChange={setImageContent}
             onSelectionChange={setCursor}
@@ -576,6 +687,7 @@ export function Workbench() {
         editorRef={editorRef}
         content={imageContent}
         onContentChange={setImageContent}
+        onBeforeReplaceDocument={checkpoint}
         metadata={xhsMetadata}
         onMetadataChange={setXhsMetadata}
         onSelectionChange={setCursor}
@@ -593,6 +705,7 @@ export function Workbench() {
         editorRef={editorRef}
         content={imageContent}
         onContentChange={setImageContent}
+        onBeforeReplaceDocument={checkpoint}
         onSelectionChange={setCursor}
         resetKey={filename}
         savePending={autoSavePending}
@@ -622,13 +735,14 @@ export function Workbench() {
       {view === "xhs" ? (
         <XhsPreview
           ref={xhsRef}
-          html={highlightedHtml}
+          html={xhsHtml}
+          keepHeadings={layout.keepHeadings}
           documentTitle={rendered.title ?? ""}
           hasTitle={rendered.title !== null}
           metadata={xhsMetadata}
           style={xhs}
           onPagesChange={setPageInfo}
-          onExport={stableExportAll}
+          onExport={openPublish}
           onExportPage={stableExportPage}
           exportDisabled={pageInfo.total === 0 || exporting !== null}
           exporting={exporting !== null}
@@ -695,6 +809,18 @@ export function Workbench() {
         onOpenSettings={() => openSettings("appearance")}
       />
 
+      <CreatorToolbar
+        view={view}
+        onPublish={openPublish}
+        onEdit={() => {
+          setXhsTab("image");
+          setWechatTab("content");
+          setNarrowSide("editor");
+        }}
+        blocks={paginationBlocks}
+        layout={layout}
+        onLayoutChange={documentLayoutStore.set}
+      />
       <QuotaWarningBanner />
 
       <main id="main-content" className="flex min-h-0 flex-1 flex-col overflow-hidden bg-card">
@@ -807,6 +933,35 @@ export function Workbench() {
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}
         initialSection={settingsSection}
+      />
+
+      {view !== "markdown" ? (
+        <PublishDialog
+          open={publishOpen}
+          onOpenChange={setPublishOpen}
+          platform={view}
+          metadata={xhsMetadata}
+          onMetadataChange={setXhsMetadata}
+          source={imageContent}
+          total={pageInfo.total}
+          overflowPages={pageInfo.overflowPages}
+          failedImages={view === "xhs" ? xhsFailedImageCount : wechatFailedImageCount}
+          exporting={exporting !== null}
+          onExport={stableExportAll}
+          onCopyWechat={stableCopyRich}
+          onDownloadHtml={stableDownloadHtml}
+          articleDocument={wechatArticleDocument}
+          title={rendered.title ?? ""}
+          docBase={docBase}
+          issues={wechatResult?.issues ?? []}
+          onLocateIssue={locateWechatIssue}
+        />
+      ) : null}
+      <ExportImageReview
+        issues={imageIssues}
+        onResolve={resolveImageReview}
+        onReplace={replaceExportImage}
+        onLocate={locateExportImage}
       />
 
       {/* 未保存变更保护（PRD FT-DOC-005） */}

@@ -13,6 +13,7 @@ import {
 import { PrefsProvider } from "@/components/providers/prefs-provider";
 import { __resetImageDbForTests, getImage, listImageStamps } from "@/lib/image/db";
 import { __resetImageCacheForTests, inlineImageRefs, saveImageDataUrl } from "@/lib/image/library";
+import { saveSnapshot } from "@/lib/storage/history";
 import { StorageKey, __resetStorageStateForTests } from "@/lib/storage";
 
 const RED_PIXEL =
@@ -114,6 +115,16 @@ describe("正文图片搬进 IndexedDB", () => {
     expect(await listImageStamps()).toHaveLength(1);
     // 导出那一刻还原成自包含的一份。
     expect(await inlineImageRefs(migrated)).toBe(original);
+  });
+
+  it("启动清理保留历史版本引用的图片", async () => {
+    const ref = await saveImageDataUrl(RED_PIXEL);
+    saveSnapshot({ filename: "旧版本.md", content: `![历史图片](${ref})`, savedAt: 1 });
+    storeDraft("# 当前版本没有图片");
+    renderDocument();
+    await act(async () => {});
+    expect(await listImageStamps()).toHaveLength(1);
+    expect(await inlineImageRefs(`![历史图片](${ref})`)).toBe(`![历史图片](${RED_PIXEL})`);
   });
 
   it("正文里没有内嵌图片时不动草稿", async () => {

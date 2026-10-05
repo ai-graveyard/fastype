@@ -9,6 +9,8 @@ export const STORAGE_PREFIX = "fastype";
 export const StorageKey = {
   /** 正文与文件名，独立于其它设置。 */
   draft: `${STORAGE_PREFIX}:draft`,
+  history: `${STORAGE_PREFIX}:history`,
+  documentLayout: `${STORAGE_PREFIX}:document-layout`,
   /** 语言、主题、上次视图、分栏比例。 */
   prefs: `${STORAGE_PREFIX}:prefs`,
   /** 小红书样式。 */

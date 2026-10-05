@@ -29,7 +29,14 @@ export default defineConfig({
         ...(useSystemChrome ? { channel: "chrome" } : {}),
       },
     },
-    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+    {
+      name: "firefox",
+      use: {
+        ...devices["Desktop Firefox"],
+        // The test server is loopback-only; machine-specific PAC proxies must not intercept it.
+        launchOptions: { firefoxUserPrefs: { "network.proxy.type": 0 } },
+      },
+    },
     { name: "webkit", use: { ...devices["Desktop Safari"] } },
   ],
 });

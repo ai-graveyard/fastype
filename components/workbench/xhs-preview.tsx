@@ -83,7 +83,10 @@ export interface XhsPreviewHandle {
 }
 
 interface XhsPreviewProps {
+  previewOnly?: boolean;
+  thumbnail?: boolean;
   html: string;
+  keepHeadings?: boolean;
   /** 正文中明确存在的一级标题，仅供封面文字留空时使用。 */
   documentTitle: string;
   hasTitle: boolean;
@@ -492,6 +495,9 @@ export const XhsPreview = React.memo(
   React.forwardRef<XhsPreviewHandle, XhsPreviewProps>(function XhsPreview(
     {
       html,
+      previewOnly = false,
+      thumbnail = false,
+      keepHeadings = true,
       documentTitle,
       hasTitle,
       metadata,
@@ -521,8 +527,19 @@ export const XhsPreview = React.memo(
     const [layoutTick, setLayoutTick] = React.useState(0);
     const phoneScale = usePhoneFitScale(previewStageRef, previewZoom);
     // 全图容器常驻（隐藏时宽度为 0），ResizeObserver 才能在切过去的那一刻就量到宽度。
+    const canvas = React.useMemo(() => getXhsCanvasSize(style), [style]);
     const [gridRef, gridWidth] = useElementWidth<HTMLDivElement>();
-    const { columns: gridColumns, cardWidth: gridCardWidth } = xhsGridLayout(gridWidth);
+    const { columns: gridColumns, cardWidth: gridCardWidth } = thumbnail
+      ? {
+          columns: 4,
+          cardWidth: Math.max(
+            1,
+            Math.floor(
+              Math.min(gridCardWidthFor(gridWidth, 4), (200 * canvas.width) / canvas.height),
+            ),
+          ),
+        }
+      : xhsGridLayout(gridWidth);
 
     const changePreviewMode = (next: XhsPreviewMode) => {
       if (next === previewMode) return;
@@ -531,9 +548,12 @@ export const XhsPreview = React.memo(
       setPreviewMode(next);
     };
 
-    const css = React.useMemo(() => xhsCardCss(style), [style]);
+    const previewId = React.useId();
+    const css = React.useMemo(
+      () => xhsCardCss(style, `[data-xhs-preview="${previewId}"]`),
+      [style, previewId],
+    );
     const palette = React.useMemo(() => xhsPalette(style), [style]);
-    const canvas = React.useMemo(() => getXhsCanvasSize(style), [style]);
     const innerWidth = contentWidth(style);
     const coverOffset = style.cover.enabled ? 1 : 0;
     const pageNumberOffset = style.cover.enabled && style.showPageNumberOnCover ? 1 : 0;
@@ -651,7 +671,7 @@ export const XhsPreview = React.memo(
         footerReservedHeight;
       const measured = measureBlocks(container);
       layoutRef.current = measured;
-      const next = paginate(measured.blocks, available);
+      const next = paginate(measured.blocks, available, keepHeadings);
       setPages(next);
       setLayoutTick((value) => value + 1);
       onPagesChange({
@@ -662,6 +682,7 @@ export const XhsPreview = React.memo(
       });
     }, [
       measurementInput,
+      keepHeadings,
       contentHtml,
       // 测量容器的排版完全由注入的 css 和 innerWidth 决定；css 是字符串，配色以外的
       // 改动若没改变它的内容就不会重新测量。
@@ -891,10 +912,19 @@ export const XhsPreview = React.memo(
     );
 
     return (
-      <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
+      <div
+        data-xhs-preview={previewId}
+        className={cn(
+          "ft-toolbar-container relative flex min-h-0 flex-col overflow-hidden",
+          !previewOnly && "h-full",
+        )}
+      >
         <style dangerouslySetInnerHTML={{ __html: css }} />
 
-        <div className="grid h-[53px] shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-dashed border-border bg-background/30 px-5 backdrop-blur">
+        <div
+          hidden={previewOnly}
+          className="ft-preview-toolbar grid h-[53px] shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-dashed border-border bg-background/30 px-5 backdrop-blur"
+        >
           <div className="flex min-w-0 items-center">
             <div
               className="flex h-8 items-center rounded-md border border-border bg-muted/45 p-0.5"
@@ -906,31 +936,35 @@ export const XhsPreview = React.memo(
                   type="button"
                   onClick={() => changePreviewMode(mode.id)}
                   aria-pressed={previewMode === mode.id}
+                  aria-label={t(mode.labelKey)}
+                  title={t(mode.labelKey)}
                   className={cn(
-                    "inline-flex h-7 items-center gap-1.5 rounded-sm border border-transparent px-2.5 text-xs font-medium transition-all",
+                    "ft-toolbar-action inline-flex h-7 shrink-0 items-center gap-1.5 rounded-sm border border-transparent px-2.5 text-xs font-medium transition-all",
                     previewMode === mode.id
                       ? "bg-card text-brand-primary shadow-sm"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <mode.icon className="size-3.5" />
-                  <span>{t(mode.labelKey)}</span>
+                  <mode.icon className="size-3.5 shrink-0" />
+                  <span className="ft-toolbar-label">{t(mode.labelKey)}</span>
                 </button>
               ))}
             </div>
           </div>
-          <ProfileButton onClick={onEditProfile} />
-          <div className="flex items-center justify-self-end gap-1.5">
+          {!previewOnly && <ProfileButton onClick={onEditProfile} />}
+          <div className="flex items-center justify-self-end gap-1.5" hidden={previewOnly}>
             <Button
               size="sm"
-              className="border border-brand-primary/30 bg-brand-primary/10 text-brand-primary shadow-none hover:bg-brand-primary/15"
+              className="ft-toolbar-action border border-brand-primary/30 bg-brand-primary/10 text-brand-primary shadow-none hover:bg-brand-primary/15"
               disabled={exportDisabled}
               // 必须包一层：直接传 onExport 会把 MouseEvent 当成「导出第几页」的实参。
               onClick={() => onExport()}
+              aria-label={t("xhs.export")}
+              aria-busy={exporting}
               title={t("xhs.exportAll", { n: totalPages })}
             >
               {exporting ? <Loader2 className="animate-spin" /> : <ImageDown />}
-              {t("xhs.export")}
+              <span className="ft-toolbar-label">{t("xhs.export")}</span>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -959,7 +993,8 @@ export const XhsPreview = React.memo(
           data-testid="xhs-preview-stage"
           className={cn(
             // 底色压深一点，白卡片和手机外壳才浮得起来；三种预览模式共用同一块底色。
-            "relative min-h-0 flex-1 overflow-hidden bg-accent",
+            "relative min-h-0 overflow-hidden bg-accent",
+            !previewOnly && "flex-1",
             previewMode !== "grid" && "flex items-center justify-center px-6 pt-4 pb-12",
           )}
         >
@@ -974,7 +1009,7 @@ export const XhsPreview = React.memo(
             ref={gridRef}
             data-testid="xhs-grid"
             className={cn(
-              "h-full overflow-x-hidden overflow-y-auto",
+              previewOnly ? "overflow-hidden" : "h-full overflow-x-hidden overflow-y-auto",
               previewMode !== "grid" && "hidden",
             )}
             style={{ padding: GRID_PADDING }}
@@ -990,36 +1025,40 @@ export const XhsPreview = React.memo(
                     gap: XHS_GRID_GAP,
                   }}
                 >
-                  {Array.from({ length: totalPages }, (_, index) => (
-                    <div
-                      key={index}
-                      data-testid="xhs-grid-card"
-                      className="group relative overflow-hidden rounded-md ring-1 ring-border/50 shadow-sm transition-[box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0"
-                    >
-                      <XhsCardClone
-                        className="bg-card"
-                        pageRefs={pageRefs}
-                        pageIndex={index}
-                        displayWidth={gridCardWidth}
-                        sourceWidth={canvas.width}
-                        sourceHeight={canvas.height}
-                        refreshKey={cloneRefreshKey}
-                      />
-                      <button
-                        type="button"
-                        disabled={exportDisabled}
-                        onClick={() => onExportPage(index)}
-                        aria-label={t("xhs.downloadImageAt", { page: index + 1 })}
-                        title={t("xhs.downloadImageAt", { page: index + 1 })}
-                        className="absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full bg-black/30 text-white opacity-60 backdrop-blur transition hover:bg-black/55 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:pointer-events-none disabled:opacity-25"
+                  {Array.from(
+                    { length: thumbnail ? Math.min(totalPages, 4) : totalPages },
+                    (_, index) => (
+                      <div
+                        key={index}
+                        data-testid="xhs-grid-card"
+                        className="group relative overflow-hidden rounded-md ring-1 ring-border/50 shadow-sm transition-[box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0"
                       >
-                        <ImageDown className="size-3.5" />
-                      </button>
-                      <span className="pointer-events-none absolute right-1.5 bottom-1.5 rounded-full bg-black/30 px-2 py-0.5 text-[11px] font-medium text-white opacity-0 backdrop-blur transition group-hover:opacity-100">
-                        {index + 1}/{totalPages}
-                      </span>
-                    </div>
-                  ))}
+                        <XhsCardClone
+                          className="bg-card"
+                          pageRefs={pageRefs}
+                          pageIndex={index}
+                          displayWidth={gridCardWidth}
+                          sourceWidth={canvas.width}
+                          sourceHeight={canvas.height}
+                          refreshKey={cloneRefreshKey}
+                        />
+                        <button
+                          hidden={previewOnly}
+                          type="button"
+                          disabled={exportDisabled}
+                          onClick={() => onExportPage(index)}
+                          aria-label={t("xhs.downloadImageAt", { page: index + 1 })}
+                          title={t("xhs.downloadImageAt", { page: index + 1 })}
+                          className="absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full bg-black/30 text-white opacity-60 backdrop-blur transition hover:bg-black/55 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:pointer-events-none disabled:opacity-25"
+                        >
+                          <ImageDown className="size-3.5" />
+                        </button>
+                        <span className="pointer-events-none absolute right-1.5 bottom-1.5 rounded-full bg-black/30 px-2 py-0.5 text-[11px] font-medium text-white opacity-0 backdrop-blur transition group-hover:opacity-100">
+                          {index + 1}/{totalPages}
+                        </span>
+                      </div>
+                    ),
+                  )}
                 </div>
               ) : (
                 <p className="py-12 text-center text-sm text-muted-foreground">{t("xhs.empty")}</p>
@@ -1135,19 +1174,22 @@ export const XhsPreview = React.memo(
                 <DropdownMenuLabel className="col-span-4">
                   {t("xhs.pageNavigator")}
                 </DropdownMenuLabel>
-                {Array.from({ length: totalPages }, (_, index) => (
-                  <DropdownMenuItem
-                    key={index}
-                    className={cn(
-                      "justify-center px-1 text-xs tabular-nums",
-                      index === activePage && "bg-accent text-accent-foreground",
-                    )}
-                    aria-label={t("xhs.goToPage", { page: index + 1 })}
-                    onSelect={() => goToPage(index)}
-                  >
-                    {index + 1}
-                  </DropdownMenuItem>
-                ))}
+                {Array.from(
+                  { length: thumbnail ? Math.min(totalPages, 4) : totalPages },
+                  (_, index) => (
+                    <DropdownMenuItem
+                      key={index}
+                      className={cn(
+                        "justify-center px-1 text-xs tabular-nums",
+                        index === activePage && "bg-accent text-accent-foreground",
+                      )}
+                      aria-label={t("xhs.goToPage", { page: index + 1 })}
+                      onSelect={() => goToPage(index)}
+                    >
+                      {index + 1}
+                    </DropdownMenuItem>
+                  ),
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}

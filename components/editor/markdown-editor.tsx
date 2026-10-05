@@ -156,6 +156,7 @@ export interface EditorApi {
 interface MarkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onBeforeReplaceDocument?: () => void;
   onSelectionChange?: (info: EditorSelectionInfo) => void;
   placeholder?: string;
   /** 变化时重建编辑器状态，让新文档不会继承上一篇的撤销历史。 */
@@ -1275,6 +1276,7 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
     {
       value,
       onChange,
+      onBeforeReplaceDocument,
       onSelectionChange,
       placeholder,
       resetKey,
@@ -1298,9 +1300,11 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
 
     // 回调放在 ref 里，避免每次父组件重渲染都重建整个编辑器。
     const onChangeRef = React.useRef(onChange);
+    const beforeReplaceRef = React.useRef(onBeforeReplaceDocument);
     const onSelectionRef = React.useRef(onSelectionChange);
     React.useEffect(() => {
       onChangeRef.current = onChange;
+      beforeReplaceRef.current = onBeforeReplaceDocument;
       onSelectionRef.current = onSelectionChange;
       inputLimitsRef.current = inputLimits;
     });
@@ -1519,6 +1523,7 @@ export const MarkdownEditor = React.forwardRef<EditorApi, MarkdownEditorProps>(
         replaceDocument: (text) => {
           const view = viewRef.current;
           if (!view) return;
+          if (text !== view.state.doc.toString()) beforeReplaceRef.current?.();
           view.dispatch({
             changes: { from: 0, to: view.state.doc.length, insert: text },
             selection: { anchor: Math.min(text.length, view.state.selection.main.head) },

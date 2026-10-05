@@ -106,7 +106,7 @@ export function applyXhsHeadingNumbers(
   if (!hasNumbering || !html.trim() || typeof window === "undefined") return html;
   const holder = window.document.createElement("div");
   // 不完全依赖调用方「已经消毒过」的命名约定，这里再兜底消毒一次（纵深防御）。
-  holder.appendChild(sanitizeHtml(html));
+  holder.appendChild(sanitizeHtml(html, true));
   appendHeadingNumbers(holder, style.headings, style.fontSize, style.accentColor);
   return holder.innerHTML;
 }
@@ -124,7 +124,7 @@ export function applyXhsBodyTitleOverride(html: string, override: string): strin
   if (!trimmed || typeof window === "undefined") return html;
   const holder = window.document.createElement("div");
   // 不完全依赖调用方「已经消毒过」的命名约定，这里再兜底消毒一次（纵深防御）。
-  holder.appendChild(sanitizeHtml(html));
+  holder.appendChild(sanitizeHtml(html, true));
   const innerHtml = trimmed.split("\n").map(escapeHtmlText).join("<br>");
   const heading = holder.querySelector("h1");
   if (heading) {
@@ -216,10 +216,10 @@ function headingColorOverrideCss(style: XhsStyle, root: string): string {
     .join("\n");
 }
 
-export function xhsCardCss(style: XhsStyle): string {
+export function xhsCardCss(style: XhsStyle, scope = ""): string {
   const p = xhsPalette(style);
   const size = style.fontSize;
-  const root = `.${XHS_CARD_CLASS}`;
+  const root = `${scope ? `${scope} ` : ""}.${XHS_CARD_CLASS}`;
   const paragraphGap = Math.round(size * style.paragraphSpacing);
   const h1 = style.headings.h1;
   const h2 = style.headings.h2;

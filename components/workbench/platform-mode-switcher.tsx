@@ -32,16 +32,17 @@ export function PlatformModeSwitcher({
           type="button"
           aria-pressed={value === option.value}
           title={option.label}
+          aria-label={option.label}
           onClick={() => onChange(option.value)}
           className={cn(
-            "inline-flex h-7 items-center gap-1 rounded-sm border border-transparent px-2 text-xs font-medium transition-all duration-200",
+            "ft-toolbar-action inline-flex h-7 shrink-0 items-center gap-1 rounded-sm border border-transparent px-2 text-xs font-medium transition-all duration-200",
             value === option.value
               ? "bg-card text-brand-primary shadow-sm"
               : "text-muted-foreground hover:text-foreground",
           )}
         >
-          <option.icon className="size-3.5" aria-hidden="true" />
-          <span>{option.label}</span>
+          <option.icon className="size-3.5 shrink-0" aria-hidden="true" />
+          <span className="ft-toolbar-label">{option.label}</span>
         </button>
       ))}
     </div>

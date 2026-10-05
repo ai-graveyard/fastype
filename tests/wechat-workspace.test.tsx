@@ -95,9 +95,9 @@ describe("公众号内容编辑器", () => {
     );
 
     const header = screen.getByTestId("wechat-workspace-header");
-    expect(header.querySelectorAll("button")).toHaveLength(5);
+    expect(header.querySelectorAll("button")).toHaveLength(4);
     expect(screen.getByRole("button", { name: /Cover|封面/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Typography|排版/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Fine-tune|精细调整/ })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Elements|元素/ })).toBeNull();
     expect(screen.getByRole("heading", { name: /Body typography|正文排版/ })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /Text elements|文字元素/ })).toBeTruthy();

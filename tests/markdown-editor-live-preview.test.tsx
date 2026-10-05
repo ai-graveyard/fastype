@@ -25,6 +25,23 @@ if (!Range.prototype.getBoundingClientRect) {
 }
 
 describe("Markdown Live Preview 编辑器", () => {
+  it("全文替换前先快照，即使只改一个字", () => {
+    const ref = createRef<EditorApi>();
+    const captured: string[] = [];
+    render(
+      <MarkdownEditor
+        ref={ref}
+        value="原文"
+        onChange={vi.fn()}
+        onBeforeReplaceDocument={() => captured.push(ref.current!.getValue())}
+        resetKey="snapshot"
+        ariaLabel="编辑区"
+      />,
+    );
+    act(() => ref.current!.replaceDocument("新文"));
+    expect(captured).toEqual(["原文"]);
+    expect(ref.current!.getValue()).toBe("新文");
+  });
   afterEach(() => {
     // 图片库的会话缓存是模块级的，留着会串到别的用例里。
     __resetImageCacheForTests();
